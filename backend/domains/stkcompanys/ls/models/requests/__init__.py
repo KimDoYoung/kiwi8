@@ -1,0 +1,111 @@
+# Auto-generated
+# LS 증권 시장 관련 요청 정의
+
+from .market_account import MARKET_ACCOUNT_REQUESTS
+from .market_stock_info import MARKET_STOCK_INFO_REQUESTS
+from .market_price_tick import MARKET_PRICE_TICK_REQUESTS
+from .market_order_execution import MARKET_ORDER_EXECUTION_REQUESTS
+from .market_statistics_ranking import MARKET_STATISTICS_RANKING_REQUESTS
+from .market_preferred_bond import MARKET_PREFERRED_BOND_REQUESTS
+from .market_foreign_institutional import MARKET_FOREIGN_INSTITUTIONAL_REQUESTS
+from .market_chart import MARKET_CHART_REQUESTS
+from .market_other import MARKET_OTHER_REQUESTS
+
+# 기존 분할 파일들도 포함
+try:
+    from .market_elw import MARKET_ELW_REQUESTS
+except ImportError:
+    MARKET_ELW_REQUESTS = {}
+
+try:
+    from .market_etf import MARKET_ETF_REQUESTS
+except ImportError:
+    MARKET_ETF_REQUESTS = {}
+
+# 선물/옵션 관련 (기존 market_future.py를 분할)
+try:
+    from .market_derivatives_query import MARKET_DERIVATIVES_QUERY_REQUESTS
+except ImportError:
+    MARKET_DERIVATIVES_QUERY_REQUESTS = {}
+
+try:
+    from .market_derivatives_account import MARKET_DERIVATIVES_ACCOUNT_REQUESTS
+except ImportError:
+    MARKET_DERIVATIVES_ACCOUNT_REQUESTS = {}
+
+try:
+    from .market_derivatives_realtime import MARKET_DERIVATIVES_REALTIME_REQUESTS
+except ImportError:
+    MARKET_DERIVATIVES_REALTIME_REQUESTS = {}
+
+# 기존 market_future.py의 백업 호환성 유지
+MARKET_FUTURE_REQUESTS = {
+    **MARKET_DERIVATIVES_QUERY_REQUESTS,
+    **MARKET_DERIVATIVES_ACCOUNT_REQUESTS,
+    **MARKET_DERIVATIVES_REALTIME_REQUESTS,
+}
+
+# 해외 관련 (기존 market_overseas.py를 분할)
+try:
+    from .market_overseas_futures import MARKET_OVERSEAS_FUTURES_REQUESTS
+except ImportError:
+    MARKET_OVERSEAS_FUTURES_REQUESTS = {}
+
+try:
+    from .market_overseas_stocks import MARKET_OVERSEAS_STOCKS_REQUESTS
+except ImportError:
+    MARKET_OVERSEAS_STOCKS_REQUESTS = {}
+
+try:
+    from .market_overseas_realtime import MARKET_OVERSEAS_REALTIME_REQUESTS
+except ImportError:
+    MARKET_OVERSEAS_REALTIME_REQUESTS = {}
+
+# 기존 market_overseas.py의 백업 호환성 유지
+MARKET_OVERSEAS_REQUESTS = {
+    **MARKET_OVERSEAS_FUTURES_REQUESTS,
+    **MARKET_OVERSEAS_STOCKS_REQUESTS,
+    **MARKET_OVERSEAS_REALTIME_REQUESTS,
+}
+
+# 전체 통합 딕셔너리
+ALL_MARKET_REQUESTS = {
+    **MARKET_ACCOUNT_REQUESTS,
+    **MARKET_STOCK_INFO_REQUESTS,
+    **MARKET_PRICE_TICK_REQUESTS,
+    **MARKET_ORDER_EXECUTION_REQUESTS,
+    **MARKET_STATISTICS_RANKING_REQUESTS,
+    **MARKET_PREFERRED_BOND_REQUESTS,
+    **MARKET_FOREIGN_INSTITUTIONAL_REQUESTS,
+    **MARKET_CHART_REQUESTS,
+    **MARKET_OTHER_REQUESTS,
+    **MARKET_ELW_REQUESTS,
+    **MARKET_ETF_REQUESTS,
+    **MARKET_FUTURE_REQUESTS,
+    **MARKET_OVERSEAS_REQUESTS,
+}
+
+__all__ = [
+    'MARKET_ACCOUNT_REQUESTS',
+    'MARKET_STOCK_INFO_REQUESTS',
+    'MARKET_PRICE_TICK_REQUESTS',
+    'MARKET_ORDER_EXECUTION_REQUESTS',
+    'MARKET_STATISTICS_RANKING_REQUESTS',
+    'MARKET_PREFERRED_BOND_REQUESTS',
+    'MARKET_FOREIGN_INSTITUTIONAL_REQUESTS',
+    'MARKET_CHART_REQUESTS',
+    'MARKET_OTHER_REQUESTS',
+    'MARKET_ELW_REQUESTS',
+    'MARKET_ETF_REQUESTS',
+    # 선물/옵션 분할 파일들
+    'MARKET_DERIVATIVES_QUERY_REQUESTS',
+    'MARKET_DERIVATIVES_ACCOUNT_REQUESTS',
+    'MARKET_DERIVATIVES_REALTIME_REQUESTS',
+    'MARKET_FUTURE_REQUESTS',  # 백업 호환성
+    # 해외 분할 파일들
+    'MARKET_OVERSEAS_FUTURES_REQUESTS',
+    'MARKET_OVERSEAS_STOCKS_REQUESTS',
+    'MARKET_OVERSEAS_REALTIME_REQUESTS',
+    'MARKET_OVERSEAS_REQUESTS',  # 백업 호환성
+    'ALL_MARKET_REQUESTS',
+]
