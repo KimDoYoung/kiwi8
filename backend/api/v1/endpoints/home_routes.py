@@ -1,13 +1,9 @@
 # home_routes.py
 """
 모듈 설명:
-    - /main, /page, /template, /login, /logout, /login 엔드포인트를 정의한다.
-    - /main: 메인 페이지
-    - /page: path에 해당하는 페이지를 가져와서 보낸다.
-    - /template: path에 해당하는 html에서 body추출해서 jinja2처리한 JSON을 리턴
-    - /login: 로그인 페이지
-    - /logout: 로그아웃 페이지
-    - /login: 로그인 프로세스
+    - /login, /logout 엔드포인트를 정의한다.
+    - /login: 로그인 처리 (JWT 발급)
+    - /logout: 로그아웃 처리 (쿠키 삭제)
 
 작성자: 김도영
 작성일: 2025-07-21

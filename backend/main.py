@@ -3,7 +3,6 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from backend.api.v1.endpoints.accounts_routes import router as accounts_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
@@ -31,14 +30,12 @@ def create_app() -> FastAPI:
     kiwi8_app = FastAPI(title='Kiwi8 - 주식매매(개인용)', version='0.0.1')
     add_middlewares(kiwi8_app)
     add_routes(kiwi8_app)
-    add_static_files(kiwi8_app)
     add_exception_handlers(kiwi8_app)
 
     # 루트 앱에 /kiwi8로 마운트
     root_app = FastAPI()
     add_event_handlers(root_app)  # sub-app의 lifespan은 실행 안되므로 root_app에 등록
     root_app.mount('/kiwi8', kiwi8_app)  # /kiwi8 하위로 마운트
-    add_static_files(root_app)  # 루트 레벨 /public 접근용
     return root_app
 
 
@@ -77,14 +74,6 @@ def add_event_handlers(app: FastAPI):
     """이벤트 핸들러 설정"""
     app.add_event_handler('startup', startup_event)
     app.add_event_handler('shutdown', shutdown_event)
-
-
-def add_static_files(app: FastAPI):
-    """정적 파일 설정"""
-    # static
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    static_files_path = os.path.join(BASE_DIR, 'frontend', 'public')
-    app.mount('/public', StaticFiles(directory=static_files_path), name='public')
 
 
 async def startup_event():
