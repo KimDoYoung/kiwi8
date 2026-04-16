@@ -31,7 +31,9 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         if path.startswith(root):
             path = path[len(root) :]
 
-        if path in ['/login', '/logout'] or any(path.startswith(p) for p in STATIC_PATHS):
+        OPEN_PATHS = ['/login', '/logout', '/health', '/docs', '/redoc', '/openapi.json']
+
+        if path in OPEN_PATHS or any(path.startswith(p) for p in STATIC_PATHS):
             response = await call_next(request)
             return response
 

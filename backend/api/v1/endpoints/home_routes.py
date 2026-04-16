@@ -26,6 +26,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+@router.get('/health', include_in_schema=False)
+async def health_check():
+    """배포 상태 확인용 엔드포인트"""
+    return {'status': 'ok', 'version': config.VERSION, 'mode': config.PROFILE_NAME}
+
+
 @router.get('/logout', response_class=JSONResponse)
 async def logout(request: Request, response: Response):
     """로그아웃"""

@@ -3,6 +3,8 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from backend.api.v1.endpoints.accounts_routes import router as accounts_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
@@ -30,6 +32,7 @@ def create_app() -> FastAPI:
     kiwi8_app = FastAPI(title='Kiwi8 - 주식매매(개인용)', version='0.0.1')
     add_middlewares(kiwi8_app)
     add_routes(kiwi8_app)
+    add_static_files(kiwi8_app)
     add_exception_handlers(kiwi8_app)
 
     # 루트 앱에 /kiwi8로 마운트
@@ -37,6 +40,19 @@ def create_app() -> FastAPI:
     add_event_handlers(root_app)  # sub-app의 lifespan은 실행 안되므로 root_app에 등록
     root_app.mount('/kiwi8', kiwi8_app)  # /kiwi8 하위로 마운트
     return root_app
+
+
+def add_static_files(app: FastAPI):
+    """React 빌드 결과물 서빙"""
+    dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+    dist_path = os.path.abspath(dist_path)
+    if os.path.exists(dist_path):
+        app.mount('/assets', StaticFiles(directory=os.path.join(dist_path, 'assets')), name='assets')
+
+        @app.get('/{full_path:path}', include_in_schema=False)
+        async def serve_spa(full_path: str):
+            index_file = os.path.join(dist_path, 'index.html')
+            return FileResponse(index_file)
 
 
 def add_middlewares(app: FastAPI):
