@@ -8,7 +8,7 @@
     3. [LS증권](https://m.ls-sec.co.kr/)
 - kiwi8은 위 3개의 증권사의 계좌를 관리하는 app이다.
 - backend와 frontend로 나누고 backend는 fastapi로 frontend는 react 로 개발한다.
-- 개발시  PORT 는 backend는 8002로, frontend는 5173을 사용
+- 개발시  PORT 는 backend는 8003으로, frontend는 5173을 사용
 - 이 프로젝트는 kwi7에서 구조를 변경하여 다시 진행하는 것이다.
 - 주요 변경 사항
   - frontend를 alpine-> react
