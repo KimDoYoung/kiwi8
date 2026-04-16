@@ -20,7 +20,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     TZ=Asia/Seoul \
-    UV_CACHE_DIR=/tmp/.cache/uv
+    UV_NO_CACHE=1
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
