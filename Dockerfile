@@ -37,6 +37,7 @@ RUN uv sync --frozen --no-dev
 
 # 소스 복사
 COPY backend/ ./backend/
+COPY sqls/ ./sqls/
 
 # React 빌드 결과물 복사
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
