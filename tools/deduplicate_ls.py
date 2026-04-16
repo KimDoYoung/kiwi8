@@ -265,5 +265,5 @@ def remove_keys_safe(file_path, keys_to_remove):
         f.write(final_content)
 
 if __name__ == "__main__":
-    base_dir = "/home/kdy987/work/kiwi7/backend/domains/stkcompanys/ls/models/requests"
+    base_dir = "/home/kdy987/work/kiwi8/backend/domains/stkcompanys/ls/models/requests"
     deduplicate(base_dir)

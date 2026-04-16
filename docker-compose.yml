@@ -1,19 +1,19 @@
 version: '3.8'
 
 services:
-  kiwi7:
+  kiwi8:
     build:
       context: .
       dockerfile: Dockerfile
-    image: kiwi7-img
-    container_name: kiwi7-app
+    image: kiwi8-img
+    container_name: kiwi8-app
     restart: unless-stopped
     environment:
       - TZ=Asia/Seoul
     ports:
       - "8001:8001"
     volumes:
-      - /home/kdy987/kiwi7:/kiwi7
+      - /home/kdy987/kiwi8:/kiwi8
     env_file:
       - .env.docker      
     # sqlite 사용시 별도 db 컨테이너 불필요

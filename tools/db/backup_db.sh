@@ -6,12 +6,12 @@
 set -e
 
 ENV=${1:-local}
-BACKUP_DIR=${2:-~/backup/kiwi7}
+BACKUP_DIR=${2:-~/backup/kiwi8}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 echo "========================================"
-echo "Kiwi7 DB 백업"
+echo "Kiwi8 DB 백업"
 echo "환경: $ENV"
 echo "========================================"
 
@@ -24,7 +24,7 @@ fi
 
 # BASE_DIR 추출
 BASE_DIR=$(grep "^BASE_DIR=" "$ENV_FILE" | cut -d '=' -f2)
-DB_PATH="$BASE_DIR/db/kiwi7.db"
+DB_PATH="$BASE_DIR/db/kiwi8.db"
 
 if [ ! -f "$DB_PATH" ]; then
     echo "❌ 에러: DB 파일이 없습니다: $DB_PATH"
@@ -36,7 +36,7 @@ mkdir -p "$BACKUP_DIR"
 
 # 백업 파일명 (날짜_시간 포함)
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/kiwi7_${ENV}_${TIMESTAMP}.db"
+BACKUP_FILE="$BACKUP_DIR/kiwi8_${ENV}_${TIMESTAMP}.db"
 
 # 백업 실행
 echo "💾 백업 중: $DB_PATH → $BACKUP_FILE"
@@ -58,5 +58,5 @@ echo "📊 파일 크기: $SIZE"
 # 오래된 백업 삭제 (7일 이상)
 echo ""
 echo "🧹 오래된 백업 파일 정리 (7일 이상)..."
-find "$BACKUP_DIR" -name "kiwi7_*.db.gz" -mtime +7 -delete
+find "$BACKUP_DIR" -name "kiwi8_*.db.gz" -mtime +7 -delete
 echo "✅ 정리 완료!"

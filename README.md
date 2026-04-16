@@ -2,14 +2,18 @@
 
 ## 개요
 
-- kiwi8은 키움, KIS(한국투자증권), LS증권의 계좌도 포함해서 나의 전체 증권계좌(현재3개)를 한 눈에 관리하고자 한다.
-- backend와 frontend로 나누고 backend는 fastapi로 frontend는 react
-- python으로 개발 backend와 frontend로 나누어서 개발.
+- 한국의 증권사 중 Restful api를 제공하는 증권사는 3개이다.
+    1. [키움증권](https://www3.kiwoom.com/h/main)
+    2. [한국투자증권](https://securities.koreainvestment.com/main/Main.jsp)
+    3. [LS증권](https://m.ls-sec.co.kr/)
+- kiwi8은 위 3개의 증권사의 계좌를 관리하는 app이다.
+- backend와 frontend로 나누고 backend는 fastapi로 frontend는 react 로 개발한다.
 - 개발시  PORT 는 backend는 8002로, frontend는 5173을 사용
 - 이 프로젝트는 kwi7에서 구조를 변경하여 다시 진행하는 것이다.
 - 주요 변경 사항
   - frontend를 alpine-> react
   - backend에서 jinja2를 배제, 모든 ui는 react로 처리.
+  - backend는 Restful api만을 제공하다.
   - db라이브러리 변경 sqlite3->aiosqlite
   
 ## 기술스택

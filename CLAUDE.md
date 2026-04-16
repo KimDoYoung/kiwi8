@@ -2,155 +2,82 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## 개요
 
-Kiwi7 is a Korean stock trading web application that uses Kiwoom Securities' RESTful API (with KIS and LS Securities support in development). The application is designed to run in Docker on a local PC, with a FastAPI backend and Alpine.js frontend on port 8001.
+- 한국의 증권사 중 Restful api를 제공하는 증권사는 3개이다.
+    1. [키움증권](https://www3.kiwoom.com/h/main)
+    2. [한국투자증권](https://securities.koreainvestment.com/main/Main.jsp)
+    3. [LS증권](https://m.ls-sec.co.kr/)
+- kiwi8은 위 3개의 증권사의 계좌를 관리하는 app이다.
+- backend와 frontend로 나누고 backend는 fastapi로 frontend는 react 로 개발한다.
+- 개발시  PORT 는 backend는 **8002**로, frontend는 **5173**을 사용
+- 이 프로젝트는 kwi7에서 구조를 변경하여 다시 진행하는 것이다.
 
-## Development Commands
+## 목적
 
-```bash
-# Install dependencies
-uv sync
+1. 3개 계좌의 현황을 파악한다.
+2. 3개 계좌를 통해서 주식을 매매 한다.
+3. Scheduling과 Local LLM과 연결하여 back data를 수집하고 분석한다.
+4. 자동매매를 수행한다.
 
-# Run development server
-uvicorn backend.main:app --host 0.0.0.0 --port 8002 --reload
+## 기술스택
 
-# Run all tests
-pytest
+- python 3.12
+- uv 를 사용함
+- backend
+  - fastapi
+  - uvicorn
+  - sqlite3
+  - jwt
+  - pydantic
+  - dotenv
+  - aiohttp
 
-# Run specific test categories
-pytest -m unit           # Unit tests only
-pytest -m api            # API tests only
-pytest -m integration    # Integration tests only
-pytest -m "not slow"     # Exclude slow tests
+- frontend
 
-# Run single test file or specific test
-pytest tests/unit/test_config.py
-pytest tests/unit/test_config.py::test_config_default_values
+| 구분 | 기술 | 안정 버전 | 라이센스 | 역할 |
+|------|------|-----------|----------|------|
+| 1  | React              | 19.2.4             | MIT          | UI 컴포넌트 라이브러리. 컴포넌트 기반 아키텍처로 재사용 가능한 UI 구축 |
+| 2  | Vite               | 6.x                | MIT          | 프론트엔드 빌드 도구 및 개발 서버. 빠른 HMR, 프록시 설정, 프로덕션 번들링 제공 |
+| 3  | React Router       | 7.x                | MIT          | 클라이언트 사이드 라우팅. SPA 페이지 전환 및 중첩 라우트 처리 |
+| 4  | TypeScript         | 5.7.x              | Apache-2.0   | 정적 타입 시스템. 금융 데이터의 타입 안정성 확보 및 개발 생산성 향상 |
+| 5  | Tailwind CSS       | 4.1.x              | MIT          | 유틸리티 기반 CSS 프레임워크. 빠른 UI 스타일링 |
+| 6  | shadcn/ui          | latest (CLI 3.8.x) | MIT          | Radix UI 기반 컴포넌트 라이브러리. 버튼, 콤보박스, 탭, 다이얼로그 등 UI 컴포넌트 제공 |
+| 7  | AG Grid Community  | 34.3.1             | MIT          | 고성능 데이터 그리드. 가상 스크롤, 셀 편집, 정렬, 필터링, 고정 컬럼 제공 |
+| 8  | Zustand            | 5.0.11             | MIT          | 경량 전역 상태관리. 멀티 탭 간 주문 상태 공유, 화면 간 데이터 연동 |
+| 9  | React Hook Form    | 7.71.x             | MIT          | 고성능 폼 상태관리. 조회 조건, 주문 입력 등 복잡한 폼 처리 |
+| 10 | Zod                | 3.x (LTS)          | MIT          | 스키마 기반 유효성 검증. TypeScript 타입 추론과 런타임 검증 통합 |
+| 11 | axios              | 1.7.x              | MIT          | HTTP 클라이언트. 인터셉터 기반 JWT 토큰 자동 첨부, 공통 에러 처리 |
+| 12 | TanStack Query     | 5.x                | MIT          | 서버 상태 관리. API 캐싱, 자동 리페치, 뮤테이션 및 낙관적 업데이트 처리 |
 
-# Coverage report
-pytest --cov=backend --cov-report=html
+## 보안
 
-# Lint with ruff
-ruff check .
-ruff format .
+- auth 는 jwt사용
+- refresh key 발급
+- cookie 베이스
+- jwtmiddelware.py
+- auth_routes의 post login, get logout
+  
+## 참고 사이트
 
-# Docker
-docker-compose up -d
-docker logs -f kiwi7-app
+### 키움
+
+- [키움Restful API 홈](https://openapi.kiwoom.com/main/home)
+- [**API문서**](https://openapi.kiwoom.com/guide/apiguide)
+
+### KIS-한국투자증권
+
+- [API 문서](https://apiportal.koreainvestment.com/apiservice-apiservice)
+
+### LS-LS증권
+
+- [API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
+
+## 유틸리티
+
+- code_samples
+- 키움api문서에서 제공하는 excel파일을 읽어서 request definition을 추출
+
+```shell
+python extract_kw_req_def.py.py c:\\tmp\\kwapi.xlsx > 1.txt
 ```
-
-## Coding Conventions
-
-- **Comments and logs in Korean**: All code comments (`# 한글 주석`) and logger messages (`logger.info("한글 메시지")`) should be in Korean
-- **Package manager**: Use `uv` as the primary package manager (not pip)
-- **Line length**: 100 characters (ruff config)
-- **Quotes**: Single quotes preferred
-- **No jQuery**: Frontend uses Alpine.js only
-- **Type hints required**: Use typing module annotations
-
-## Architecture
-
-### Backend Structure
-
-```
-backend/
-├── main.py                  # Entry point, middleware, route registration
-├── core/                    # Infrastructure (config, JWT, security, DB, logging)
-├── api/v1/endpoints/        # Route handlers
-├── domains/                 # Business logic
-│   ├── kscheduler/          # Async task scheduler (persistence, cron, concurrency)
-│   ├── kdemon/              # Rule-based automated trading daemon
-│   ├── kiwoom/              # Kiwoom API (REST + WebSocket)
-│   ├── services/            # Business services (one per table)
-│   └── models/              # Pydantic models (one per table)
-├── page_contexts/           # Jinja2 template context providers
-└── utils/
-```
-
-### Frontend Structure
-
-```
-frontend/
-├── public/js/fetchUtil.js   # AJAX utility (GET/POST/PUT/DELETE, KiwiError handling)
-└── views/template/          # Jinja2 templates with Alpine.js
-```
-
-### Key Integration Points
-
-**Kiwoom API calls** (see `backend/domains/models/kiwoom_request_definition.py` and `kiwoom_response_definition.py`):
-```python
-kiwoom_api = await get_kiwoom_api()
-response = await kiwoom_api.send_request(KiwoomRequest(api_id="ka10099", payload={"mrkt_tp": mrkt_tp}))
-```
-
-**Service pattern**:
-```python
-service = get_service("settings")
-result = await service.get(SettingsKey.LAST_STK_INFO_FILL)
-```
-
-**Template page routing**: `/page?path=stock/find` → `frontend/views/template/stock/find.html`
-- Context providers registered in `backend/page_contexts/context_registry.py`
-
-### Authentication
-
-Cookie-based JWT (NOT Bearer header):
-- Cookie name: `kiwi7_token`
-- Middleware: `JWTAuthMiddleware`
-- Bypassed paths: `/public`, `/favicon.ico`, `/login`, `/logout`
-
-### Database
-
-SQLite with schema in `sqls/kiwi7_ddl.sql`. Auto-created on startup.
-
-When adding a new table:
-1. Add DDL to `sqls/kiwi7_ddl.sql`
-2. Create Pydantic model in `backend/domains/models/{table}_model.py`
-3. Create service in `backend/domains/services/{table}_service.py`
-
-### HTML Template Pattern
-
-```html
-{% extends 'common/base.html' %}
-{% block content %}
-<div x-data="componentName" class="container mt-4">
-</div>
-{% endblock %}
-{% block script %}
-{% raw %}
-<script>
-function createComponent() {
-    return {
-        data: null,
-        init() { console.log('Initializing'); }
-    };
-}
-document.addEventListener('alpine:init', () => {
-    Alpine.data('componentName', createComponent);
-});
-</script>
-{% endraw %}
-{% endblock %}
-```
-
-## Environment Configuration
-
-Profile-based using `.env.{PROFILE}` files (default: `.env.local`). Set `KIWI7_MODE` to change profile.
-
-Key variables:
-- `BASE_DIR`, `DB_PATH`, `LOG_DIR`: Paths configuration
-- `KIWOOM_APP_KEY`, `KIWOOM_SECRET_KEY`, `KIWOOM_ACCT_NO`: Kiwoom API credentials
-- `JWT_SECRET_KEY`: Authentication
-
-## Test Markers
-
-Defined in `pyproject.toml`:
-- `@pytest.mark.unit` - Unit tests
-- `@pytest.mark.integration` - Integration tests
-- `@pytest.mark.api` - API endpoint tests
-- `@pytest.mark.slow` - Long-running tests
-
-For async tests: `@pytest.mark.asyncio`
-
-Skip real API calls with `@pytest.mark.skip`

@@ -6,7 +6,7 @@
 
 ## 메뉴수정
 
-원래 kiwi7은 키움증권의 계좌1개만을 대상으로 하려고 했는데. 이제 KIS(한국투자증권)과 LS증권의 계좌도 포함해서 나의 전체 증권계좌(현재3개)를 한 눈에 관리하고자 한다.
+원래 kiwi8은 키움증권의 계좌1개만을 대상으로 하려고 했는데. 이제 KIS(한국투자증권)과 LS증권의 계좌도 포함해서 나의 전체 증권계좌(현재3개)를 한 눈에 관리하고자 한다.
 @nav.html을 보고 어떻게 수정하는게 좋은지 의견을 줘
 
 
@@ -62,7 +62,7 @@
     },
   ```
 
-- C:\Users\USER\Documents\kiwi7-api\kis\1.xlsx
+- C:\Users\USER\Documents\kiwi8-api\kis\1.xlsx
 
 ## kis req/response defintion
 

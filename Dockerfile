@@ -1,4 +1,4 @@
-# --- kiwi7 Dockerfile ---
+# --- kiwi8 Dockerfile ---
 FROM python:3.12-slim
 
 # 환경 변수 설정

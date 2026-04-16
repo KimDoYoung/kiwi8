@@ -21,10 +21,10 @@ fi
 BASE_DIR=$(grep "^BASE_DIR=" "$ENV_FILE" | cut -d '=' -f2)
 # ~를 홈 디렉토리로 확장
 BASE_DIR="${BASE_DIR/#\~/$HOME}"
-LOG_FILE="$BASE_DIR/logs/kiwi7.log"
+LOG_FILE="$BASE_DIR/logs/kiwi8.log"
 
 echo "========================================"
-echo "Kiwi7 로그 모니터링"
+echo "Kiwi8 로그 모니터링"
 echo "환경: $ENV"
 echo "로그 파일: $LOG_FILE"
 echo "========================================"

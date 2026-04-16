@@ -49,7 +49,7 @@ def find_duplicates(directory):
     return duplicates
 
 if __name__ == "__main__":
-    base_dir = "/home/kdy987/work/kiwi7/backend/domains/stkcompanys/ls/models"
+    base_dir = "/home/kdy987/work/kiwi8/backend/domains/stkcompanys/ls/models"
     print("--- REQUESTS ---")
     req_dups = find_duplicates(os.path.join(base_dir, "requests"))
     print("\n--- RESPONSES ---")

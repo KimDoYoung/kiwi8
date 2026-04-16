@@ -35,9 +35,9 @@ applyTo: '**/*.py'
 테이블 관련
 ---
 
-* kiwi7이 실행될 때 sql/kiwi7_ddl.sql로 table들을 생성합니다.
+* kiwi8이 실행될 때 sql/kiwi8_ddl.sql로 table들을 생성합니다.
 * 각 테이블에 대한 model과 service가 domains/폴더 하위에 생성됩니다.
-* 만약 새로운 테이블을 kiwi7_ddl.sql에 생성한다면 그 테이블에 대한 model과 service를 domains/폴더 하위에 생성해야 합니다.
+* 만약 새로운 테이블을 kiwi8_ddl.sql에 생성한다면 그 테이블에 대한 model과 service를 domains/폴더 하위에 생성해야 합니다.
 * model의 생성은 pydantic을 사용합니다. 이때 주석을 ddl 을 참조하여 생성합니다.
 * 모델의 예는 domains/stocks/my_stock_model.py를 참조합니다.
 * service의 예는 domains/stocks/my_stock_service.py를 참조합니다.
@@ -108,7 +108,7 @@ async def page(
 --- 
 api 작성(router파일의 함수)
 ---
-- table의 ddl은 sql/kiwi7_ddl.sql에 정의되어 있습니다.
+- table의 ddl은 sql/kiwi8_ddl.sql에 정의되어 있습니다.
 - table 1개 당 1개의 model파일과 1개의 service파일이 domains/폴더 하위에 있습니다.
 - 각 model과 service는 해당 table의 CRUD 기능을 수행합니다.
 - get_<tablename>_service로 해당 테이블의 service를 가져옵니다.

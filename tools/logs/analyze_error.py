@@ -23,7 +23,7 @@ from backend.core.config import config
 
 def get_log_path():
     """로그 파일 경로"""
-    return Path(config.BASE_DIR) / 'logs' / 'kiwi7.log'
+    return Path(config.BASE_DIR) / 'logs' / 'kiwi8.log'
 
 
 def analyze_errors(log_file: Path, lines: int = None, today_only: bool = False):
@@ -34,7 +34,7 @@ def analyze_errors(log_file: Path, lines: int = None, today_only: bool = False):
         return
     
     print("="*60)
-    print("🔍 Kiwi7 에러 로그 분석")
+    print("🔍 Kiwi8 에러 로그 분석")
     print("="*60)
     print(f"📁 로그 파일: {log_file}\n")
     

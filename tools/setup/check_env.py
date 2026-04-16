@@ -21,7 +21,7 @@ from backend.core.config import config
 def check_environment():
     """환경 설정 검증"""
     print("="*60)
-    print("🔍 Kiwi7 환경 설정 검증")
+    print("🔍 Kiwi8 환경 설정 검증")
     print("="*60)
     print()
     
@@ -107,7 +107,7 @@ def main():
     args = parser.parse_args()
     
     if args.env:
-        os.environ['KIWI7_MODE'] = args.env
+        os.environ['KIWI8_MODE'] = args.env
     
     check_environment()
 

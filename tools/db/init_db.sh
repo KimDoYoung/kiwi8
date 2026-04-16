@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 echo "========================================"
-echo "Kiwi7 DB 초기화"
+echo "Kiwi8 DB 초기화"
 echo "환경: $ENV"
 echo "========================================"
 
@@ -23,7 +23,7 @@ fi
 
 # BASE_DIR 추출
 BASE_DIR=$(grep "^BASE_DIR=" "$ENV_FILE" | cut -d '=' -f2)
-DB_PATH="$BASE_DIR/db/kiwi7.db"
+DB_PATH="$BASE_DIR/db/kiwi8.db"
 
 echo "📁 DB 경로: $DB_PATH"
 
@@ -39,7 +39,7 @@ fi
 mkdir -p "$(dirname "$DB_PATH")"
 
 # DDL 실행
-DDL_FILE="$PROJECT_ROOT/sqls/kiwi7_ddl.sql"
+DDL_FILE="$PROJECT_ROOT/sqls/kiwi8_ddl.sql"
 if [ ! -f "$DDL_FILE" ]; then
     echo "❌ 에러: DDL 파일이 없습니다: $DDL_FILE"
     exit 1

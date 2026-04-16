@@ -10,7 +10,7 @@
         "**/__pycache__": true,
         "**/.pytest_cache": true,
     },
-    "python.testing.pytestPath": "C:/Users/KOREA/python-practice/kiwi7",
+    "python.testing.pytestPath": "C:/Users/KOREA/python-practice/kiwi8",
     
     "python.analysis.extraPaths": [
         "./backend/app/core",

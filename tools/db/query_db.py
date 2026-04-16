@@ -75,7 +75,7 @@ def show_table(table_name: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Kiwi7 DB 쿼리 도구')
+    parser = argparse.ArgumentParser(description='Kiwi8 DB 쿼리 도구')
     parser.add_argument('query', nargs='?', help='실행할 SQL 쿼리')
     parser.add_argument('--tables', action='store_true', help='모든 테이블 목록')
     parser.add_argument('--table', help='특정 테이블의 모든 데이터 조회')

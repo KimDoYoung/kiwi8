@@ -1,4 +1,4 @@
-# kiwi7 : 키움증권 주식매매 
+# kiwi8 : 키움증권 주식매매 
 
 ## 목표
 - alpine.js와 Tailwind CSS, DaisyUI를 이용하여 restful로 받은 데이터를 화면에 표시

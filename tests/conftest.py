@@ -12,7 +12,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # 테스트 환경 설정
-os.environ['KIWI7_MODE'] = 'test'
+os.environ['KIWI8_MODE'] = 'test'
 
 from backend.main import create_app
 
@@ -33,14 +33,14 @@ def client(app):
 @pytest.fixture(scope="session")
 def test_db(tmp_path_factory):
     """세션 스코프의 테스트 DB fixture"""
-    from backend.core.kiwi7_db import create_kiwi7_db
-    
+    from backend.core.kiwi8_db import create_kiwi8_db
+
     # 세션 전체에서 사용할 임시 디렉토리 생성
     db_dir = tmp_path_factory.mktemp("data")
-    db_path = db_dir / "test_kiwi7.db"
-    
+    db_path = db_dir / "test_kiwi8.db"
+
     # DB 생성 및 테이블 스키마 적용
-    create_kiwi7_db(str(db_path))
+    create_kiwi8_db(str(db_path))
     
     return str(db_path)
 

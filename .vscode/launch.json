@@ -34,13 +34,13 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "kiwi7-fedora",
+            "name": "kiwi8-fedora",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}",
-                "KIWI7_MODE": "fedora"
+                "KIWI8_MODE": "fedora"
             },
             "args": [
                 "backend.main:app",
