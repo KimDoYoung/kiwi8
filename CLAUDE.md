@@ -53,11 +53,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 보안
 
 - auth 는 jwt사용
-- refresh key 발급
+- refresh key 발급 (sqlite를 redis대신 사용)
 - cookie 베이스
 - jwtmiddelware.py
 - auth_routes의 post login, get logout
-  
+
+## 유틸리티
+
+- b.sh : backend 즉 fastapi를 수행한다.
+- f.sh : frontend vite로 react app을 수행한다.
+
+## DATA 위치
+  /home/kdy987/work/kiwi8/data/
+  ├── db/       ← kiwi8.db
+  ├── logs/     ← kiwi8.log
+  ├── data/
+  └── files/
+- **위 파일구조를 참조하여 log와 db를  조회**한다
+
 ## 참고 사이트
 
 ### 키움
@@ -72,12 +85,3 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### LS-LS증권
 
 - [API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
-
-## 유틸리티
-
-- code_samples
-- 키움api문서에서 제공하는 excel파일을 읽어서 request definition을 추출
-
-```shell
-python extract_kw_req_def.py.py c:\\tmp\\kwapi.xlsx > 1.txt
-```
