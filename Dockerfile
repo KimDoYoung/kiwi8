@@ -41,6 +41,8 @@ COPY backend/ ./backend/
 # React 빌드 결과물 복사
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
+RUN chown -R 1000:1000 /app
+
 EXPOSE 8003
 
 CMD ["uv", "run", "uvicorn", "backend.main:app", \
