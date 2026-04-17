@@ -165,3 +165,99 @@ CREATE TABLE IF NOT EXISTS kscheduler_lock (
   holder       TEXT,                        -- hostname/pid
   acquired_at  TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- ---------------------------------------------------------------
+-- 메뉴 및 화면 관리 테이블
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS menus (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_id   INTEGER NULL,
+    level       INTEGER NOT NULL DEFAULT 1,   -- 1:대, 2:중, 3:소
+    screen_no   TEXT UNIQUE NULL,
+    title       TEXT NOT NULL,
+    url         TEXT NULL,
+    component   TEXT NULL,                    -- React 컴포넌트명
+    icon        TEXT NULL,
+    sort_order  INTEGER DEFAULT 0,
+    is_active   BOOLEAN DEFAULT 1,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES menus (id) ON DELETE CASCADE
+);
+
+
+
+-- 빠른 조회를 위한 인덱스 설정
+CREATE INDEX IF NOT EXISTS idx_menus_parent ON menus(parent_id);
+CREATE INDEX IF NOT EXISTS idx_menus_screen_no ON menus(screen_no);
+
+
+-- 1. 대분류 (Level 1)
+-- id를 명시하여 하위 메뉴 연결을 확실히 합니다.
+INSERT INTO menus (id, parent_id, level, screen_no, title, url, icon, sort_order) VALUES 
+(1, NULL, 1, '1000', '통합 트레이딩 센터', NULL, 'layout-dashboard', 1),
+(2, NULL, 1, '3000', '증권사별 채널', NULL, 'building-2', 2),
+(3, NULL, 1, '8000', '매니지먼트', NULL, 'settings', 3);
+
+-- 2. 중분류 (Level 2)
+-- 1000번대: 통합 트레이딩 센터 하위
+INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
+(11, 1, 2, '1100', '자산 현황', NULL, 1),
+(12, 1, 2, '1200', '시장 분석', NULL, 2),
+(13, 1, 2, '1300', '주문 센터', NULL, 3);
+
+-- 3000번대: 증권사별 채널 하위
+INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
+(21, 2, 2, '2100', '키움증권', NULL, 1),
+(22, 2, 2, '3100', '한국투자증권(KIS)', NULL, 2),
+(23, 2, 2, '4100', 'LS증권', NULL, 3);
+
+-- 8000번대: 매니지먼트 하위
+INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
+(31, 3, 2, '8100', '투자 기록', NULL, 1),
+(32, 3, 2, '8200', '시스템 엔진', NULL, 2);
+
+-- 3. 화면/기능 (Level 3 - 최하위 노드)
+-- [1100 자산 현황] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(11, 3, '1101', '통합 계좌 요약', '/accounts/total', 1),
+(11, 3, '1102', '실시간 통합 잔고', '/accounts/balance', 2),
+(11, 3, '1103', '통합 수익률 추이', '/accounts/profit-loss', 3),
+(11, 3, '1104', '전 증권사 체결내역', '/accounts/fill', 4);
+
+-- [1200 시장 분석] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(12, 3, '1201', '전종목 탐색', '/stock/find', 1),
+(12, 3, '1202', '공통 관심종목', '/stock/mystock', 2),
+(12, 3, '1203', '외인/기관 수급', '/stock/foreign-trade', 3),
+(12, 3, '1204', '증권사 통합 의견', '/stock/opinion', 4);
+
+-- [1300 주문 센터] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(13, 3, '1301', '통합 매수 주문', '/order/buy', 1),
+(13, 3, '1302', '통합 매도 주문', '/order/sell', 2);
+
+-- [2100 키움증권] 특화
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(21, 3, '2101', '키움 계좌현황', '/kiwoom/account/list', 1),
+(21, 3, '2102', '키움 상세잔고', '/kiwoom/account/detail', 2);
+
+-- [3100 KIS] 특화
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(22, 3, '3101', 'KIS 조건검색', '/kis/psearch', 1),
+(22, 3, '3102', 'KIS 실시간 랭킹', '/kis/ranking', 2),
+(22, 3, '3103', 'KIS 관심종목', '/kis/attention', 3);
+
+-- [4100 LS증권] 특화
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(23, 3, '4101', 'LS 상위종목', '/ls/ranking', 1),
+(23, 3, '4102', 'LS 계좌상세', '/ls/account/detail', 2);
+
+-- [8100 투자 기록] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(31, 3, '8101', '매매 일지', '/manage/diary', 1);
+
+-- [8200 시스템 엔진] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(32, 3, '8201', 'K-데몬 상태', '/manage/daemon', 1),
+(32, 3, '8202', 'K-스케줄러 설정', '/manage/scheduler', 2);
