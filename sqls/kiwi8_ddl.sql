@@ -203,6 +203,19 @@ CREATE TABLE IF NOT EXISTS menus (
 CREATE INDEX IF NOT EXISTS idx_menus_parent ON menus(parent_id);
 CREATE INDEX IF NOT EXISTS idx_menus_screen_no ON menus(screen_no);
 
+-- layout_presets: 사용자별 레이아웃 프리셋 저장 (HTS 스타일)
+CREATE TABLE IF NOT EXISTS layout_presets (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     TEXT NOT NULL,
+    name        TEXT NOT NULL,                       -- 프리셋 이름 (예: "계좌 함께보기")
+    layout_json TEXT NOT NULL,                       -- FlexLayout Model.toJson() 직렬화 결과
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, name)                            -- 같은 사용자 내 이름 중복 불가
+);
+
+CREATE INDEX IF NOT EXISTS idx_layout_presets_user ON layout_presets(user_id);
+
 
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;

@@ -1,15 +1,16 @@
 import { useState, useRef, type KeyboardEvent } from 'react'
-import { LogOut, BookX, BookCheck, Settings } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { fetchMenuTree } from '@/services/menuService'
 import api from '@/services/api'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
+import LayoutPresetPanel from './topbar/LayoutPresetPanel'
 
 export default function TopBar() {
   const { username, logout } = useAuthStore()
-  const { openByScreenNo, closeAllTabs, saveScreens, restoreScreens, isClosed } = useLayoutStore()
+  const { openByScreenNo } = useLayoutStore()
 
   const [screenInput, setScreenInput] = useState('')
   const [inputError, setInputError] = useState(false)
@@ -42,15 +43,6 @@ export default function TopBar() {
     }
   }
 
-  const handleToggle = () => {
-    if (isClosed) {
-      restoreScreens(menus)
-    } else {
-      saveScreens()
-      closeAllTabs()
-    }
-  }
-
   const handleLogout = async () => {
     try { await api.get('/logout') } finally { logout() }
   }
@@ -59,7 +51,8 @@ export default function TopBar() {
     <header className="h-12 bg-blue-100 border-b border-green-200 flex items-center px-3 shrink-0 z-10 gap-2">
 
       {/* 1) Logo Area */}
-      <div className="flex items-baseline gap-1.5 shrink-0 mr-2">
+      <div className="flex items-center gap-1.5 shrink-0 mr-2">
+        <img src="/images/kiwi8-logo.svg" alt="KIWI8 Logo" className="w-6 h-6" />
         <span className="text-xl font-bold text-green-600 tracking-tight">kiwi8</span>
         {health?.version && (
           <span className="text-[10px] text-gray-400 font-mono">v{health.version}</span>
@@ -85,17 +78,7 @@ export default function TopBar() {
               : 'border-gray-200 focus:ring-2 focus:ring-green-300'
             }`}
         />
-        <button
-          onClick={handleToggle}
-          title={isClosed ? '저장된 화면 열기' : '모두 닫기'}
-          className={`p-1.5 rounded-lg transition-colors
-            ${isClosed
-              ? 'text-green-600 hover:text-green-800 hover:bg-green-50'
-              : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'
-            }`}
-        >
-          {isClosed ? <BookCheck size={16} /> : <BookX size={16} />}
-        </button>
+        <LayoutPresetPanel />
       </div>
 
       {/* 구분선 */}

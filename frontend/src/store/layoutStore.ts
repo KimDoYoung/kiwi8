@@ -80,6 +80,7 @@ interface LayoutState {
   closeAllTabs: () => void
   saveScreens: () => void
   restoreScreens: (menus: MenuItem[]) => void
+  loadPreset: (layoutJson: string) => void
   onModelChange: (model: Model) => void
 }
 
@@ -160,6 +161,17 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
       set((s) => ({ modelVersion: s.modelVersion + 1, isClosed: false }))
     } catch {
       // 저장된 레이아웃이 손상된 경우 무시
+    }
+  },
+
+  // 서버에 저장된 프리셋 불러오기
+  loadPreset: (layoutJson: string) => {
+    try {
+      _model = Model.fromJson(JSON.parse(layoutJson))
+      localStorage.setItem(STORAGE_KEY, layoutJson)
+      set((s) => ({ modelVersion: s.modelVersion + 1, isClosed: false }))
+    } catch {
+      // 손상된 프리셋 JSON은 무시
     }
   },
 

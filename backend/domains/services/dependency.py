@@ -16,6 +16,7 @@ from backend.domains.services.tokens_service import TokensService
 from backend.domains.services.cache_manager import CacheManager
 from backend.domains.services.menus_service import MenusService
 from backend.domains.services.auth_service import AuthService
+from backend.domains.services.layout_preset_service import LayoutPresetService
 
 
 _services = {}
@@ -48,6 +49,7 @@ def get_service(name: str):
         'cache_manager': CacheManager,
         'menus': MenusService,
         'auth': AuthService,
+        'layout_preset': LayoutPresetService,
     }
     
     if name not in service_classes:

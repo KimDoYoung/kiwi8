@@ -18,6 +18,7 @@ from backend.api.v1.endpoints.stkcompany.kiwoom_routes import router as kiwoom_r
 from backend.api.v1.endpoints.stkcompany.ls_routes import router as ls_router
 from backend.api.v1.endpoints.menus_routes import router as menus_router
 from backend.api.v1.endpoints.stock_routes import router as stock_router
+from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
 from backend.core.config import config
 from backend.core.exception_handler import add_exception_handlers
 from backend.core.jwtmiddleware import JWTAuthMiddleware
@@ -86,6 +87,7 @@ def add_routes(app: FastAPI):
     app.include_router(diary_router, prefix='/api/v1/diary', tags=['diary'])
     app.include_router(scheduler_router, prefix='/api/v1/scheduler', tags=['scheduler'])
     app.include_router(menus_router, prefix='/api/v1/menus', tags=['menus'])
+    app.include_router(layout_preset_router, prefix='/api/v1/layout-presets', tags=['layout-presets'])
 
 
 def add_event_handlers(app: FastAPI):
