@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_OVERSEAS_FUTURES_REQUESTS = {
     'CIDBQ01400': {

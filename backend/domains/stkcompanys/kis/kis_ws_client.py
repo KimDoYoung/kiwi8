@@ -3,13 +3,14 @@ KIS(한국투자증권) WebSocket 클라이언트
 실시간 시세, 호가, 체결통보를 수신합니다.
 """
 import json
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
+
 import websockets
 
-from backend.domains.stkcompanys.kis.managers.kis_token_manager import KisTokenManager
 from backend.core.config import config
 from backend.core.exceptions import KisApiException
 from backend.core.logger import get_logger
+from backend.domains.stkcompanys.kis.managers.kis_token_manager import KisTokenManager
 
 logger = get_logger(__name__)
 
@@ -33,10 +34,10 @@ class KisWsClient:
         self.websocket = None
         self.connected = False
         self.keep_running = True
-        self.handlers: Dict[str, Callable] = {}
+        self.handlers: dict[str, Callable] = {}
 
         # WebSocket 접속용 승인키
-        self.approval_key: Optional[str] = None
+        self.approval_key: str | None = None
 
     async def connect(self):
         """WebSocket 연결"""

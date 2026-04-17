@@ -1,9 +1,14 @@
-from backend.core.config import config
-from backend.domains.models.stk_cache_model import StkCache, StkCacheCreate, StkCacheUpdate, StkCacheFilter
-from backend.core.logger import get_logger
-from typing import List, Optional, Dict
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.stk_cache_model import (
+    StkCache,
+    StkCacheCreate,
+    StkCacheFilter,
+    StkCacheUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -62,13 +67,13 @@ class StkCacheService:
                 created_at=now
             )
 
-    async def get_by_id(self, cache_id: int) -> Optional[StkCache]:
+    async def get_by_id(self, cache_id: int) -> StkCache | None:
         """ID로 캐시 데이터 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_by_id_sync, cache_id)
 
-    def _get_by_id_sync(self, cache_id: int) -> Optional[StkCache]:
+    def _get_by_id_sync(self, cache_id: int) -> StkCache | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -82,13 +87,13 @@ class StkCacheService:
                 return self._row_to_cache(row)
             return None
 
-    async def get_by_stock_and_name(self, stk_cd: str, name: str) -> Optional[StkCache]:
+    async def get_by_stock_and_name(self, stk_cd: str, name: str) -> StkCache | None:
         """종목코드와 캐시명으로 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_by_stock_and_name_sync, stk_cd, name)
 
-    def _get_by_stock_and_name_sync(self, stk_cd: str, name: str) -> Optional[StkCache]:
+    def _get_by_stock_and_name_sync(self, stk_cd: str, name: str) -> StkCache | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -104,13 +109,13 @@ class StkCacheService:
                 return self._row_to_cache(row)
             return None
 
-    async def update(self, cache_id: int, update_data: StkCacheUpdate) -> Optional[StkCache]:
+    async def update(self, cache_id: int, update_data: StkCacheUpdate) -> StkCache | None:
         """캐시 데이터 수정"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_sync, cache_id, update_data)
 
-    def _update_sync(self, cache_id: int, update_data: StkCacheUpdate) -> Optional[StkCache]:
+    def _update_sync(self, cache_id: int, update_data: StkCacheUpdate) -> StkCache | None:
         # 기존 데이터 확인
         existing = self._get_by_id_sync(cache_id)
         if not existing:
@@ -129,7 +134,7 @@ class StkCacheService:
             return existing
 
         # SQL 쿼리 동적 생성
-        set_clause = ', '.join([f"{field} = ?" for field in update_fields.keys()])
+        set_clause = ', '.join([f"{field} = ?" for field in update_fields])
 
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -176,13 +181,13 @@ class StkCacheService:
             create_data = StkCacheCreate(stk_cd=stk_cd, name=name, value=value)
             return self._create_sync(create_data)
 
-    async def list_all(self, filter_data: Optional[StkCacheFilter] = None) -> List[StkCache]:
+    async def list_all(self, filter_data: StkCacheFilter | None = None) -> list[StkCache]:
         """모든 캐시 데이터 목록 조회 (필터링 포함)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._list_all_sync, filter_data)
 
-    def _list_all_sync(self, filter_data: Optional[StkCacheFilter] = None) -> List[StkCache]:
+    def _list_all_sync(self, filter_data: StkCacheFilter | None = None) -> list[StkCache]:
         query = """
             SELECT id, stk_cd, name, value, created_at
             FROM stk_cache
@@ -219,12 +224,12 @@ class StkCacheService:
             
             return [self._row_to_cache(row) for row in rows]
 
-    async def get_by_stock(self, stk_cd: str) -> List[StkCache]:
+    async def get_by_stock(self, stk_cd: str) -> list[StkCache]:
         """특정 종목의 모든 캐시 데이터"""
         filter_data = StkCacheFilter(stk_cd=stk_cd)
         return await self.list_all(filter_data)
 
-    async def get_by_name(self, name: str) -> List[StkCache]:
+    async def get_by_name(self, name: str) -> list[StkCache]:
         """특정 캐시명의 모든 데이터"""
         filter_data = StkCacheFilter(name=name)
         return await self.list_all(filter_data)
@@ -255,13 +260,13 @@ class StkCacheService:
             conn.commit()
             return cur.rowcount
 
-    async def get_cache_names(self) -> List[str]:
+    async def get_cache_names(self) -> list[str]:
         """등록된 모든 캐시명 목록"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_cache_names_sync)
 
-    def _get_cache_names_sync(self) -> List[str]:
+    def _get_cache_names_sync(self) -> list[str]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -272,13 +277,13 @@ class StkCacheService:
             rows = cur.fetchall()
             return [row[0] for row in rows]
 
-    async def get_stock_codes(self) -> List[str]:
+    async def get_stock_codes(self) -> list[str]:
         """캐시된 모든 종목코드 목록"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stock_codes_sync)
 
-    def _get_stock_codes_sync(self) -> List[str]:
+    def _get_stock_codes_sync(self) -> list[str]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -289,13 +294,13 @@ class StkCacheService:
             rows = cur.fetchall()
             return [row[0] for row in rows]
 
-    async def get_stats(self) -> Dict[str, any]:
+    async def get_stats(self) -> dict[str, any]:
         """캐시 데이터 통계 정보"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stats_sync)
 
-    def _get_stats_sync(self) -> Dict[str, any]:
+    def _get_stats_sync(self) -> dict[str, any]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             

@@ -3,6 +3,7 @@ API에서 사용하는 공통 포매팅 함수들
 """
 from typing import Any
 
+
 def format_currency(value: Any, currency: str = "원") -> str:
     """
     숫자를 통화 형식으로 포매팅

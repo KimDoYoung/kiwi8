@@ -1,18 +1,18 @@
-from fastapi import APIRouter
-from typing import List
 
-from backend.core.logger import get_logger
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper
-from backend.domains.services.dependency import get_service
-from backend.domains.models.settings_model import SettingInfo
+from fastapi import APIRouter
+
 from backend.api.common.stock_functions import stk_info_fill
+from backend.core.logger import get_logger
+from backend.domains.models.settings_model import SettingInfo
+from backend.domains.services.dependency import get_service
 from backend.domains.services.settings_keys import SettingsKey
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper
 
 # APIRouter 인스턴스 생성
 router = APIRouter()
 logger = get_logger(__name__)
 
-@router.get("/", response_model=List[SettingInfo])
+@router.get("/", response_model=list[SettingInfo])
 async def get_all_settings():
     """모든 설정값 목록 조회"""
     settings_service = get_service("settings")
@@ -39,8 +39,8 @@ async def update_stk_info(force: bool = False):
         logger.info(f"stk_info 테이블 업데이트 완료: {last_fill_time}")
         return KiwoomApiHelper.create_success_response(data={"last_stk_info_fill": last_fill_time})
     except Exception as e:
-        logger.error(f"stk_info 테이블 업데이트 중 오류 발생: {str(e)}", exc_info=True)
+        logger.error(f"stk_info 테이블 업데이트 중 오류 발생: {e!s}", exc_info=True)
         return KiwoomApiHelper.create_error_response(
             error_code="STK_INFO_UPDATE_ERROR",
-            error_message=f"stk_info 테이블 업데이트 중 오류가 발생했습니다: {str(e)}"
+            error_message=f"stk_info 테이블 업데이트 중 오류가 발생했습니다: {e!s}"
         )

@@ -2,14 +2,13 @@
 KIS(한국투자증권) 서비스
 API 인스턴스 및 토큰 매니저의 싱글톤 관리
 """
-from typing import Optional
 
 from backend.domains.stkcompanys.kis.kis_rest_api import KisRestApi
 from backend.domains.stkcompanys.kis.managers.kis_token_manager import KisTokenManager
 
 # 싱글톤 인스턴스
-kis_api_instance: Optional[KisRestApi] = None
-token_manager_instance: Optional[KisTokenManager] = None
+kis_api_instance: KisRestApi | None = None
+token_manager_instance: KisTokenManager | None = None
 
 
 async def get_kis_api() -> KisRestApi:

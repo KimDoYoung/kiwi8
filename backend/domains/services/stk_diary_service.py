@@ -1,9 +1,14 @@
-from backend.core.config import config
-from backend.domains.models.stk_diary_model import StkDiary, StkDiaryCreate, StkDiaryUpdate, StkDiaryFilter
-from backend.core.logger import get_logger
-from typing import List, Optional, Dict
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.stk_diary_model import (
+    StkDiary,
+    StkDiaryCreate,
+    StkDiaryFilter,
+    StkDiaryUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -65,13 +70,13 @@ class StkDiaryService:
                 updated_at=now
             )
 
-    async def get_by_id(self, diary_id: int) -> Optional[StkDiary]:
+    async def get_by_id(self, diary_id: int) -> StkDiary | None:
         """ID로 일지 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_by_id_sync, diary_id)
 
-    def _get_by_id_sync(self, diary_id: int) -> Optional[StkDiary]:
+    def _get_by_id_sync(self, diary_id: int) -> StkDiary | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -85,13 +90,13 @@ class StkDiaryService:
                 return self._row_to_diary(row)
             return None
 
-    async def update(self, diary_id: int, update_data: StkDiaryUpdate) -> Optional[StkDiary]:
+    async def update(self, diary_id: int, update_data: StkDiaryUpdate) -> StkDiary | None:
         """일지 수정"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_sync, diary_id, update_data)
 
-    def _update_sync(self, diary_id: int, update_data: StkDiaryUpdate) -> Optional[StkDiary]:
+    def _update_sync(self, diary_id: int, update_data: StkDiaryUpdate) -> StkDiary | None:
         # 기존 데이터 확인
         existing = self._get_by_id_sync(diary_id)
         if not existing:
@@ -110,7 +115,7 @@ class StkDiaryService:
             return existing
 
         # SQL 쿼리 동적 생성
-        set_clause = ', '.join([f"{field} = ?" for field in update_fields.keys()])
+        set_clause = ', '.join([f"{field} = ?" for field in update_fields])
         update_fields['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         set_clause += ', updated_at = ?'
 
@@ -140,13 +145,13 @@ class StkDiaryService:
             conn.commit()
             return cur.rowcount > 0
 
-    async def list_all(self, filter_data: Optional[StkDiaryFilter] = None) -> List[StkDiary]:
+    async def list_all(self, filter_data: StkDiaryFilter | None = None) -> list[StkDiary]:
         """모든 일지 목록 조회 (필터링 포함)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._list_all_sync, filter_data)
 
-    def _list_all_sync(self, filter_data: Optional[StkDiaryFilter] = None) -> List[StkDiary]:
+    def _list_all_sync(self, filter_data: StkDiaryFilter | None = None) -> list[StkDiary]:
         query = """
             SELECT id, ymd, stk_cd, note, created_at, updated_at
             FROM stk_diary
@@ -183,33 +188,33 @@ class StkDiaryService:
             
             return [self._row_to_diary(row) for row in rows]
 
-    async def get_by_date(self, ymd: str) -> List[StkDiary]:
+    async def get_by_date(self, ymd: str) -> list[StkDiary]:
         """특정 날짜의 일지 목록"""
         filter_data = StkDiaryFilter(ymd_from=ymd, ymd_to=ymd)
         return await self.list_all(filter_data)
 
-    async def get_by_stock(self, stk_cd: str) -> List[StkDiary]:
+    async def get_by_stock(self, stk_cd: str) -> list[StkDiary]:
         """특정 종목의 일지 목록"""
         filter_data = StkDiaryFilter(stk_cd=stk_cd)
         return await self.list_all(filter_data)
 
-    async def search_by_content(self, keyword: str) -> List[StkDiary]:
+    async def search_by_content(self, keyword: str) -> list[StkDiary]:
         """내용으로 일지 검색"""
         filter_data = StkDiaryFilter(note_like=keyword)
         return await self.list_all(filter_data)
 
-    async def get_date_range(self, start_date: str, end_date: str) -> List[StkDiary]:
+    async def get_date_range(self, start_date: str, end_date: str) -> list[StkDiary]:
         """날짜 범위로 일지 조회"""
         filter_data = StkDiaryFilter(ymd_from=start_date, ymd_to=end_date)
         return await self.list_all(filter_data)
 
-    async def get_stats(self) -> Dict[str, int]:
+    async def get_stats(self) -> dict[str, int]:
         """일지 통계 정보"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stats_sync)
 
-    def _get_stats_sync(self) -> Dict[str, int]:
+    def _get_stats_sync(self) -> dict[str, int]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             

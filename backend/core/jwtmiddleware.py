@@ -12,7 +12,7 @@
 """
 
 from fastapi import HTTPException, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.core.config import config
@@ -28,8 +28,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
 
         # root_path를 제거한 실제 경로로 비교
         path = request.url.path
-        if path.startswith(root):
-            path = path[len(root) :]
+        path = path.removeprefix(root)
 
         OPEN_PATHS = ['/login', '/logout', '/health', '/docs', '/redoc', '/openapi.json']
 

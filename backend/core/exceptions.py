@@ -22,17 +22,14 @@ class BrokerApiException(Exception):
 
 class BrokerAuthException(BrokerApiException):
     """인증 관련 예외"""
-    pass
 
 
 class BrokerOrderException(BrokerApiException):
     """주문 관련 예외"""
-    pass
 
 
 class BrokerDataException(BrokerApiException):
     """데이터 조회 관련 예외"""
-    pass
 
 
 # === Kiwoom 예외 (기존 호환성 유지) ===
@@ -45,17 +42,14 @@ class KiwoomApiException(BrokerApiException):
 
 class KiwoomAuthException(KiwoomApiException):
     """키움증권 API 인증 관련 예외"""
-    pass
 
 
 class KiwoomOrderException(KiwoomApiException):
     """키움증권 주문 관련 예외"""
-    pass
 
 
 class KiwoomDataException(KiwoomApiException):
     """키움증권 데이터 조회 관련 예외"""
-    pass
 
 
 # === KIS(한국투자증권) 예외 ===
@@ -68,17 +62,14 @@ class KisApiException(BrokerApiException):
 
 class KisAuthException(KisApiException):
     """한국투자증권 API 인증 관련 예외"""
-    pass
 
 
 class KisOrderException(KisApiException):
     """한국투자증권 주문 관련 예외"""
-    pass
 
 
 class KisDataException(KisApiException):
     """한국투자증권 데이터 조회 관련 예외"""
-    pass
 
 
 # === LS증권 예외 ===
@@ -91,17 +82,14 @@ class LsApiException(BrokerApiException):
 
 class LsAuthException(LsApiException):
     """LS증권 API 인증 관련 예외"""
-    pass
 
 
 class LsOrderException(LsApiException):
     """LS증권 주문 관련 예외"""
-    pass
 
 
 class LsDataException(LsApiException):
     """LS증권 데이터 조회 관련 예외"""
-    pass
 
 
 # === 공통 예외 ===

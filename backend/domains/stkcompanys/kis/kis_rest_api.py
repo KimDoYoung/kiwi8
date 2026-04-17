@@ -2,20 +2,21 @@
 KIS(한국투자증권) REST API 클라이언트
 """
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
 import aiohttp
 
-from backend.domains.stock_api import StockApi, BrokerType
+from backend.core.config import config
+from backend.core.exceptions import KisApiException
+from backend.core.logger import get_logger
 from backend.domains.stkcompanys.kis.managers.kis_token_manager import KisTokenManager
-from backend.domains.stkcompanys.kis.models.kis_schema import KisRequest, KisResponse, KisApiHelper
 from backend.domains.stkcompanys.kis.models.kis_request_definition import (
     get_request_definition,
     get_tr_id,
     is_hashkey_required,
 )
-from backend.core.config import config
-from backend.core.exceptions import KisApiException
-from backend.core.logger import get_logger
+from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest, KisResponse
+from backend.domains.stock_api import BrokerType, StockApi
 
 logger = get_logger(__name__)
 
@@ -38,7 +39,7 @@ class KisRestApi(StockApi):
     def base_url(self) -> str:
         return self.get_base_url()
 
-    def get_headers(self, request: KisRequest, token: str, tr_id: str, hashkey: str = None) -> Dict[str, str]:
+    def get_headers(self, request: KisRequest, token: str, tr_id: str, hashkey: str = None) -> dict[str, str]:
         """HTTP 헤더 생성"""
         headers = {
             'Content-Type': 'application/json;charset=UTF-8',
@@ -60,7 +61,7 @@ class KisRestApi(StockApi):
 
         return headers
 
-    async def get_hashkey(self, payload: Dict[str, Any]) -> str:
+    async def get_hashkey(self, payload: dict[str, Any]) -> str:
         """해시키 생성 (주문 시 필요)"""
         url = f"{self.base_url}/uapi/hashkey"
         headers = {
@@ -140,7 +141,7 @@ class KisRestApi(StockApi):
             logger.error(f"[KIS] HTTP 요청 오류: {e}")
             return KisApiHelper.create_error_response(
                 error_code="500",
-                error_message=f"HTTP 요청 실패: {str(e)}",
+                error_message=f"HTTP 요청 실패: {e!s}",
                 request_time=request_time
             )
         except KisApiException as e:
@@ -154,14 +155,14 @@ class KisRestApi(StockApi):
             logger.error(f"[KIS] 예상치 못한 오류: {e}")
             return KisApiHelper.create_error_response(
                 error_code="500",
-                error_message=f"요청 처리 중 오류: {str(e)}",
+                error_message=f"요청 처리 중 오류: {e!s}",
                 request_time=request_time
             )
 
     async def _process_response(
         self,
         response: aiohttp.ClientResponse,
-        api_info: Dict[str, str],
+        api_info: dict[str, str],
         request_time: datetime
     ) -> KisResponse:
         """응답 처리"""
@@ -184,7 +185,7 @@ class KisRestApi(StockApi):
         except Exception as e:
             return KisApiHelper.create_error_response(
                 error_code="502",
-                error_message=f"JSON 파싱 실패: {str(e)}",
+                error_message=f"JSON 파싱 실패: {e!s}",
                 api_info=api_info,
                 request_time=request_time
             )
@@ -209,7 +210,7 @@ class KisRestApi(StockApi):
             request_time=request_time
         )
 
-    def _extract_headers(self, headers) -> Dict[str, str]:
+    def _extract_headers(self, headers) -> dict[str, str]:
         """응답 헤더에서 필요한 정보 추출"""
         kis_headers = {}
         header_keys = [

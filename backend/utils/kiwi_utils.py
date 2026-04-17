@@ -1,6 +1,7 @@
 import datetime
 import json
-from typing import Any, Dict
+from typing import Any
+
 
 def format_account_number(company_abbr:str, account_number: str ) -> str:
     if company_abbr == "KIWOOM":
@@ -170,7 +171,7 @@ def merge_multiple_dicts(*dicts: dict, merge_strategy: str = "override") -> dict
     return result
 
 
-def to_dict(obj: Any) -> Dict:
+def to_dict(obj: Any) -> dict:
     """
     객체를 dict로 변환
     - dict 그대로 반환

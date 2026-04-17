@@ -2,12 +2,12 @@
 tokens 테이블 서비스
 증권사별 API 토큰 CRUD 관리
 """
-from backend.core.config import config
-from backend.domains.models.tokens_model import Token
-from backend.core.logger import get_logger
-from typing import Optional
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.tokens_model import Token
 
 logger = get_logger(__name__)
 
@@ -32,7 +32,7 @@ class TokensService:
             updated_at=row[4]
         )
 
-    async def get_by_broker(self, broker_type: str) -> Optional[Token]:
+    async def get_by_broker(self, broker_type: str) -> Token | None:
         """증권사별 토큰 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
@@ -40,7 +40,7 @@ class TokensService:
             None, self._get_by_broker_sync, broker_type
         )
 
-    def _get_by_broker_sync(self, broker_type: str) -> Optional[Token]:
+    def _get_by_broker_sync(self, broker_type: str) -> Token | None:
         """동기적으로 증권사별 토큰 조회"""
         with self._get_conn() as conn:
             cur = conn.cursor()

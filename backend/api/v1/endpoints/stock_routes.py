@@ -1,12 +1,16 @@
 from fastapi import APIRouter
+
 from backend.core.exceptions import KiwoomApiException
 from backend.core.logger import get_logger
-from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest, KiwoomResponse
 from backend.domains.services import get_service
+from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+    KiwoomApiHelper,
+    KiwoomRequest,
+    KiwoomResponse,
+)
 from backend.utils.kiwi_utils import merge_dicts
 from backend.utils.naver_utils import get_summary_from_naver
-
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -117,10 +121,10 @@ async def find_stock(request: KiwoomRequest):
         )
         
     except Exception as e:
-        logger.error(f"종목 검색 중 오류 발생: {str(e)}")
+        logger.error(f"종목 검색 중 오류 발생: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="500",
-            error_message=f"종목 검색 중 오류가 발생했습니다: {str(e)}",
+            error_message=f"종목 검색 중 오류가 발생했습니다: {e!s}",
             status_code=500,
             api_info={"api_id": "stock_find", "description": "종목 검색"}
         )

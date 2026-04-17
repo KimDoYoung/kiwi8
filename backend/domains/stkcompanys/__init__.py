@@ -4,4 +4,4 @@
 
 from .stock_api import BrokerType, StockApi
 
-__all__ = ['StockApi', 'BrokerType']
+__all__ = ['BrokerType', 'StockApi']

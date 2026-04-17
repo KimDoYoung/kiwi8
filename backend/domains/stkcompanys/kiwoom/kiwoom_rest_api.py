@@ -9,16 +9,20 @@
 작성일: 2025-07-23
 버전: 1.0
 """
-from datetime import datetime
 import json
-import aiohttp
-from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomResponse
-from backend.domains.stock_api import StockApi
-from backend.core.config import config
+from datetime import datetime
 
+import aiohttp
+
+from backend.core.config import config
 from backend.core.logger import get_logger
+from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+    KiwoomApiHelper,
+    KiwoomRequest,
+    KiwoomResponse,
+)
+from backend.domains.stock_api import StockApi
 
 logger = get_logger(__name__)
 
@@ -125,7 +129,7 @@ class KiwoomRestApi(StockApi):
             logger.error(f"HTTP 요청 오류: {e}")
             return KiwoomApiHelper.create_error_response(
                 error_code="HTTP_ERROR",
-                error_message=f"HTTP 요청 실패: {str(e)}",
+                error_message=f"HTTP 요청 실패: {e!s}",
                 status_code=500,
                 request_time=request_time
             )
@@ -133,7 +137,7 @@ class KiwoomRestApi(StockApi):
             logger.error(f"예상치 못한 오류: {e}")
             return KiwoomApiHelper.create_error_response(
                 error_code="UNEXPECTED_ERROR",
-                error_message=f"요청 처리 중 오류 발생: {str(e)}",
+                error_message=f"요청 처리 중 오류 발생: {e!s}",
                 status_code=500,
                 request_time=request_time
             )
@@ -198,7 +202,7 @@ class KiwoomRestApi(StockApi):
             logger.error(f"JSON 파싱 오류: {e}")
             return KiwoomApiHelper.create_error_response(
                 error_code="JSON_PARSE_ERROR",
-                error_message=f"응답 내용이 JSON 형식이 아닙니다: {str(e)}",
+                error_message=f"응답 내용이 JSON 형식이 아닙니다: {e!s}",
                 status_code=502,
                 api_info=api_info,
                 request_time=request_time

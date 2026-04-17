@@ -3,13 +3,14 @@ LS증권 WebSocket 클라이언트
 실시간 시세, 호가, 체결통보를 수신합니다.
 """
 import json
-from typing import Callable, Dict
+from collections.abc import Callable
+
 import websockets
 
-from backend.domains.stkcompanys.ls.managers.ls_token_manager import LsTokenManager
 from backend.core.config import config
 from backend.core.exceptions import LsApiException
 from backend.core.logger import get_logger
+from backend.domains.stkcompanys.ls.managers.ls_token_manager import LsTokenManager
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ class LsWsClient:
         self.websocket = None
         self.connected = False
         self.keep_running = True
-        self.handlers: Dict[str, Callable] = {}
+        self.handlers: dict[str, Callable] = {}
 
     async def connect(self):
         """WebSocket 연결"""

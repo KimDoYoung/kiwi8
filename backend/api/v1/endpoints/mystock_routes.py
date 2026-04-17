@@ -2,10 +2,13 @@ from fastapi import APIRouter
 
 from backend.api.common.stock_functions import get_stock_name
 from backend.core.logger import get_logger
-from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest, KiwoomResponse
 from backend.domains.services.dependency import get_service
-
+from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+    KiwoomApiHelper,
+    KiwoomRequest,
+    KiwoomResponse,
+)
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -57,14 +60,14 @@ async def get_my_stocks():
                     logger.warning(f"❌ {stock.stk_cd} 조회 실패: {response.error_message}")
                     
             except Exception as e:
-                logger.error(f"❌ {stock.stk_cd} 조회 중 오류: {str(e)}")
+                logger.error(f"❌ {stock.stk_cd} 조회 중 오류: {e!s}")
                 return KiwoomApiHelper.create_error_response(error_code="MY_STOCK_ERROR", error_message=str(e))
         
         logger.info(f"My Stock 조회 완료: {len(result)}개 종목 정보 반환")
         return KiwoomApiHelper.create_success_response(data={"list": result})
 
     except Exception as e:
-        logger.error(f"My Stock 조회 중 오류 발생: {str(e)}")
+        logger.error(f"My Stock 조회 중 오류 발생: {e!s}")
         return KiwoomApiHelper.create_error_response(error_code="MY_STOCK_ERROR", error_message=str(e))
 
 @router.put("/{stk_code}", response_model=KiwoomResponse)
@@ -116,7 +119,7 @@ async def put_stocks(request: KiwoomRequest):
             except Exception as e:
                 error_info = {"stk_code": stk_code, "error": str(e)}
                 error_list.append(error_info)
-                logger.error(f"종목 추가 실패: {stk_code} - {str(e)}")
+                logger.error(f"종목 추가 실패: {stk_code} - {e!s}")
         
         result_data = {
             "total_count": len(codes),
@@ -148,9 +151,9 @@ async def put_stocks(request: KiwoomRequest):
             )
             
     except Exception as e:
-        logger.error(f"종목 일괄 추가 중 예상치 못한 오류 발생: {str(e)}")
+        logger.error(f"종목 일괄 추가 중 예상치 못한 오류 발생: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="MY_STOCK_BULK_SYSTEM_ERROR", 
-            error_message=f"종목 일괄 추가 중 시스템 오류가 발생했습니다: {str(e)}",
+            error_message=f"종목 일괄 추가 중 시스템 오류가 발생했습니다: {e!s}",
             api_info={"api_id": "mystock_bulk_add", "description": "종목 일괄 추가"}
         )

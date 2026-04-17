@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_ORDER_EXECUTION_REQUESTS = {
     't1403': {

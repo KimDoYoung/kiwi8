@@ -14,12 +14,18 @@
 작성일: 2025-08-24
 버전: 1.0
 """
-from backend.core.config import config
-from backend.domains.models.stk_info_model import StkInfo, StkInfoCreate, StkInfoUpdate, StkInfoFilter, StkInfoBulkCreate
-from backend.core.logger import get_logger
-from typing import List, Optional, Dict, Tuple
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.stk_info_model import (
+    StkInfo,
+    StkInfoBulkCreate,
+    StkInfoCreate,
+    StkInfoFilter,
+    StkInfoUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -104,13 +110,13 @@ class StkInfoService:
                 created_at=now
             )
 
-    async def get_by_code(self, code: str) -> Optional[StkInfo]:
+    async def get_by_code(self, code: str) -> StkInfo | None:
         """종목코드로 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_by_code_sync, code)
 
-    def _get_by_code_sync(self, code: str) -> Optional[StkInfo]:
+    def _get_by_code_sync(self, code: str) -> StkInfo | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -126,13 +132,13 @@ class StkInfoService:
                 return self._row_to_stkinfo(row)
             return None
 
-    async def update(self, code: str, update_data: StkInfoUpdate) -> Optional[StkInfo]:
+    async def update(self, code: str, update_data: StkInfoUpdate) -> StkInfo | None:
         """종목 정보 수정"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_sync, code, update_data)
 
-    def _update_sync(self, code: str, update_data: StkInfoUpdate) -> Optional[StkInfo]:
+    def _update_sync(self, code: str, update_data: StkInfoUpdate) -> StkInfo | None:
         # 기존 데이터 확인
         existing = self._get_by_code_sync(code)
         if not existing:
@@ -171,7 +177,7 @@ class StkInfoService:
             return existing
 
         # SQL 쿼리 동적 생성
-        set_clause = ', '.join([f"{field} = ?" for field in update_fields.keys()])
+        set_clause = ', '.join([f"{field} = ?" for field in update_fields])
 
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -188,7 +194,7 @@ class StkInfoService:
     
     async def delete_all(self) ->bool:
         """ 모든 레코드 삭제 """
-        import asyncio  
+        import asyncio
         loop = asyncio.get_event_loop()
         def _delete_all_sync():
             with self._get_conn() as conn:
@@ -211,13 +217,13 @@ class StkInfoService:
             conn.commit()
             return cur.rowcount > 0
 
-    async def list_all(self, filter_data: Optional[StkInfoFilter] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[StkInfo]:
+    async def list_all(self, filter_data: StkInfoFilter | None = None, limit: int | None = None, offset: int | None = None) -> list[StkInfo]:
         """모든 종목 목록 조회 (필터링 및 페이징 포함)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._list_all_sync, filter_data, limit, offset)
 
-    def _list_all_sync(self, filter_data: Optional[StkInfoFilter] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[StkInfo]:
+    def _list_all_sync(self, filter_data: StkInfoFilter | None = None, limit: int | None = None, offset: int | None = None) -> list[StkInfo]:
         query = """
             SELECT stk_cd, stk_nm, list_count, audit_info, reg_day, last_price, state,
                    market_code, market_name, up_name, up_size_name, company_class_name,
@@ -277,13 +283,13 @@ class StkInfoService:
             
             return [self._row_to_stkinfo(row) for row in rows]
 
-    async def count_all(self, filter_data: Optional[StkInfoFilter] = None) -> int:
+    async def count_all(self, filter_data: StkInfoFilter | None = None) -> int:
         """필터링된 종목 총 개수 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._count_all_sync, filter_data)
 
-    def _count_all_sync(self, filter_data: Optional[StkInfoFilter] = None) -> int:
+    def _count_all_sync(self, filter_data: StkInfoFilter | None = None) -> int:
         query = "SELECT COUNT(*) FROM stk_info"
         params = []
         conditions = []
@@ -329,13 +335,13 @@ class StkInfoService:
             cur.execute(query, params)
             return cur.fetchone()[0]
 
-    async def bulk_create(self, bulk_data: StkInfoBulkCreate) -> Tuple[int, int]:
+    async def bulk_create(self, bulk_data: StkInfoBulkCreate) -> tuple[int, int]:
         """종목 정보 대량 생성 (키움 API 데이터 저장용)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._bulk_create_sync, bulk_data)
 
-    def _bulk_create_sync(self, bulk_data: StkInfoBulkCreate) -> Tuple[int, int]:
+    def _bulk_create_sync(self, bulk_data: StkInfoBulkCreate) -> tuple[int, int]:
         """대량 생성 동기 처리 - (성공 건수, 실패 건수) 반환"""
         success_count = 0
         error_count = 0
@@ -385,28 +391,28 @@ class StkInfoService:
         logger.info(f"종목 정보 대량 저장 완료 - 성공: {success_count}, 실패: {error_count}")
         return success_count, error_count
 
-    async def search_by_name(self, name: str) -> List[StkInfo]:
+    async def search_by_name(self, name: str) -> list[StkInfo]:
         """종목명으로 검색"""
         filter_data = StkInfoFilter(stk_nm_like=name)
         return await self.list_all(filter_data)
 
-    async def get_by_market(self, market_code: str) -> List[StkInfo]:
+    async def get_by_market(self, market_code: str) -> list[StkInfo]:
         """특정 시장의 모든 종목 조회"""
         filter_data = StkInfoFilter(market_code=market_code)
         return await self.list_all(filter_data)
 
-    async def get_by_sector(self, up_name: str) -> List[StkInfo]:
+    async def get_by_sector(self, up_name: str) -> list[StkInfo]:
         """특정 업종의 모든 종목 조회"""
         filter_data = StkInfoFilter(up_name=up_name)
         return await self.list_all(filter_data)
 
-    async def get_markets(self) -> List[Dict[str, str]]:
+    async def get_markets(self) -> list[dict[str, str]]:
         """등록된 모든 시장 목록 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_markets_sync)
 
-    def _get_markets_sync(self) -> List[Dict[str, str]]:
+    def _get_markets_sync(self) -> list[dict[str, str]]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -418,13 +424,13 @@ class StkInfoService:
             rows = cur.fetchall()
             return [{"code": row[0], "name": row[1]} for row in rows]
 
-    async def get_sectors(self) -> List[str]:
+    async def get_sectors(self) -> list[str]:
         """등록된 모든 업종 목록 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_sectors_sync)
 
-    def _get_sectors_sync(self) -> List[str]:
+    def _get_sectors_sync(self) -> list[str]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -436,13 +442,13 @@ class StkInfoService:
             rows = cur.fetchall()
             return [row[0] for row in rows]
 
-    async def get_stats(self) -> Dict[str, int]:
+    async def get_stats(self) -> dict[str, int]:
         """통계 정보 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stats_sync)
 
-    def _get_stats_sync(self) -> Dict[str, int]:
+    def _get_stats_sync(self) -> dict[str, int]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             

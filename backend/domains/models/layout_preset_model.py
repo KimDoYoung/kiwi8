@@ -1,17 +1,17 @@
 from dataclasses import dataclass
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
 @dataclass
 class LayoutPreset:
     """레이아웃 프리셋 데이터 클래스 (DB row 매핑용)"""
-    id: Optional[int] = None
+    id: int | None = None
     user_id: str = ''
     name: str = ''
     layout_json: str = ''
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
 
 class LayoutPresetCreate(BaseModel):

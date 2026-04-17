@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+
 @dataclass
 class SettingInfo:
     """설정 정보 데이터 클래스

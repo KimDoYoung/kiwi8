@@ -12,6 +12,7 @@
 """
 from enum import Enum
 
+
 class SettingsKey(str, Enum):
     # 사용자 관련
     USER_ID = "user_id"

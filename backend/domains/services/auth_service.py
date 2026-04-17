@@ -1,7 +1,7 @@
-import sqlite3
 import asyncio
+import sqlite3
 from datetime import datetime
-from typing import Optional
+
 from backend.core.config import config
 from backend.core.logger import get_logger
 
@@ -30,12 +30,12 @@ class AuthService:
             """, (token_id, user_id, hashed_token, expires_at.isoformat()))
             conn.commit()
 
-    async def verify_refresh_token(self, token_id: str, hashed_token: str) -> Optional[str]:
+    async def verify_refresh_token(self, token_id: str, hashed_token: str) -> str | None:
         """DB에 저장된 Refresh Token 검증"""
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._verify_refresh_token_sync, token_id, hashed_token)
 
-    def _verify_refresh_token_sync(self, token_id: str, hashed_token: str) -> Optional[str]:
+    def _verify_refresh_token_sync(self, token_id: str, hashed_token: str) -> str | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""

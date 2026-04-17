@@ -3,7 +3,7 @@ tokens 테이블 모델
 증권사별 API 토큰을 통합 관리
 """
 from dataclasses import dataclass
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -18,8 +18,8 @@ class Token:
     broker_type: str                           # PK: 'KIWOOM' | 'KIS' | 'LS'
     access_token: str                          # 액세스 토큰
     expires_at: str                            # 만료 시각 (ISO8601 또는 증권사별 형식)
-    created_at: Optional[str] = None           # 생성 시각
-    updated_at: Optional[str] = None           # 수정 시각
+    created_at: str | None = None           # 생성 시각
+    updated_at: str | None = None           # 수정 시각
 
 
 class TokenCreate(BaseModel):

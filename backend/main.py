@@ -3,22 +3,22 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.api.v1.endpoints.accounts_routes import router as accounts_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
+from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
+from backend.api.v1.endpoints.menus_routes import router as menus_router
 from backend.api.v1.endpoints.mystock_routes import router as mystock_router
 from backend.api.v1.endpoints.scheduler_routes import router as scheduler_router
 from backend.api.v1.endpoints.settings_routes import router as settings_router
 from backend.api.v1.endpoints.stkcompany.kis_routes import router as kis_router
 from backend.api.v1.endpoints.stkcompany.kiwoom_routes import router as kiwoom_router
 from backend.api.v1.endpoints.stkcompany.ls_routes import router as ls_router
-from backend.api.v1.endpoints.menus_routes import router as menus_router
 from backend.api.v1.endpoints.stock_routes import router as stock_router
-from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
 from backend.core.config import config
 from backend.core.exception_handler import add_exception_handlers
 from backend.core.jwtmiddleware import JWTAuthMiddleware

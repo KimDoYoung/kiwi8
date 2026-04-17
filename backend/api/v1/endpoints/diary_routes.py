@@ -4,9 +4,13 @@
 from fastapi import APIRouter
 
 from backend.core.logger import get_logger
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest, KiwoomResponse
 from backend.domains.models.stk_diary_model import StkDiaryFilter
 from backend.domains.services.dependency import get_service
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+    KiwoomApiHelper,
+    KiwoomRequest,
+    KiwoomResponse,
+)
 
 logger = get_logger(__name__)
 
@@ -79,10 +83,10 @@ async def create_diary(request: KiwoomRequest):
         )
         
     except Exception as e:
-        logger.error(f"주식 일지 생성 중 오류: {str(e)}")
+        logger.error(f"주식 일지 생성 중 오류: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="DIARY_CREATE_ERROR",
-            error_message=f"주식 일지 저장 중 오류가 발생했습니다: {str(e)}",
+            error_message=f"주식 일지 저장 중 오류가 발생했습니다: {e!s}",
             api_info={"api_id": "diary_create", "description": "주식 일지 생성"}
         )
 
@@ -155,10 +159,10 @@ async def get_diary_list(request : KiwoomRequest):
         )
         
     except Exception as e:
-        logger.error(f"주식 일지 목록 조회 중 오류: {str(e)}")
+        logger.error(f"주식 일지 목록 조회 중 오류: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="DIARY_LIST_ERROR",
-            error_message=f"주식 일지 목록 조회 중 오류가 발생했습니다: {str(e)}",
+            error_message=f"주식 일지 목록 조회 중 오류가 발생했습니다: {e!s}",
             api_info={"api_id": "diary_list", "description": "주식 일지 목록 조회"}
         )
 
@@ -195,10 +199,10 @@ async def get_diary(diary_id: int):
         )
         
     except Exception as e:
-        logger.error(f"주식 일지 상세 조회 중 오류: {str(e)}")
+        logger.error(f"주식 일지 상세 조회 중 오류: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="DIARY_GET_ERROR",
-            error_message=f"주식 일지 조회 중 오류가 발생했습니다: {str(e)}",
+            error_message=f"주식 일지 조회 중 오류가 발생했습니다: {e!s}",
             api_info={"api_id": "diary_get", "description": "주식 일지 상세 조회"}
         )
 
@@ -292,10 +296,10 @@ async def update_diary(diary_id: int, request: KiwoomRequest):
         )
         
     except Exception as e:
-        logger.error(f"주식 일지 수정 중 오류: {str(e)}")
+        logger.error(f"주식 일지 수정 중 오류: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="DIARY_UPDATE_ERROR",
-            error_message=f"주식 일지 수정 중 오류가 발생했습니다: {str(e)}",
+            error_message=f"주식 일지 수정 중 오류가 발생했습니다: {e!s}",
             api_info={"api_id": "diary_update", "description": "주식 일지 수정"}
         )
 
@@ -337,9 +341,9 @@ async def delete_diary(diary_id: int):
         )
         
     except Exception as e:
-        logger.error(f"주식 일지 삭제 중 오류: {str(e)}")
+        logger.error(f"주식 일지 삭제 중 오류: {e!s}")
         return KiwoomApiHelper.create_error_response(
             error_code="DIARY_DELETE_ERROR",
-            error_message=f"주식 일지 삭제 중 오류가 발생했습니다: {str(e)}",
+            error_message=f"주식 일지 삭제 중 오류가 발생했습니다: {e!s}",
             api_info={"api_id": "diary_delete", "description": "주식 일지 삭제"}
         ) 

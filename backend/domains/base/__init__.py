@@ -8,6 +8,6 @@ from backend.domains.base.base_token_manager import BaseTokenManager
 __all__ = [
     'BaseRequest',
     'BaseResponse',
-    'ContYn',
     'BaseTokenManager',
+    'ContYn',
 ]

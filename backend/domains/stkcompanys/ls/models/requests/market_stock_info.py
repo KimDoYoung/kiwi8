@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_STOCK_INFO_REQUESTS = {
     't1101': {

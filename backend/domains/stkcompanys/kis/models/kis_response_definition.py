@@ -1,6 +1,6 @@
 """Auto-generated definition file"""
 
-from typing import Any, Dict
+from typing import Any
 
 from .responses.kis_resp_1 import KIS_RESPONSE_DEF_1
 from .responses.kis_resp_2 import KIS_RESPONSE_DEF_2
@@ -20,7 +20,7 @@ KIS_RESPONSE_DEF.update(KIS_RESPONSE_DEF_6)
 KIS_RESPONSE_DEF.update(KIS_RESPONSE_DEF_7)
 
 
-def get_response_definition(api_id: str) -> Dict[str, Any]:
+def get_response_definition(api_id: str) -> dict[str, Any]:
   return KIS_RESPONSE_DEF.get(api_id)
 
 

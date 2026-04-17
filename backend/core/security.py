@@ -1,13 +1,12 @@
-from fastapi import status
-from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, Request
+from datetime import UTC, datetime, timedelta
+
+from fastapi import HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError
 from passlib.context import CryptContext
-from typing import Optional
-from backend.core.config import config
 
+from backend.core.config import config
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -23,19 +22,19 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-def create_jwt_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_jwt_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def create_jwt_refresh_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -63,7 +62,7 @@ async def get_current_user(request: Request) -> dict:
     )
     
     # Authorization 헤더에서 토큰 추출
-    token: Optional[str] = None
+    token: str | None = None
     authorization: str = request.headers.get("Authorization")
     if authorization is None or not authorization.startswith("Bearer "):
         #없으면 쿠키에서 토큰 추출

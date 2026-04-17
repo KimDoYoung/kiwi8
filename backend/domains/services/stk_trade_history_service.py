@@ -1,9 +1,14 @@
-from backend.core.config import config
-from backend.domains.models.stk_trade_history_model import StkTradeHistory, StkTradeHistoryCreate, StkTradeHistoryUpdate, StkTradeHistoryFilter
-from backend.core.logger import get_logger
-from typing import List, Optional, Dict
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.stk_trade_history_model import (
+    StkTradeHistory,
+    StkTradeHistoryCreate,
+    StkTradeHistoryFilter,
+    StkTradeHistoryUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -68,13 +73,13 @@ class StkTradeHistoryService:
                 updated_at=now
             )
 
-    async def get_by_id(self, trade_id: int) -> Optional[StkTradeHistory]:
+    async def get_by_id(self, trade_id: int) -> StkTradeHistory | None:
         """ID로 매매 이력 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_by_id_sync, trade_id)
 
-    def _get_by_id_sync(self, trade_id: int) -> Optional[StkTradeHistory]:
+    def _get_by_id_sync(self, trade_id: int) -> StkTradeHistory | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -88,13 +93,13 @@ class StkTradeHistoryService:
                 return self._row_to_trade_history(row)
             return None
 
-    async def update(self, trade_id: int, update_data: StkTradeHistoryUpdate) -> Optional[StkTradeHistory]:
+    async def update(self, trade_id: int, update_data: StkTradeHistoryUpdate) -> StkTradeHistory | None:
         """매매 이력 수정"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_sync, trade_id, update_data)
 
-    def _update_sync(self, trade_id: int, update_data: StkTradeHistoryUpdate) -> Optional[StkTradeHistory]:
+    def _update_sync(self, trade_id: int, update_data: StkTradeHistoryUpdate) -> StkTradeHistory | None:
         # 기존 데이터 확인
         existing = self._get_by_id_sync(trade_id)
         if not existing:
@@ -115,7 +120,7 @@ class StkTradeHistoryService:
             return existing
 
         # SQL 쿼리 동적 생성
-        set_clause = ', '.join([f"{field} = ?" for field in update_fields.keys()])
+        set_clause = ', '.join([f"{field} = ?" for field in update_fields])
         update_fields['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         set_clause += ', updated_at = ?'
 
@@ -145,13 +150,13 @@ class StkTradeHistoryService:
             conn.commit()
             return cur.rowcount > 0
 
-    async def list_all(self, filter_data: Optional[StkTradeHistoryFilter] = None) -> List[StkTradeHistory]:
+    async def list_all(self, filter_data: StkTradeHistoryFilter | None = None) -> list[StkTradeHistory]:
         """모든 매매 이력 목록 조회 (필터링 포함)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._list_all_sync, filter_data)
 
-    def _list_all_sync(self, filter_data: Optional[StkTradeHistoryFilter] = None) -> List[StkTradeHistory]:
+    def _list_all_sync(self, filter_data: StkTradeHistoryFilter | None = None) -> list[StkTradeHistory]:
         query = """
             SELECT id, stk_cd, stk_nm, ymd, note, created_at, updated_at
             FROM stk_trades_history
@@ -192,38 +197,38 @@ class StkTradeHistoryService:
             
             return [self._row_to_trade_history(row) for row in rows]
 
-    async def get_by_stock(self, stk_cd: str) -> List[StkTradeHistory]:
+    async def get_by_stock(self, stk_cd: str) -> list[StkTradeHistory]:
         """특정 종목의 매매 이력"""
         filter_data = StkTradeHistoryFilter(stk_cd=stk_cd)
         return await self.list_all(filter_data)
 
-    async def get_by_date(self, ymd: str) -> List[StkTradeHistory]:
+    async def get_by_date(self, ymd: str) -> list[StkTradeHistory]:
         """특정 날짜의 매매 이력"""
         filter_data = StkTradeHistoryFilter(ymd_from=ymd, ymd_to=ymd)
         return await self.list_all(filter_data)
 
-    async def get_date_range(self, start_date: str, end_date: str) -> List[StkTradeHistory]:
+    async def get_date_range(self, start_date: str, end_date: str) -> list[StkTradeHistory]:
         """날짜 범위로 매매 이력 조회"""
         filter_data = StkTradeHistoryFilter(ymd_from=start_date, ymd_to=end_date)
         return await self.list_all(filter_data)
 
-    async def search_by_stock_name(self, stock_name: str) -> List[StkTradeHistory]:
+    async def search_by_stock_name(self, stock_name: str) -> list[StkTradeHistory]:
         """종목명으로 매매 이력 검색"""
         filter_data = StkTradeHistoryFilter(stk_nm_like=stock_name)
         return await self.list_all(filter_data)
 
-    async def search_by_note(self, keyword: str) -> List[StkTradeHistory]:
+    async def search_by_note(self, keyword: str) -> list[StkTradeHistory]:
         """매매 기록 내용으로 검색"""
         filter_data = StkTradeHistoryFilter(note_like=keyword)
         return await self.list_all(filter_data)
 
-    async def get_stats(self) -> Dict[str, any]:
+    async def get_stats(self) -> dict[str, any]:
         """매매 이력 통계 정보"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stats_sync)
 
-    def _get_stats_sync(self) -> Dict[str, any]:
+    def _get_stats_sync(self) -> dict[str, any]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             
@@ -250,13 +255,13 @@ class StkTradeHistoryService:
                 'earliest_trade_date': earliest_date
             }
 
-    async def get_stock_trade_summary(self, stk_cd: str) -> Dict[str, any]:
+    async def get_stock_trade_summary(self, stk_cd: str) -> dict[str, any]:
         """특정 종목의 매매 요약 정보"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stock_trade_summary_sync, stk_cd)
 
-    def _get_stock_trade_summary_sync(self, stk_cd: str) -> Dict[str, any]:
+    def _get_stock_trade_summary_sync(self, stk_cd: str) -> dict[str, any]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             

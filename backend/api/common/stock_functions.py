@@ -1,21 +1,21 @@
 
-import json
 from backend.api.common.validators import validate_market_type
+from backend.core.logger import get_logger
+from backend.domains.models.stk_info_model import (
+    StkInfoBulkCreate,
+    StkInfoCreate,
+)
+from backend.domains.services.cache_keys import CacheKey
+from backend.domains.services.dependency import get_service
+from backend.domains.services.settings_keys import SettingsKey
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
     KiwoomApiHelper,
     KiwoomRequest,
 )
-from backend.domains.services.dependency import get_service
-from backend.domains.services.settings_keys import SettingsKey
-from backend.domains.services.cache_keys import CacheKey
-from backend.domains.models.stk_info_model import (
-    StkInfoBulkCreate,
-    StkInfoCreate,
-)
+
 # from backend.domains.services.stk_info_service import get_stk_info_service
-from backend.utils.kiwi_utils import get_current_timestamp, is_time_exceeded, to_dict, to_str
-from backend.core.logger import get_logger
+from backend.utils.kiwi_utils import get_current_timestamp, is_time_exceeded, to_str
 
 logger = get_logger(__name__)
 

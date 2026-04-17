@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_DERIVATIVES_QUERY_REQUESTS = {
     't0434': {

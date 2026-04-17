@@ -2,10 +2,11 @@
 공통 스키마 정의
 증권사 API의 공통 Request/Response 모델을 정의합니다.
 """
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel
 
 
 class ContYn(str, Enum):
@@ -18,9 +19,9 @@ class BaseRequest(BaseModel):
     """공통 API 요청 베이스 모델"""
     api_id: str
     cont_yn: ContYn = ContYn.N
-    next_key: Optional[str] = None
-    payload: Dict[str, Any]
-    title: Optional[str] = None
+    next_key: str | None = None
+    payload: dict[str, Any]
+    title: str | None = None
 
     class Config:
         use_enum_values = True
@@ -28,16 +29,16 @@ class BaseRequest(BaseModel):
 
 class BaseResponse(BaseModel):
     """공통 API 응답 베이스 모델"""
-    data: Optional[Dict[str, Any]] = None
-    headers: Optional[Dict[str, str]] = None
-    api_info: Optional[Dict[str, str]] = None
+    data: dict[str, Any] | None = None
+    headers: dict[str, str] | None = None
+    api_info: dict[str, str] | None = None
     status_code: int = 200
     cont_yn: ContYn = ContYn.N
-    next_key: Optional[str] = None
-    request_time: Optional[datetime] = None
-    response_time: Optional[datetime] = None
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
+    next_key: str | None = None
+    request_time: datetime | None = None
+    response_time: datetime | None = None
+    error_code: str | None = None
+    error_message: str | None = None
     success: bool = True
 
     class Config:

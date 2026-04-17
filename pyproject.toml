@@ -49,7 +49,37 @@ markers = [
     "slow: 실행이 느린 테스트",
 ]
 
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore = [
+    "BLE001",   # Do not catch blind exception - 프로젝트 전체 패턴
+    "E722",     # bare except
+    "S110",     # try-except-pass
+    "DTZ005",   # datetime.now() without tz
+    "DTZ006",   # datetime.fromtimestamp() without tz
+    "DTZ007",   # datetime.strptime() without %z
+    "PLW1508",  # env var default 타입
+    "RUF013",   # implicit Optional
+    "RUF022",   # __all__ not sorted
+    "F841",     # local variable assigned but never used
+    "B008",     # do not perform function call in default argument
+    "FURB162",  # datetime.UTC alias
+    "G201",     # logging.exception vs logger.error
+    "PERF102",  # items() vs keys()
+    "PLC0206",  # dict key/value iteration
+    "PLE1205",  # logging format mismatch
+    "RUF012",   # mutable class attributes
+    "SIM103",   # return condition directly
+    "SIM117",   # nested with statements
+    "TRY002",   # create exception with Exception
+    "TRY201",   # raise without argument in exception handler
+    "TRY401",   # redundant exception object in logging
+]
+
 [dependency-groups]
 dev = [
     "pytest-cov>=7.0.0",
+    "ruff>=0.15.11",
 ]

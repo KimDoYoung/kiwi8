@@ -1,5 +1,7 @@
 import logging
+
 from concurrent_log_handler import ConcurrentRotatingFileHandler
+
 
 def get_logger(name):
     from backend.core.config import config

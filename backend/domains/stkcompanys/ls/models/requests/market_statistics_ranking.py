@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_STATISTICS_RANKING_REQUESTS = {
     't1422': {

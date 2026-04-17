@@ -13,7 +13,7 @@
 작성일: 2025-07-24
 버전: 1.0
 """
-from typing import Dict, Any, List
+from typing import Any
 
 KIWOOM_REQUEST_DEF = {
 'au10001': {
@@ -1962,7 +1962,7 @@ KIWOOM_REQUEST_DEF = {
 }
 
 # API 유효성 검증 함수들
-def get_request_definition(api_id: str) -> Dict[str, Any]:
+def get_request_definition(api_id: str) -> dict[str, Any]:
     """
     API ID로 해당 API의 정의 정보를 반환합니다.
     
@@ -1980,7 +1980,7 @@ def get_request_definition(api_id: str) -> Dict[str, Any]:
     
     return KIWOOM_REQUEST_DEF[api_id]
 
-def get_required_fields(api_id: str) -> List[str]:
+def get_required_fields(api_id: str) -> list[str]:
     """
     특정 API의 필수 필드 목록을 반환합니다.
     

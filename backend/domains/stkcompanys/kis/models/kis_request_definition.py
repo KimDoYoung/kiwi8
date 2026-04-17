@@ -1,5 +1,5 @@
 """Auto-generated definition file"""
-from typing import Any, Dict, List
+from typing import Any
 
 from .requests.kis_req_1 import KIS_REQUEST_DEF_1
 from .requests.kis_req_2 import KIS_REQUEST_DEF_2
@@ -18,10 +18,10 @@ KIS_REQUEST_DEF.update(KIS_REQUEST_DEF_5)
 KIS_REQUEST_DEF.update(KIS_REQUEST_DEF_6)
 KIS_REQUEST_DEF.update(KIS_REQUEST_DEF_7)
 
-def get_request_definition(api_id: str) -> Dict[str, Any]:
+def get_request_definition(api_id: str) -> dict[str, Any]:
     return KIS_REQUEST_DEF.get(api_id)
 
-def get_required_fields(api_id: str) -> List[str]:
+def get_required_fields(api_id: str) -> list[str]:
     api_def = KIS_REQUEST_DEF.get(api_id, {})
     body = api_def.get('body', [])
     return [field['key'] for field in body if field.get('required', False)]

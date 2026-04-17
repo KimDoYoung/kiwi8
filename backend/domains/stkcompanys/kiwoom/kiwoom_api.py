@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class BrokerType(str, Enum):
@@ -27,7 +27,7 @@ class StockApi(ABC):
     """주식 API 추상 베이스 클래스"""
 
     def __init__(
-        self, acctno: str, settings_service=None, broker_type: Optional[BrokerType] = None
+        self, acctno: str, settings_service=None, broker_type: BrokerType | None = None
     ):
         self.acctno = acctno
         self.settings_service = settings_service
@@ -36,7 +36,6 @@ class StockApi(ABC):
     @abstractmethod
     async def send_request(self, request: Any) -> Any:
         """API 요청 전송 - 각 증권사별 구현 필요"""
-        pass
 
     def get_base_url(self) -> str:
         """증권사 API 베이스 URL"""

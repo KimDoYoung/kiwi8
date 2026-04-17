@@ -4,7 +4,7 @@ API 요청/응답 모델 및 유틸리티 클래스를 정의합니다.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from backend.domains.base.base_schema import BaseRequest, BaseResponse, ContYn
 from backend.domains.stkcompanys.ls.models.ls_request_definition import (
@@ -18,7 +18,7 @@ from backend.domains.stkcompanys.ls.models.ls_response_definition import LS_RESP
 class LsRequest(BaseRequest):
   """LS API 요청 모델"""
 
-  def validate_payload(self) -> List[str]:
+  def validate_payload(self) -> list[str]:
     """payload의 유효성을 검증"""
     # 커스텀 API는 검증 스킵
     if self.api_id.startswith('kiwi8_'):
@@ -41,14 +41,13 @@ class LsRequest(BaseRequest):
 class LsResponse(BaseResponse):
   """LS API 응답 모델"""
 
-  pass
 
 
 class LsApiHelper:
   """LS API 유틸리티 클래스"""
 
   @staticmethod
-  def get_request_info(api_id: str) -> Optional[Dict[str, str]]:
+  def get_request_info(api_id: str) -> dict[str, str] | None:
     """API 정보 조회"""
     api_def = get_request_definition(api_id)
     if not api_def:
@@ -79,9 +78,9 @@ class LsApiHelper:
 
   @staticmethod
   def create_success_response(
-    data: Dict[str, Any],
-    headers: Dict[str, str] = None,
-    api_info: Dict[str, str] = None,
+    data: dict[str, Any],
+    headers: dict[str, str] = None,
+    api_info: dict[str, str] = None,
     request_time: datetime = None,
   ) -> LsResponse:
     """성공 응답 생성"""
@@ -119,7 +118,7 @@ class LsApiHelper:
   def create_error_response(
     error_code: str,
     error_message: str,
-    api_info: Dict[str, str] = None,
+    api_info: dict[str, str] = None,
     request_time: datetime = None,
   ) -> LsResponse:
     """에러 응답 생성"""
@@ -135,7 +134,7 @@ class LsApiHelper:
     )
 
   @staticmethod
-  def to_korea_data(response_data: Dict[str, Any], api_id: str) -> Dict[str, Any]:
+  def to_korea_data(response_data: dict[str, Any], api_id: str) -> dict[str, Any]:
     """영문 필드명을 한글로 변환"""
     response_def = LS_RESPONSE_DEF.get(api_id, {})
     if not response_def:
@@ -155,7 +154,7 @@ class LsApiHelper:
     if not key_to_name_map:
       return response_data
 
-    def convert_dict(data: Dict) -> Dict:
+    def convert_dict(data: dict) -> dict:
       korea_data = {}
       for key, value in data.items():
         korean_key = key_to_name_map.get(key, key)

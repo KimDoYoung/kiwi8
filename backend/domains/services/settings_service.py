@@ -1,9 +1,9 @@
-from backend.core.config import config
-from backend.domains.services.settings_keys import SettingsKey
-from backend.domains.models.settings_model import SettingInfo
-from backend.core.logger import get_logger
-from typing import Dict, Optional
 import sqlite3
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.settings_model import SettingInfo
+from backend.domains.services.settings_keys import SettingsKey
 
 logger = get_logger(__name__)
 
@@ -15,7 +15,7 @@ class SettingsService:
     
     def __init__(self):
         self.db_path = config.DB_PATH
-        self.settings: Dict[str, SettingInfo] = {}
+        self.settings: dict[str, SettingInfo] = {}
         self._load_settings()
 
     def _get_conn(self):
@@ -30,7 +30,7 @@ class SettingsService:
             for name, value, created_at in cur.fetchall():
                 self.settings[name] = SettingInfo(name=name, value=value, created_at=created_at)
 
-    async def get(self, key) -> Optional[str]:
+    async def get(self, key) -> str | None:
         """설정값 조회 - SettingsKey 또는 문자열을 받을 수 있음"""
         if isinstance(key, SettingsKey):
             name = key.value
@@ -71,7 +71,7 @@ class SettingsService:
             """, (setting.name, setting.value))
             conn.commit()
 
-    def _get_sync(self, name: str) -> Optional[str]:
+    def _get_sync(self, name: str) -> str | None:
         """동기적으로 설정값 조회"""
         setting = self.settings.get(name)
         return setting.value if setting else None

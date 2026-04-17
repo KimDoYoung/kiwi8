@@ -1,7 +1,6 @@
 import asyncio
 import sqlite3
 from datetime import datetime
-from typing import List, Optional
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -34,12 +33,12 @@ class LayoutPresetService:
             updated_at=row[5],
         )
 
-    async def list_by_user(self, user_id: str) -> List[LayoutPreset]:
+    async def list_by_user(self, user_id: str) -> list[LayoutPreset]:
         """사용자의 전체 프리셋 목록 조회 (최신 수정순)"""
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._list_by_user_sync, user_id)
 
-    def _list_by_user_sync(self, user_id: str) -> List[LayoutPreset]:
+    def _list_by_user_sync(self, user_id: str) -> list[LayoutPreset]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute(

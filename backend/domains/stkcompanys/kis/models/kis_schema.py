@@ -4,7 +4,7 @@ API 요청/응답 모델 및 유틸리티 클래스를 정의합니다.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from backend.domains.base.base_schema import BaseRequest, BaseResponse, ContYn
 from backend.domains.stkcompanys.kis.models.kis_request_definition import (
@@ -18,7 +18,7 @@ from backend.domains.stkcompanys.kis.models.kis_response_definition import KIS_R
 class KisRequest(BaseRequest):
   """KIS API 요청 모델"""
 
-  def validate_payload(self) -> List[str]:
+  def validate_payload(self) -> list[str]:
     """payload의 유효성을 검증"""
     # 커스텀 API는 검증 스킵
     if self.api_id.startswith('kiwi8_'):
@@ -45,14 +45,13 @@ class KisRequest(BaseRequest):
 class KisResponse(BaseResponse):
   """KIS API 응답 모델"""
 
-  pass
 
 
 class KisApiHelper:
   """KIS API 유틸리티 클래스"""
 
   @staticmethod
-  def get_request_info(api_id: str) -> Optional[Dict[str, str]]:
+  def get_request_info(api_id: str) -> dict[str, str] | None:
     """API 정보 조회"""
     api_def = get_request_definition(api_id)
     if not api_def:
@@ -84,9 +83,9 @@ class KisApiHelper:
 
   @staticmethod
   def create_success_response(
-    data: Dict[str, Any],
-    headers: Dict[str, str] = None,
-    api_info: Dict[str, str] = None,
+    data: dict[str, Any],
+    headers: dict[str, str] = None,
+    api_info: dict[str, str] = None,
     request_time: datetime = None,
   ) -> KisResponse:
     """성공 응답 생성"""
@@ -115,7 +114,7 @@ class KisApiHelper:
   def create_error_response(
     error_code: str,
     error_message: str,
-    api_info: Dict[str, str] = None,
+    api_info: dict[str, str] = None,
     request_time: datetime = None,
   ) -> KisResponse:
     """에러 응답 생성"""
@@ -131,7 +130,7 @@ class KisApiHelper:
     )
 
   @staticmethod
-  def to_korea_data(response_data: Dict[str, Any], api_id: str) -> Dict[str, Any]:
+  def to_korea_data(response_data: dict[str, Any], api_id: str) -> dict[str, Any]:
     """영문 필드명을 한글로 변환"""
     response_def = KIS_RESPONSE_DEF.get(api_id, {})
     if not response_def:
@@ -155,7 +154,7 @@ class KisApiHelper:
     if not key_to_name_map:
       return response_data
 
-    def convert_dict(data: Dict) -> Dict:
+    def convert_dict(data: dict) -> dict:
       korea_data = {}
       for key, value in data.items():
         korean_key = key_to_name_map.get(key, key)
@@ -184,7 +183,7 @@ class KisApiHelper:
   @staticmethod
   def create_continuation_request(
     original_request: KisRequest, response: KisResponse
-  ) -> Optional[KisRequest]:
+  ) -> KisRequest | None:
     """연속조회 요청 생성"""
     if not KisApiHelper.has_more_data(response):
       return None

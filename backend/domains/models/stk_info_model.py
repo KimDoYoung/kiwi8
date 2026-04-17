@@ -14,8 +14,9 @@
 버전: 1.0
 """
 from dataclasses import dataclass
-from typing import Optional
+
 from pydantic import BaseModel, Field
+
 
 @dataclass
 class StkInfo:
@@ -27,20 +28,20 @@ class StkInfo:
     - 종목코드(단축코드)를 PK로 사용
     """
     stk_cd: str                              # 종목코드(단축코드) - PK (예: 005930)
-    stk_nm: Optional[str] = None             # 종목명 (예: 삼성전자)
-    list_count: Optional[str] = None         # 상장주식수 (API 원문: String)
-    audit_info: Optional[str] = None         # 감리구분
-    reg_day: Optional[str] = None            # 상장일 (YYYYMMDD)
-    last_price: Optional[str] = None         # 전일종가
-    state: Optional[str] = None              # 종목상태
-    market_code: Optional[str] = None        # 시장구분코드
-    market_name: Optional[str] = None        # 시장명
-    up_name: Optional[str] = None            # 업종명
-    up_size_name: Optional[str] = None       # 회사크기분류
-    company_class_name: Optional[str] = None # 회사분류 (코스닥만 존재)
-    order_warning: Optional[str] = None      # 투자유의종목여부: 0 해당없음, 2 정리매매, 3 단기과열, 4 투자위험, 5 투자경과, 1 ETF투자주의요망
-    nxt_enable: Optional[str] = None         # NXT 가능여부 (Y/N)
-    created_at: Optional[str] = None         # 생성 시각 (DB에서 자동 설정)
+    stk_nm: str | None = None             # 종목명 (예: 삼성전자)
+    list_count: str | None = None         # 상장주식수 (API 원문: String)
+    audit_info: str | None = None         # 감리구분
+    reg_day: str | None = None            # 상장일 (YYYYMMDD)
+    last_price: str | None = None         # 전일종가
+    state: str | None = None              # 종목상태
+    market_code: str | None = None        # 시장구분코드
+    market_name: str | None = None        # 시장명
+    up_name: str | None = None            # 업종명
+    up_size_name: str | None = None       # 회사크기분류
+    company_class_name: str | None = None # 회사분류 (코스닥만 존재)
+    order_warning: str | None = None      # 투자유의종목여부: 0 해당없음, 2 정리매매, 3 단기과열, 4 투자위험, 5 투자경과, 1 ETF투자주의요망
+    nxt_enable: str | None = None         # NXT 가능여부 (Y/N)
+    created_at: str | None = None         # 생성 시각 (DB에서 자동 설정)
 
 class StkInfoCreate(BaseModel):
     """종목 기본정보 생성 요청 모델
@@ -50,19 +51,19 @@ class StkInfoCreate(BaseModel):
     - 키움 API 응답 데이터를 그대로 저장
     """
     stk_cd: str = Field(..., description="종목코드(단축코드)", example="005930", max_length=10)
-    stk_nm: Optional[str] = Field(None, description="종목명", example="삼성전자")
-    list_count: Optional[str] = Field(None, description="상장주식수", example="5969782550")
-    audit_info: Optional[str] = Field(None, description="감리구분", example="정상")
-    reg_day: Optional[str] = Field(None, description="상장일 (YYYYMMDD)", example="19750611")
-    last_price: Optional[str] = Field(None, description="전일종가", example="71000")
-    state: Optional[str] = Field(None, description="종목상태", example="정상")
-    market_code: Optional[str] = Field(None, description="시장구분코드", example="STK")
-    market_name: Optional[str] = Field(None, description="시장명", example="코스피")
-    up_name: Optional[str] = Field(None, description="업종명", example="전기전자")
-    up_size_name: Optional[str] = Field(None, description="회사크기분류", example="대형")
-    company_class_name: Optional[str] = Field(None, description="회사분류 (코스닥만 존재)")
-    order_warning: Optional[str] = Field(None, description="투자유의종목여부", example="0")
-    nxt_enable: Optional[str] = Field(None, description="NXT 가능여부 (Y/N)", example="Y")
+    stk_nm: str | None = Field(None, description="종목명", example="삼성전자")
+    list_count: str | None = Field(None, description="상장주식수", example="5969782550")
+    audit_info: str | None = Field(None, description="감리구분", example="정상")
+    reg_day: str | None = Field(None, description="상장일 (YYYYMMDD)", example="19750611")
+    last_price: str | None = Field(None, description="전일종가", example="71000")
+    state: str | None = Field(None, description="종목상태", example="정상")
+    market_code: str | None = Field(None, description="시장구분코드", example="STK")
+    market_name: str | None = Field(None, description="시장명", example="코스피")
+    up_name: str | None = Field(None, description="업종명", example="전기전자")
+    up_size_name: str | None = Field(None, description="회사크기분류", example="대형")
+    company_class_name: str | None = Field(None, description="회사분류 (코스닥만 존재)")
+    order_warning: str | None = Field(None, description="투자유의종목여부", example="0")
+    nxt_enable: str | None = Field(None, description="NXT 가능여부 (Y/N)", example="Y")
 
 class StkInfoUpdate(BaseModel):
     """종목 기본정보 수정 요청 모델
@@ -71,19 +72,19 @@ class StkInfoUpdate(BaseModel):
     - 모든 필드가 Optional (수정하고 싶은 필드만 제공)
     - stk_cd는 PK이므로 수정 불가 (URL 파라미터로 식별)
     """
-    stk_nm: Optional[str] = Field(None, description="종목명")
-    list_count: Optional[str] = Field(None, description="상장주식수")
-    audit_info: Optional[str] = Field(None, description="감리구분")
-    reg_day: Optional[str] = Field(None, description="상장일 (YYYYMMDD)")
-    last_price: Optional[str] = Field(None, description="전일종가")
-    state: Optional[str] = Field(None, description="종목상태")
-    market_code: Optional[str] = Field(None, description="시장구분코드")
-    market_name: Optional[str] = Field(None, description="시장명")
-    up_name: Optional[str] = Field(None, description="업종명")
-    up_size_name: Optional[str] = Field(None, description="회사크기분류")
-    company_class_name: Optional[str] = Field(None, description="회사분류 (코스닥만 존재)")
-    order_warning: Optional[str] = Field(None, description="투자유의종목여부")
-    nxt_enable: Optional[str] = Field(None, description="NXT 가능여부 (Y/N)")
+    stk_nm: str | None = Field(None, description="종목명")
+    list_count: str | None = Field(None, description="상장주식수")
+    audit_info: str | None = Field(None, description="감리구분")
+    reg_day: str | None = Field(None, description="상장일 (YYYYMMDD)")
+    last_price: str | None = Field(None, description="전일종가")
+    state: str | None = Field(None, description="종목상태")
+    market_code: str | None = Field(None, description="시장구분코드")
+    market_name: str | None = Field(None, description="시장명")
+    up_name: str | None = Field(None, description="업종명")
+    up_size_name: str | None = Field(None, description="회사크기분류")
+    company_class_name: str | None = Field(None, description="회사분류 (코스닥만 존재)")
+    order_warning: str | None = Field(None, description="투자유의종목여부")
+    nxt_enable: str | None = Field(None, description="NXT 가능여부 (Y/N)")
 
 class StkInfoResponse(BaseModel):
     """종목 기본정보 응답 모델
@@ -93,20 +94,20 @@ class StkInfoResponse(BaseModel):
     - created_at은 필수 (DB에서 자동 생성)
     """
     stk_cd: str = Field(..., description="종목코드(단축코드)", example="005930")
-    stk_nm: Optional[str] = Field(None, description="종목명", example="삼성전자")
-    list_count: Optional[str] = Field(None, description="상장주식수", example="5969782550")
-    audit_info: Optional[str] = Field(None, description="감리구분", example="정상")
-    reg_day: Optional[str] = Field(None, description="상장일 (YYYYMMDD)", example="19750611")
-    last_price: Optional[str] = Field(None, description="전일종가", example="71000")
-    state: Optional[str] = Field(None, description="종목상태", example="정상")
-    market_code: Optional[str] = Field(None, description="시장구분코드", example="STK")
-    market_name: Optional[str] = Field(None, description="시장명", example="코스피")
-    up_name: Optional[str] = Field(None, description="업종명", example="전기전자")
-    up_size_name: Optional[str] = Field(None, description="회사크기분류", example="대형")
-    company_class_name: Optional[str] = Field(None, description="회사분류 (코스닥만 존재)")
-    order_warning: Optional[str] = Field(None, description="투자유의종목여부", example="0")
-    nxt_enable: Optional[str] = Field(None, description="NXT 가능여부 (Y/N)", example="Y")
-    created_at: Optional[str] = Field(None, description="생성 시각", example="2024-08-24 14:30:00")
+    stk_nm: str | None = Field(None, description="종목명", example="삼성전자")
+    list_count: str | None = Field(None, description="상장주식수", example="5969782550")
+    audit_info: str | None = Field(None, description="감리구분", example="정상")
+    reg_day: str | None = Field(None, description="상장일 (YYYYMMDD)", example="19750611")
+    last_price: str | None = Field(None, description="전일종가", example="71000")
+    state: str | None = Field(None, description="종목상태", example="정상")
+    market_code: str | None = Field(None, description="시장구분코드", example="STK")
+    market_name: str | None = Field(None, description="시장명", example="코스피")
+    up_name: str | None = Field(None, description="업종명", example="전기전자")
+    up_size_name: str | None = Field(None, description="회사크기분류", example="대형")
+    company_class_name: str | None = Field(None, description="회사분류 (코스닥만 존재)")
+    order_warning: str | None = Field(None, description="투자유의종목여부", example="0")
+    nxt_enable: str | None = Field(None, description="NXT 가능여부 (Y/N)", example="Y")
+    created_at: str | None = Field(None, description="생성 시각", example="2024-08-24 14:30:00")
 
 class StkInfoFilter(BaseModel):
     """종목 기본정보 필터링 모델
@@ -115,14 +116,14 @@ class StkInfoFilter(BaseModel):
     - 모든 필드가 Optional (필터링하고 싶은 조건만 제공)
     - 여러 조건을 AND로 결합하여 검색
     """
-    market_code: Optional[str] = Field(None, description="시장구분코드 필터", example="STK")
-    market_name: Optional[str] = Field(None, description="시장명 필터", example="코스피")
-    up_name: Optional[str] = Field(None, description="업종명 필터", example="전기전자")
-    up_size_name: Optional[str] = Field(None, description="회사크기분류 필터", example="대형")
-    order_warning: Optional[str] = Field(None, description="투자유의종목여부 필터", example="0")
-    nxt_enable: Optional[str] = Field(None, description="NXT 가능여부 필터", example="Y")
-    stk_nm_like: Optional[str] = Field(None, description="종목명 부분 검색", example="삼성")
-    stk_cd_like: Optional[str] = Field(None, description="종목코드 부분 검색", example="005")
+    market_code: str | None = Field(None, description="시장구분코드 필터", example="STK")
+    market_name: str | None = Field(None, description="시장명 필터", example="코스피")
+    up_name: str | None = Field(None, description="업종명 필터", example="전기전자")
+    up_size_name: str | None = Field(None, description="회사크기분류 필터", example="대형")
+    order_warning: str | None = Field(None, description="투자유의종목여부 필터", example="0")
+    nxt_enable: str | None = Field(None, description="NXT 가능여부 필터", example="Y")
+    stk_nm_like: str | None = Field(None, description="종목명 부분 검색", example="삼성")
+    stk_cd_like: str | None = Field(None, description="종목코드 부분 검색", example="005")
 
 class StkInfoBulkCreate(BaseModel):
     """종목 기본정보 대량 생성 요청 모델

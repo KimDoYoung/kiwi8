@@ -10,12 +10,12 @@
 버전: 1.0
 """
 
-import uuid
 import hashlib
-from datetime import datetime, timedelta, timezone
+import uuid
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Form, HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -84,7 +84,7 @@ async def login_for_access_token(
     # 1. Access Token 생성
     access_expire = timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRE_MINUTES))
     access_token = create_jwt_access_token(
-        data={'user_id': userId, 'login_time': datetime.now(timezone.utc).isoformat()},
+        data={'user_id': userId, 'login_time': datetime.now(UTC).isoformat()},
         expires_delta=access_expire
     )
 
@@ -94,7 +94,7 @@ async def login_for_access_token(
     hashed_token = hashlib.sha256(refresh_token.encode()).hexdigest()
     
     refresh_expire_days = int(config.REFRESH_TOKEN_EXPIRE_DAYS)
-    refresh_expire_at = datetime.now(timezone.utc) + timedelta(days=refresh_expire_days)
+    refresh_expire_at = datetime.now(UTC) + timedelta(days=refresh_expire_days)
     
     await auth_service.save_refresh_token(userId, token_id, hashed_token, refresh_expire_at)
 
@@ -149,7 +149,7 @@ async def refresh_access_token(request: Request, response: Response):
         # 3. 새로운 Access Token 발급
         access_expire = timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRE_MINUTES))
         new_access_token = create_jwt_access_token(
-            data={'user_id': user_id, 'login_time': datetime.now(timezone.utc).isoformat()},
+            data={'user_id': user_id, 'login_time': datetime.now(UTC).isoformat()},
             expires_delta=access_expire
         )
 

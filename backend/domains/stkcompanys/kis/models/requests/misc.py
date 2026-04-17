@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MISC_REQUESTS = {
     'FHKST11860000': {

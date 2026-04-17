@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_OVERSEAS_REALTIME_REQUESTS = {
     'AS0': {

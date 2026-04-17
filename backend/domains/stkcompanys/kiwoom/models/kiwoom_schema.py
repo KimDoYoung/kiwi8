@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ class KiwoomRequest(BaseRequest):
     키움 OpenAPI 호출 시 사용되는 표준 요청 형식입니다.
     """
 
-    def validate_payload(self) -> List[str]:
+    def validate_payload(self) -> list[str]:
         """
         payload의 유효성을 검증합니다.
         kiwi8_로 시작하는 api_id는 자체 API이므로 검증을 스킵합니다.
@@ -50,28 +50,28 @@ class KiwoomResponse(BaseModel):
     키움 OpenAPI 응답을 표준화된 형식으로 처리합니다.
     """
     # 응답 데이터
-    data: Optional[Dict[str, Any]] = None           # 실제 응답 JSON 데이터
+    data: dict[str, Any] | None = None           # 실제 응답 JSON 데이터
     
     # 응답 헤더 정보
-    headers: Optional[Dict[str, str]] = None        # 응답 헤더 (연속조회 키 등)
+    headers: dict[str, str] | None = None        # 응답 헤더 (연속조회 키 등)
     
     # API 메타 정보
-    api_info: Optional[Dict[str, str]] = None       # API 정보 (ID, 제목, URL 등)
+    api_info: dict[str, str] | None = None       # API 정보 (ID, 제목, URL 등)
     
     # HTTP 응답 정보
     status_code: int = 200                          # HTTP 상태 코드
     
     # 연속조회 관련 정보
     cont_yn: ContYn = ContYn.N                      # 연속조회 가능 여부
-    next_key: Optional[str] = None                  # 다음 연속조회 키
+    next_key: str | None = None                  # 다음 연속조회 키
     
     # 처리 시간 정보
-    request_time: Optional[datetime] = None         # 요청 시간
-    response_time: Optional[datetime] = None        # 응답 시간
+    request_time: datetime | None = None         # 요청 시간
+    response_time: datetime | None = None        # 응답 시간
     
     # 오류 정보
-    error_code: Optional[str] = None                # 오류 코드
-    error_message: Optional[str] = None             # 오류 메시지
+    error_code: str | None = None                # 오류 코드
+    error_message: str | None = None             # 오류 메시지
     
     # 성공 여부
     success: bool = True                            # 요청 성공 여부
@@ -91,12 +91,12 @@ class KiwoomApiResult(BaseModel):
     response: KiwoomResponse                        # 응답 데이터
     
     # 처리 통계
-    processing_time_ms: Optional[float] = None      # 처리 시간 (밀리초)
+    processing_time_ms: float | None = None      # 처리 시간 (밀리초)
     retry_count: int = 0                           # 재시도 횟수
     
     # 로그 정보
-    log_id: Optional[str] = None                   # 로그 추적 ID
-    trace_id: Optional[str] = None                 # 분산 추적 ID
+    log_id: str | None = None                   # 로그 추적 ID
+    trace_id: str | None = None                 # 분산 추적 ID
 
 class KiwoomApiHelper:
     """
@@ -106,10 +106,10 @@ class KiwoomApiHelper:
     
     @staticmethod
     def create_success_response(
-        data: Dict[str, Any], 
-        headers: Optional[Dict[str, str]] = None,
-        api_info: Optional[Dict[str, str]] = None,
-        request_time: Optional[datetime] = None
+        data: dict[str, Any], 
+        headers: dict[str, str] | None = None,
+        api_info: dict[str, str] | None = None,
+        request_time: datetime | None = None
     ) -> KiwoomResponse:
         """
         성공 응답 객체를 생성합니다.
@@ -144,8 +144,8 @@ class KiwoomApiHelper:
         error_code: str,
         error_message: str,
         status_code: int = 500,
-        api_info: Optional[Dict[str, str]] = None,
-        request_time: Optional[datetime] = None
+        api_info: dict[str, str] | None = None,
+        request_time: datetime | None = None
     ) -> KiwoomResponse:
         """
         오류 응답 객체를 생성합니다.
@@ -203,7 +203,7 @@ class KiwoomApiHelper:
         return True
 
     @staticmethod
-    def get_validation_errors(request: KiwoomRequest) -> List[str]:
+    def get_validation_errors(request: KiwoomRequest) -> list[str]:
         """
         API 요청의 유효성 검증 오류 목록을 반환합니다.
         kiwi8_로 시작하는 api_id는 자체 API이므로 검증을 스킵합니다.
@@ -236,7 +236,7 @@ class KiwoomApiHelper:
         return errors
 
     @staticmethod
-    def extract_output_data(response: KiwoomResponse, output_key: str = 'output') -> Optional[Dict[str, Any]]:
+    def extract_output_data(response: KiwoomResponse, output_key: str = 'output') -> dict[str, Any] | None:
         """
         응답에서 실제 출력 데이터를 추출합니다.
         
@@ -269,7 +269,7 @@ class KiwoomApiHelper:
     def create_continuation_request(
         original_request: KiwoomRequest, 
         response: KiwoomResponse
-    ) -> Optional[KiwoomRequest]:
+    ) -> KiwoomRequest | None:
         """
         연속조회를 위한 다음 요청을 생성합니다.
         
@@ -294,7 +294,7 @@ class KiwoomApiHelper:
         )
 
     @staticmethod
-    def get_request_info(api_id: str) -> Optional[Dict[str, str]]:
+    def get_request_info(api_id: str) -> dict[str, str] | None:
         """
         API ID에 해당하는 메타 정보를 KIWOOM_REQUEST_DEF에서 취득해서 반환합니다.
         
@@ -317,7 +317,7 @@ class KiwoomApiHelper:
             return None
     
     @staticmethod
-    def to_korea_data(response_data: Dict[str, Any], api_id: str) -> Dict[str, Any]:
+    def to_korea_data(response_data: dict[str, Any], api_id: str) -> dict[str, Any]:
         """
         키움 API 응답 데이터를 한글 필드명으로 변환합니다.
         

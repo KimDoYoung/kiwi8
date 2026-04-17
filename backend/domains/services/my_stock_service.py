@@ -1,9 +1,14 @@
-from backend.core.config import config
-from backend.domains.models.my_stock_model import MyStock, MyStockCreate, MyStockUpdate, MyStockFilter
-from backend.core.logger import get_logger
-from typing import List, Optional, Dict
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.my_stock_model import (
+    MyStock,
+    MyStockCreate,
+    MyStockFilter,
+    MyStockUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -64,13 +69,13 @@ class MyStockService:
                 updated_at=now
             )
 
-    async def get_by_code(self, stk_cd: str) -> Optional[MyStock]:
+    async def get_by_code(self, stk_cd: str) -> MyStock | None:
         """종목코드로 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_by_code_sync, stk_cd)
 
-    def _get_by_code_sync(self, stk_cd: str) -> Optional[MyStock]:
+    def _get_by_code_sync(self, stk_cd: str) -> MyStock | None:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -84,13 +89,13 @@ class MyStockService:
                 return self._row_to_mystock(row)
             return None
 
-    async def update(self, stk_cd: str, update_data: MyStockUpdate) -> Optional[MyStock]:
+    async def update(self, stk_cd: str, update_data: MyStockUpdate) -> MyStock | None:
         """종목 정보 수정"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_sync, stk_cd, update_data)
 
-    def _update_sync(self, stk_cd: str, update_data: MyStockUpdate) -> Optional[MyStock]:
+    def _update_sync(self, stk_cd: str, update_data: MyStockUpdate) -> MyStock | None:
         # 기존 데이터 확인
         existing = self._get_by_code_sync(stk_cd)
         if not existing:
@@ -113,7 +118,7 @@ class MyStockService:
             return existing
 
         # SQL 쿼리 동적 생성
-        set_clause = ', '.join([f"{field} = ?" for field in update_fields.keys()])
+        set_clause = ', '.join([f"{field} = ?" for field in update_fields])
         update_fields['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         set_clause += ', updated_at = ?'
 
@@ -143,13 +148,13 @@ class MyStockService:
             conn.commit()
             return cur.rowcount > 0
 
-    async def list_all(self, filter_data: Optional[MyStockFilter] = None) -> List[MyStock]:
+    async def list_all(self, filter_data: MyStockFilter | None = None) -> list[MyStock]:
         """모든 종목 목록 조회 (필터링 포함)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._list_all_sync, filter_data)
 
-    def _list_all_sync(self, filter_data: Optional[MyStockFilter] = None) -> List[MyStock]:
+    def _list_all_sync(self, filter_data: MyStockFilter | None = None) -> list[MyStock]:
         query = """
             SELECT stk_cd, stk_nm, sector, is_hold, is_watch, note, created_at, updated_at
             FROM my_stock
@@ -186,38 +191,38 @@ class MyStockService:
             
             return [self._row_to_mystock(row) for row in rows]
 
-    async def get_holding_stocks(self) -> List[MyStock]:
+    async def get_holding_stocks(self) -> list[MyStock]:
         """보유 종목만 조회"""
         filter_data = MyStockFilter(is_hold=1)
         return await self.list_all(filter_data)
 
-    async def get_watching_stocks(self) -> List[MyStock]:
+    async def get_watching_stocks(self) -> list[MyStock]:
         """관심 종목만 조회"""
         filter_data = MyStockFilter(is_watch=1)
         return await self.list_all(filter_data)
 
-    async def set_hold_status(self, stk_cd: str, is_hold: bool) -> Optional[MyStock]:
+    async def set_hold_status(self, stk_cd: str, is_hold: bool) -> MyStock | None:
         """보유 상태 변경"""
         update_data = MyStockUpdate(is_hold=1 if is_hold else 0)
         return await self.update(stk_cd, update_data)
 
-    async def set_watch_status(self, stk_cd: str, is_watch: bool) -> Optional[MyStock]:
+    async def set_watch_status(self, stk_cd: str, is_watch: bool) -> MyStock | None:
         """관심 상태 변경"""
         update_data = MyStockUpdate(is_watch=1 if is_watch else 0)
         return await self.update(stk_cd, update_data)
 
-    async def search_by_name(self, stk_nm: str) -> List[MyStock]:
+    async def search_by_name(self, stk_nm: str) -> list[MyStock]:
         """종목명으로 검색"""
         filter_data = MyStockFilter(stk_nm_like=stk_nm)
         return await self.list_all(filter_data)
 
-    async def get_sectors(self) -> List[str]:
+    async def get_sectors(self) -> list[str]:
         """등록된 모든 섹터 목록 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_sectors_sync)
 
-    def _get_sectors_sync(self) -> List[str]:
+    def _get_sectors_sync(self) -> list[str]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -229,13 +234,13 @@ class MyStockService:
             rows = cur.fetchall()
             return [row[0] for row in rows]
 
-    async def get_stats(self) -> Dict[str, int]:
+    async def get_stats(self) -> dict[str, int]:
         """통계 정보 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_stats_sync)
 
-    def _get_stats_sync(self) -> Dict[str, int]:
+    def _get_stats_sync(self) -> dict[str, int]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             
@@ -255,7 +260,7 @@ class MyStockService:
                 'watching': row[2] or 0
             }
 
-    def upsert_watching(self, stk_cd: str, stk_nm: Optional[str] = None, sector: Optional[str] = None) -> MyStock:
+    def upsert_watching(self, stk_cd: str, stk_nm: str | None = None, sector: str | None = None) -> MyStock:
         """종목이 존재하면 업데이트 watching을 1로, 없으면 생성 watching을 1로"""
         existing = self._get_by_code_sync(stk_cd)
         if existing:
@@ -277,7 +282,7 @@ class MyStockService:
             )
             return self._create_sync(create_data)
 
-    def upsert_holding(self, stk_cd: str, stk_nm: Optional[str] = None, sector: Optional[str] = None) -> MyStock:
+    def upsert_holding(self, stk_cd: str, stk_nm: str | None = None, sector: str | None = None) -> MyStock:
         """종목이 존재하면 업데이트 holding을 1로, 없으면 생성 holding을 1로"""
         existing = self._get_by_code_sync(stk_cd)
         if existing:

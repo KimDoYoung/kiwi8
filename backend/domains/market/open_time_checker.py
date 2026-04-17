@@ -18,13 +18,15 @@
 버전: 1.0
 """
 from __future__ import annotations
+
 import asyncio
-import aiohttp
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from datetime import datetime, date, time
-from typing import Dict, Optional, Set, Tuple, Literal
+from datetime import date, datetime, time
+from typing import Literal
 from zoneinfo import ZoneInfo
+
+import aiohttp
 
 from backend.core.config import config  # GODATA_API_KEY, TZ
 
@@ -39,20 +41,20 @@ def yyyymmdd(d: date) -> str:
 
 @dataclass
 class _MonthCache:
-    holidays: Set[str] = field(default_factory=set)  # {"20250815", ...}
+    holidays: set[str] = field(default_factory=set)  # {"20250815", ...}
     last_fetch_ymd: str = ""                        # 이 월 데이터를 마지막으로 가져온 '오늘' yyyymmdd
 
 class OpenTimeChecker:
     """정부공휴일 + 주말 기반 휴장/영업시간(KRX/NXT) 판정 (DB 없이 메모리 캐시).
        변경점: 날짜 바뀌면 월 캐시 재조회(1일 1회/월별), 월말엔 다음 달 프리패치.
     """
-    _instance: Optional["OpenTimeChecker"] = None
+    _instance: OpenTimeChecker | None = None
     _fetch_lock = asyncio.Lock()
 
     def __init__(self):
-        self._today_key: Optional[str] = None
-        self._today_is_holiday: Optional[bool] = None
-        self._month_cache: Dict[Tuple[int, int], _MonthCache] = {}
+        self._today_key: str | None = None
+        self._today_is_holiday: bool | None = None
+        self._month_cache: dict[tuple[int, int], _MonthCache] = {}
         self._api_url = getattr(
             config, 
             "GODATA_URL",
@@ -61,12 +63,12 @@ class OpenTimeChecker:
         self._api_key = config.GODATA_API_KEY
 
     @classmethod
-    def get(cls) -> "OpenTimeChecker":
+    def get(cls) -> OpenTimeChecker:
         if cls._instance is None:
             cls._instance = OpenTimeChecker()
         return cls._instance
 
-    async def getMarket(self, dt: Optional[datetime] = None) -> Optional[Market]:
+    async def getMarket(self, dt: datetime | None = None) -> Market | None:
         dt = dt.astimezone(KST) if dt else now_kst()
         if await self.isHoliday(dt.date()):
             return None
@@ -76,7 +78,7 @@ class OpenTimeChecker:
             return "NXT"
         return None
 
-    async def isHoliday(self, d: Optional[date] = None) -> bool:
+    async def isHoliday(self, d: date | None = None) -> bool:
         d = d or now_kst().date()
         key = yyyymmdd(d)
 
@@ -100,12 +102,12 @@ class OpenTimeChecker:
         self._set_today_cache(key, is_hol)
         return is_hol
 
-    def isKrxTime(self, dt: Optional[datetime] = None) -> bool:
+    def isKrxTime(self, dt: datetime | None = None) -> bool:
         dt = dt.astimezone(KST) if dt else now_kst()
         t = dt.time()
         return time(9, 0) <= t < time(15, 30)
 
-    def isNxtTime(self, dt: Optional[datetime] = None) -> bool:
+    def isNxtTime(self, dt: datetime | None = None) -> bool:
         dt = dt.astimezone(KST) if dt else now_kst()
         t = dt.time()
         early = time(8, 0) <= t <= time(8, 50)
@@ -121,7 +123,7 @@ class OpenTimeChecker:
         self._today_key = key
         self._today_is_holiday = value
 
-    async def _get_month_holidays(self, year: int, month: int, today_ymd: str) -> Set[str]:
+    async def _get_month_holidays(self, year: int, month: int, today_ymd: str) -> set[str]:
         """월 캐시가 없으면 생성, 있고 'last_fetch_ymd != today'면 재조회 → 일자 바뀌면 다시 호출."""
         k = (year, month)
 
@@ -151,7 +153,7 @@ class OpenTimeChecker:
         nm_month = 1 if d.month == 12 else d.month + 1
         _ = await self._get_month_holidays(nm_year, nm_month, today_ymd=today_ymd)
 
-    async def _fetch_holidays_from_api(self, year: int, month: int) -> Set[str]:
+    async def _fetch_holidays_from_api(self, year: int, month: int) -> set[str]:
         # rate-limit 보호
         await asyncio.sleep(1)
         params = {

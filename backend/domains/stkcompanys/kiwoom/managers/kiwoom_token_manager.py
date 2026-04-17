@@ -3,13 +3,14 @@ Kiwoom 토큰 매니저
 OAuth2 토큰 발급, 갱신, 저장을 관리합니다.
 """
 from datetime import datetime
+
 import aiohttp
 
-from backend.domains.base.base_token_manager import BaseTokenManager
-from backend.domains.stock_api import BrokerType
 from backend.core.config import config
 from backend.core.exceptions import KiwoomAuthException
 from backend.core.logger import get_logger
+from backend.domains.base.base_token_manager import BaseTokenManager
+from backend.domains.stock_api import BrokerType
 
 logger = get_logger(__name__)
 
@@ -81,9 +82,9 @@ class KiwoomTokenManager(BaseTokenManager):
                         'token_type': self.token_type,
                     }
         except aiohttp.ClientError as e:
-            raise KiwoomAuthException(f'토큰 발급 네트워크 오류: {str(e)}')
+            raise KiwoomAuthException(f'토큰 발급 네트워크 오류: {e!s}')
         except Exception as e:
-            raise KiwoomAuthException(f'토큰 발급 실패: {str(e)}')
+            raise KiwoomAuthException(f'토큰 발급 실패: {e!s}')
 
     async def discard_token(self):
         """토큰을 폐기합니다. (버그 수정: DB 삭제 로직 추가)"""
@@ -125,9 +126,9 @@ class KiwoomTokenManager(BaseTokenManager):
                     logger.info('[KIWOOM] 액세스 토큰 폐기 완료')
 
         except aiohttp.ClientError as e:
-            raise KiwoomAuthException(f'토큰 폐기 네트워크 오류: {str(e)}')
+            raise KiwoomAuthException(f'토큰 폐기 네트워크 오류: {e!s}')
         except Exception as e:
-            raise KiwoomAuthException(f'토큰 폐기 실패: {str(e)}')
+            raise KiwoomAuthException(f'토큰 폐기 실패: {e!s}')
 
     def _is_token_expire_soon(self) -> bool:
         """만료 임박 여부 (1시간 전) - Kiwoom 형식: YYYYMMDDHHMMSS"""

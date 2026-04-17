@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import contextlib
 import dataclasses
@@ -7,26 +8,27 @@ import os
 import random
 import socket
 import sqlite3
-from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Dict, Optional
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta, timezone
+from typing import Any
 
 # ==== 유틸 ====
 KST = timezone(timedelta(hours=9))
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
-def to_iso(dt: Optional[datetime]) -> Optional[str]:
-    return dt.astimezone(timezone.utc).isoformat() if dt else None
+def to_iso(dt: datetime | None) -> str | None:
+    return dt.astimezone(UTC).isoformat() if dt else None
 
-def from_iso(s: Optional[str]) -> Optional[datetime]:
+def from_iso(s: str | None) -> datetime | None:
     if not s:
         return None
-    return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone.utc)
+    return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(UTC)
 
 def now_tz(tz_name: str) -> datetime:
     # 간단 처리: Asia/Seoul만 고정. tzdb 없이 KST만 지원(요구시 확장)
-    return datetime.now(KST if tz_name == "Asia/Seoul" else timezone.utc)
+    return datetime.now(KST if tz_name == "Asia/Seoul" else UTC)
 
 # ==== 간단 cron 파서 (분 시 일 월 요일) ====
 # 형식: "m h dom mon dow"
@@ -67,7 +69,7 @@ JobFunc = Callable[[dict], Awaitable[Any]]
 
 class JobRegistry:
     def __init__(self) -> None:
-        self._funcs: Dict[str, JobFunc] = {}
+        self._funcs: dict[str, JobFunc] = {}
 
     def register(self, name: str) -> Callable[[JobFunc], JobFunc]:
         def deco(func: JobFunc) -> JobFunc:
@@ -97,8 +99,8 @@ class Job:
     retry_max: int = 0
     retry_backoff: float = 2.0
     jitter_sec: int = 0
-    next_run_at: Optional[datetime] = None
-    last_run_at: Optional[datetime] = None
+    next_run_at: datetime | None = None
+    last_run_at: datetime | None = None
 
 class KScheduler:
     def __init__(self, db_path: str, poll_sec: int = 1):
@@ -174,7 +176,7 @@ class KScheduler:
             ))
         return jobs
 
-    def _update_next_run(self, job: Job, dt: Optional[datetime]) -> None:
+    def _update_next_run(self, job: Job, dt: datetime | None) -> None:
         self._con.execute(
             "UPDATE kscheduler_job SET next_run_at=?, updated_at=CURRENT_TIMESTAMP WHERE name=?",
             (to_iso(dt), job.name)
@@ -196,9 +198,9 @@ class KScheduler:
         self._con.commit()
 
     # --- scheduling ---
-    def _compute_next(self, job: Job, base: Optional[datetime] = None) -> datetime:
+    def _compute_next(self, job: Job, base: datetime | None = None) -> datetime:
         base = base or utcnow()
-        tznow = now_tz(job.timezone).astimezone(timezone.utc)
+        tznow = now_tz(job.timezone).astimezone(UTC)
 
         if job.schedule_type == "interval":
             # schedule_expr: "seconds=900" or JSON {"seconds":900}
@@ -218,13 +220,13 @@ class KScheduler:
             expr = job.schedule_expr.strip()
             # tznow 기준으로 계산 후 UTC로
             next_local = next_cron_time(expr, now_tz(job.timezone))
-            return next_local.astimezone(timezone.utc)
+            return next_local.astimezone(UTC)
 
         elif job.schedule_type == "once":
             at = from_iso(job.schedule_expr)
             if at is None:
                 # 문자열이 로컬시간일 수 있으니 KST로 가정
-                at = datetime.fromisoformat(job.schedule_expr).replace(tzinfo=KST).astimezone(timezone.utc)
+                at = datetime.fromisoformat(job.schedule_expr).replace(tzinfo=KST).astimezone(UTC)
             return at
         else:
             # fallback: 1분 뒤
@@ -354,7 +356,7 @@ class KScheduler:
                     await _invoke(attempt)
                     self._finish_run(run_id, "success", None)
                     break
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     if attempt >= job.retry_max:
                         self._finish_run(run_id, "timeout", f"timeout after {attempt} retries")
                         break
@@ -364,7 +366,7 @@ class KScheduler:
                         break
                 attempt += 1
                 # 지수 백오프
-                await asyncio.sleep((job.retry_backoff ** attempt))
+                await asyncio.sleep(job.retry_backoff ** attempt)
         finally:
             self._release_lock(lock_key)
 

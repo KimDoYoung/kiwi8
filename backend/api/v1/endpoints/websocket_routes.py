@@ -1,5 +1,5 @@
-from fastapi import WebSocket
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket
+
 from backend.core.logger import get_logger
 
 logger = get_logger(__name__)

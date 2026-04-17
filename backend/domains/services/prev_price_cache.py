@@ -2,7 +2,7 @@
 
 import random
 from datetime import datetime
-from typing import Dict, Literal, Optional
+from typing import Literal
 
 from backend.core.logger import get_logger
 from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper
@@ -139,7 +139,7 @@ class PrevPriceCache:
             cls._instance._last_update = None
         return cls._instance
 
-    async def get(self, stk_cd: str) -> Optional[PriceData]:
+    async def get(self, stk_cd: str) -> PriceData | None:
         """종목의 10일치 가격 데이터 조회
 
         Args:
@@ -150,7 +150,7 @@ class PrevPriceCache:
         """
         return self._cache.get(stk_cd)
 
-    async def get_trend(self, stk_cd: str) -> Optional[Trend]:
+    async def get_trend(self, stk_cd: str) -> Trend | None:
         """종목의 추세 조회
 
         Args:
@@ -162,7 +162,7 @@ class PrevPriceCache:
         data = self._cache.get(stk_cd)
         return data.trend if data else None
 
-    async def get_prices(self, stk_cd: str) -> Optional[list[float]]:
+    async def get_prices(self, stk_cd: str) -> list[float] | None:
         """종목의 10일치 가격 조회
 
         Args:
@@ -174,7 +174,7 @@ class PrevPriceCache:
         data = self._cache.get(stk_cd)
         return data.prices if data else None
 
-    async def get_multi(self, stk_cd_list: list[str]) -> Dict[str, Optional[PriceData]]:
+    async def get_multi(self, stk_cd_list: list[str]) -> dict[str, PriceData | None]:
         """여러 종목의 가격 데이터 조회
 
         Args:
@@ -214,7 +214,7 @@ class PrevPriceCache:
         self._cache[stk_cd].add_price(date, price)
         logger.debug(f"가격 추가: {stk_cd} {date}={price}, 추세: {self._cache[stk_cd].trend}")
 
-    async def set_multi(self, data_dict: Dict[str, tuple[list[str], list[float]]]) -> None:
+    async def set_multi(self, data_dict: dict[str, tuple[list[str], list[float]]]) -> None:
         """여러 종목의 10일치 가격 일괄 저장
 
         Args:
@@ -229,7 +229,7 @@ class PrevPriceCache:
 
     async def update_all(
         self,
-        data_dict: Dict[str, tuple[list[str], list[float]]],
+        data_dict: dict[str, tuple[list[str], list[float]]],
     ) -> None:
         """전체 캐시 갱신 (스케줄러에서 호출)
 
@@ -240,7 +240,7 @@ class PrevPriceCache:
         self._last_update = datetime.now()
         logger.info(f"가격 캐시 전체 갱신 완료 ({self._last_update})")
 
-    async def clear(self, stk_cd: Optional[str] = None) -> None:
+    async def clear(self, stk_cd: str | None = None) -> None:
         """캐시 초기화
 
         Args:
@@ -264,7 +264,7 @@ class PrevPriceCache:
                 "trends": 추세별 종목 수
             }
         """
-        trends: Dict[Trend, int] = {
+        trends: dict[Trend, int] = {
             '5일연속 오름': 0,
             '3연속 오름': 0,
             '5일연속 하락': 0,
@@ -285,7 +285,7 @@ class PrevPriceCache:
     def __repr__(self) -> str:
         return f"PrevPriceCache(count={len(self._cache)}, last_update={self._last_update})"
 
-    async def get_last_price(self, stk_cd: str) -> Optional[float]:
+    async def get_last_price(self, stk_cd: str) -> float | None:
         """종목의 최신 종가 조회 (어제 종가, 캐시 미스시 API 호출)
 
         오늘은 시장이 아직 닫혀있지 않으므로 어제 종가를 반환
@@ -312,7 +312,7 @@ class PrevPriceCache:
 
         return None
 
-    async def get_last_trend(self, stk_cd: str) -> Optional[Trend]:
+    async def get_last_trend(self, stk_cd: str) -> Trend | None:
         """종목의 최신 추세 조회 (캐시 미스시 API 호출)
 
         Args:
@@ -337,7 +337,7 @@ class PrevPriceCache:
 
         return None
 
-    async def _fetch_price_data(self, stk_cd: str) -> tuple[Optional[list[float]], Optional[list[str]]]:
+    async def _fetch_price_data(self, stk_cd: str) -> tuple[list[float] | None, list[str] | None]:
         """3개 증권사 API 중 랜덤하게 선택하여 10일 가격 데이터 조회
 
         Args:

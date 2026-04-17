@@ -2,14 +2,13 @@
 LS증권 서비스
 API 인스턴스 및 토큰 매니저의 싱글톤 관리
 """
-from typing import Optional
 
 from backend.domains.stkcompanys.ls.ls_rest_api import LsRestApi
 from backend.domains.stkcompanys.ls.managers.ls_token_manager import LsTokenManager
 
 # 싱글톤 인스턴스
-ls_api_instance: Optional[LsRestApi] = None
-token_manager_instance: Optional[LsTokenManager] = None
+ls_api_instance: LsRestApi | None = None
+token_manager_instance: LsTokenManager | None = None
 
 
 async def get_ls_api() -> LsRestApi:

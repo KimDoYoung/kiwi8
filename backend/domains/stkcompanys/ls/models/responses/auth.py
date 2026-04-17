@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 AUTH_RESPONSES = {
     'revoke': {

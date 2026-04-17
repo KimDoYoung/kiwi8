@@ -59,7 +59,7 @@ async def ls_rest_api(api_id: str, req: LsRequest):
         logger.error(f"[LS] 오류: {e}")
         return LsApiHelper.create_error_response(
             error_code="999",
-            error_message=f"Internal server error: {str(e)}"
+            error_message=f"Internal server error: {e!s}"
         )
 
 async def insert_prev_costs_ls(stock_list: list):

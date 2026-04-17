@@ -3,16 +3,11 @@
 3개 증권사(Kiwoom, KIS, LS)의 계좌별 자산 정보를 통합 조회
 """
 
-from backend.utils.kiwi_utils import format_account_number
 import json
-from typing import List
 
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
-from backend.domains.stkcompanys.kis.models.kis_response_definition import (
-    get_response_definition as get_kis_response_def,
-)
 from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
@@ -21,6 +16,7 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
 )
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest
+from backend.utils.kiwi_utils import format_account_number
 
 logger = get_logger(__name__)
 
@@ -364,7 +360,7 @@ async def get_ls_account_summary() -> AccountSummary | None:
         return None
 
 
-def get_summary_json(accounts: List[AccountSummary]) -> dict:
+def get_summary_json(accounts: list[AccountSummary]) -> dict:
     """
     모든 계좌 정보를 통합 JSON 형식으로 반환
 

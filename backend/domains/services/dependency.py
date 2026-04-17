@@ -6,6 +6,10 @@
 # 각 서비스 클래스들을 직접 import
 
 # 싱글톤 인스턴스 저장소
+from backend.domains.services.auth_service import AuthService
+from backend.domains.services.cache_manager import CacheManager
+from backend.domains.services.layout_preset_service import LayoutPresetService
+from backend.domains.services.menus_service import MenusService
 from backend.domains.services.my_stock_service import MyStockService
 from backend.domains.services.settings_service import SettingsService
 from backend.domains.services.stk_cache_service import StkCacheService
@@ -13,11 +17,6 @@ from backend.domains.services.stk_diary_service import StkDiaryService
 from backend.domains.services.stk_info_service import StkInfoService
 from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
 from backend.domains.services.tokens_service import TokensService
-from backend.domains.services.cache_manager import CacheManager
-from backend.domains.services.menus_service import MenusService
-from backend.domains.services.auth_service import AuthService
-from backend.domains.services.layout_preset_service import LayoutPresetService
-
 
 _services = {}
 

@@ -2,7 +2,6 @@ import asyncio
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional
 
 from backend.core.logger import get_logger
 from backend.domains.stkcompanys.kiwoom.kiwoom_rest_api import KiwoomRestApi
@@ -24,10 +23,10 @@ class Rule:
     qty: int
     status: str
     cooldown_sec: int
-    valid_from: Optional[str]
-    valid_to: Optional[str]
-    last_price: Optional[float]
-    last_triggered_at: Optional[str]
+    valid_from: str | None
+    valid_to: str | None
+    last_price: float | None
+    last_triggered_at: str | None
 
 class KDemon:
     """주기적으로 가격을 조회하고 룰을 평가해 주문을 실행하는 데몬."""
@@ -37,10 +36,10 @@ class KDemon:
         self.db_path = db_path
         self.poll_interval_sec = poll_interval_sec
         self.dry_run = dry_run  # True면 실제 주문 대신 로그만
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
         self._refresh_event = asyncio.Event()
-        self._rules: List[Rule] = []
+        self._rules: list[Rule] = []
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self.token_manager = KiwoomTokenManager()
@@ -54,7 +53,7 @@ class KDemon:
         return cls._instance
 
     # ---------- DB helpers ----------
-    def _fetch_rules(self) -> List[Rule]:
+    def _fetch_rules(self) -> list[Rule]:
         cur = self._conn.cursor()
         cur.execute("""
             SELECT * FROM kdemon_rules WHERE status='active'
@@ -101,7 +100,7 @@ class KDemon:
     async def _ensure_token(self):
         await self._api.refresh_token()
 
-    async def _get_current_price(self, symbol: str) -> Optional[float]:
+    async def _get_current_price(self, symbol: str) -> float | None:
         """종목 현재가 조회. 실제 API id는 프로젝트에 맞춰 교체."""
         # 예시: 시세조회 API 아이디/페이로드는 환경에 맞게 조정
         req = {

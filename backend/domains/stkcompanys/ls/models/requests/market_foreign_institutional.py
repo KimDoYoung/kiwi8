@@ -1,5 +1,4 @@
 # Auto-generated
-from typing import Any, Dict, List
 
 MARKET_FOREIGN_INSTITUTIONAL_REQUESTS = {
     't1601': {

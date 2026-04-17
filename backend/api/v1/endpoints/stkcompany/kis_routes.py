@@ -60,7 +60,7 @@ async def kis_rest_api(api_id: str, req: KisRequest):
     except Exception as e:
         logger.error(f'[KIS] 오류: {e}')
         return KisApiHelper.create_error_response(
-            error_code='999', error_message=f'Internal server error: {str(e)}'
+            error_code='999', error_message=f'Internal server error: {e!s}'
         )
 
 

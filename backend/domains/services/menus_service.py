@@ -1,6 +1,5 @@
 import asyncio
 import sqlite3
-from typing import List, Dict
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -30,12 +29,12 @@ class MenusService:
             is_active=row[9],
         )
 
-    async def get_tree(self) -> List[MenuResponse]:
+    async def get_tree(self) -> list[MenuResponse]:
         """활성화된 메뉴를 트리 구조로 반환"""
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_tree_sync)
 
-    def _get_tree_sync(self) -> List[MenuResponse]:
+    def _get_tree_sync(self) -> list[MenuResponse]:
         with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -49,7 +48,7 @@ class MenusService:
         menus = [self._row_to_menu(row) for row in rows]
 
         # id → MenuResponse 맵 구성
-        menu_map: Dict[int, MenuResponse] = {}
+        menu_map: dict[int, MenuResponse] = {}
         for m in menus:
             menu_map[m.id] = MenuResponse(
                 id=m.id,
@@ -66,7 +65,7 @@ class MenusService:
             )
 
         # 트리 조립
-        roots: List[MenuResponse] = []
+        roots: list[MenuResponse] = []
         for m_id, node in menu_map.items():
             if node.parent_id is None:
                 roots.append(node)

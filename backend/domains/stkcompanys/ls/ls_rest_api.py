@@ -3,7 +3,6 @@ LS증권 REST API 클라이언트
 """
 
 from datetime import datetime
-from typing import Dict
 
 import aiohttp
 
@@ -11,7 +10,10 @@ from backend.core.config import config
 from backend.core.exceptions import LsApiException
 from backend.core.logger import get_logger
 from backend.domains.stkcompanys.ls.managers.ls_token_manager import LsTokenManager
-from backend.domains.stkcompanys.ls.models.ls_request_definition import get_request_definition, get_tr_cd
+from backend.domains.stkcompanys.ls.models.ls_request_definition import (
+  get_request_definition,
+  get_tr_cd,
+)
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest, LsResponse
 from backend.domains.stock_api import BrokerType, StockApi
 
@@ -32,7 +34,7 @@ class LsRestApi(StockApi):
   def base_url(self) -> str:
     return self.get_base_url()
 
-  def get_headers(self, request: LsRequest, token: str, tr_cd: str) -> Dict[str, str]:
+  def get_headers(self, request: LsRequest, token: str, tr_cd: str) -> dict[str, str]:
     """HTTP 헤더 생성"""
     headers = {
       'Content-Type': 'application/json;charset=UTF-8',
@@ -97,7 +99,7 @@ class LsRestApi(StockApi):
     except aiohttp.ClientError as e:
       logger.error(f'[LS] HTTP 요청 오류: {e}')
       return LsApiHelper.create_error_response(
-        error_code='500', error_message=f'HTTP 요청 실패: {str(e)}', request_time=request_time
+        error_code='500', error_message=f'HTTP 요청 실패: {e!s}', request_time=request_time
       )
     except LsApiException as e:
       logger.error(f'[LS] API 오류: {e}')
@@ -107,11 +109,11 @@ class LsRestApi(StockApi):
     except Exception as e:
       logger.error(f'[LS] 예상치 못한 오류: {e}')
       return LsApiHelper.create_error_response(
-        error_code='500', error_message=f'요청 처리 중 오류: {str(e)}', request_time=request_time
+        error_code='500', error_message=f'요청 처리 중 오류: {e!s}', request_time=request_time
       )
 
   async def _process_response(
-    self, response: aiohttp.ClientResponse, api_info: Dict[str, str], request_time: datetime
+    self, response: aiohttp.ClientResponse, api_info: dict[str, str], request_time: datetime
   ) -> LsResponse:
     """응답 처리"""
     # HTTP 상태 코드 확인
@@ -133,7 +135,7 @@ class LsRestApi(StockApi):
     except Exception as e:
       return LsApiHelper.create_error_response(
         error_code='502',
-        error_message=f'JSON 파싱 실패: {str(e)}',
+        error_message=f'JSON 파싱 실패: {e!s}',
         api_info=api_info,
         request_time=request_time,
       )
@@ -152,7 +154,7 @@ class LsRestApi(StockApi):
       data=response_data, headers=response_headers, api_info=api_info, request_time=request_time
     )
 
-  def _extract_headers(self, headers) -> Dict[str, str]:
+  def _extract_headers(self, headers) -> dict[str, str]:
     """응답 헤더에서 필요한 정보 추출"""
     ls_headers = {}
     header_keys = ['tr_cd', 'tr_cont', 'tr_cont_key']

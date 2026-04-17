@@ -1,14 +1,19 @@
-from backend.core.config import config
-from backend.domains.models.scheduler_model import (
-    SchedulerJob, SchedulerRunHistory, SchedulerLock,
-    SchedulerJobCreate, SchedulerJobUpdate, SchedulerJobFilter,
-    SchedulerRunHistoryCreate, SchedulerRunHistoryFilter,
-    SchedulerLockCreate
-)
-from backend.core.logger import get_logger
-from typing import List, Optional, Dict
 import sqlite3
 from datetime import datetime
+
+from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.models.scheduler_model import (
+    SchedulerJob,
+    SchedulerJobCreate,
+    SchedulerJobFilter,
+    SchedulerJobUpdate,
+    SchedulerLock,
+    SchedulerLockCreate,
+    SchedulerRunHistory,
+    SchedulerRunHistoryCreate,
+    SchedulerRunHistoryFilter,
+)
 
 logger = get_logger(__name__)
 
@@ -82,13 +87,13 @@ class SchedulerService:
             # 생성된 작업 조회 후 반환
             return self._get_job_by_id_sync(job_id)
 
-    async def get_job_by_id(self, job_id: int) -> Optional[SchedulerJob]:
+    async def get_job_by_id(self, job_id: int) -> SchedulerJob | None:
         """ID로 스케줄러 작업 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_job_by_id_sync, job_id)
 
-    def _get_job_by_id_sync(self, job_id: int) -> Optional[SchedulerJob]:
+    def _get_job_by_id_sync(self, job_id: int) -> SchedulerJob | None:
         """ID로 스케줄러 작업 조회 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -105,13 +110,13 @@ class SchedulerService:
                 return self._row_to_scheduler_job(row)
             return None
 
-    async def get_job_by_name(self, name: str) -> Optional[SchedulerJob]:
+    async def get_job_by_name(self, name: str) -> SchedulerJob | None:
         """이름으로 스케줄러 작업 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_job_by_name_sync, name)
 
-    def _get_job_by_name_sync(self, name: str) -> Optional[SchedulerJob]:
+    def _get_job_by_name_sync(self, name: str) -> SchedulerJob | None:
         """이름으로 스케줄러 작업 조회 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -128,13 +133,13 @@ class SchedulerService:
                 return self._row_to_scheduler_job(row)
             return None
 
-    async def get_all_jobs(self, filters: Optional[SchedulerJobFilter] = None) -> List[SchedulerJob]:
+    async def get_all_jobs(self, filters: SchedulerJobFilter | None = None) -> list[SchedulerJob]:
         """모든 스케줄러 작업 조회 (필터링 가능)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_all_jobs_sync, filters)
 
-    def _get_all_jobs_sync(self, filters: Optional[SchedulerJobFilter] = None) -> List[SchedulerJob]:
+    def _get_all_jobs_sync(self, filters: SchedulerJobFilter | None = None) -> list[SchedulerJob]:
         """모든 스케줄러 작업 조회 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -178,13 +183,13 @@ class SchedulerService:
             
             return [self._row_to_scheduler_job(row) for row in rows]
 
-    async def update_job(self, job_id: int, job_update: SchedulerJobUpdate) -> Optional[SchedulerJob]:
+    async def update_job(self, job_id: int, job_update: SchedulerJobUpdate) -> SchedulerJob | None:
         """스케줄러 작업 수정"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_job_sync, job_id, job_update)
 
-    def _update_job_sync(self, job_id: int, job_update: SchedulerJobUpdate) -> Optional[SchedulerJob]:
+    def _update_job_sync(self, job_id: int, job_update: SchedulerJobUpdate) -> SchedulerJob | None:
         """스케줄러 작업 수정 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -236,13 +241,13 @@ class SchedulerService:
                 logger.warning(f"삭제할 작업을 찾을 수 없음: job_id={job_id}")
                 return False
 
-    async def update_job_runtime(self, job_id: int, next_run_at: Optional[str] = None, last_run_at: Optional[str] = None) -> bool:
+    async def update_job_runtime(self, job_id: int, next_run_at: str | None = None, last_run_at: str | None = None) -> bool:
         """작업의 실행 시간 정보 업데이트"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_job_runtime_sync, job_id, next_run_at, last_run_at)
 
-    def _update_job_runtime_sync(self, job_id: int, next_run_at: Optional[str] = None, last_run_at: Optional[str] = None) -> bool:
+    def _update_job_runtime_sync(self, job_id: int, next_run_at: str | None = None, last_run_at: str | None = None) -> bool:
         """작업의 실행 시간 정보 업데이트 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -314,13 +319,13 @@ class SchedulerService:
             row = cur.fetchone()
             return self._row_to_run_history(row)
 
-    async def get_run_history(self, filters: Optional[SchedulerRunHistoryFilter] = None, limit: int = 100) -> List[SchedulerRunHistory]:
+    async def get_run_history(self, filters: SchedulerRunHistoryFilter | None = None, limit: int = 100) -> list[SchedulerRunHistory]:
         """실행 이력 조회 (필터링 가능)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_run_history_sync, filters, limit)
 
-    def _get_run_history_sync(self, filters: Optional[SchedulerRunHistoryFilter] = None, limit: int = 100) -> List[SchedulerRunHistory]:
+    def _get_run_history_sync(self, filters: SchedulerRunHistoryFilter | None = None, limit: int = 100) -> list[SchedulerRunHistory]:
         """실행 이력 조회 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -361,13 +366,13 @@ class SchedulerService:
             
             return [self._row_to_run_history(row) for row in rows]
 
-    async def update_run_history(self, history_id: int, finished_at: str, status: str, message: Optional[str] = None) -> bool:
+    async def update_run_history(self, history_id: int, finished_at: str, status: str, message: str | None = None) -> bool:
         """실행 이력 업데이트 (완료 시점)"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._update_run_history_sync, history_id, finished_at, status, message)
 
-    def _update_run_history_sync(self, history_id: int, finished_at: str, status: str, message: Optional[str] = None) -> bool:
+    def _update_run_history_sync(self, history_id: int, finished_at: str, status: str, message: str | None = None) -> bool:
         """실행 이력 업데이트 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -463,13 +468,13 @@ class SchedulerService:
                 logger.debug(f"락 해제 실패: {lock_key} (락을 소유하지 않음)")
                 return False
 
-    async def get_lock(self, lock_key: str) -> Optional[SchedulerLock]:
+    async def get_lock(self, lock_key: str) -> SchedulerLock | None:
         """락 정보 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_lock_sync, lock_key)
 
-    def _get_lock_sync(self, lock_key: str) -> Optional[SchedulerLock]:
+    def _get_lock_sync(self, lock_key: str) -> SchedulerLock | None:
         """락 정보 조회 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()
@@ -511,13 +516,13 @@ class SchedulerService:
 
     # === 유틸리티 메서드 ===
     
-    async def get_job_statistics(self) -> Dict[str, int]:
+    async def get_job_statistics(self) -> dict[str, int]:
         """작업 통계 정보 조회"""
         import asyncio
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_job_statistics_sync)
 
-    def _get_job_statistics_sync(self) -> Dict[str, int]:
+    def _get_job_statistics_sync(self) -> dict[str, int]:
         """작업 통계 정보 조회 (동기)"""
         with self._get_conn() as conn:
             cur = conn.cursor()

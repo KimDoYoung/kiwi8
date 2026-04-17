@@ -1,10 +1,11 @@
-import websockets
 import json
-from typing import Callable
+from collections.abc import Callable
 
-from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
+import websockets
 
 from backend.core.logger import get_logger
+from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
+
 logger = get_logger(__name__)
 
 class KiwoomWsClient:

@@ -3,10 +3,9 @@
 증권사별 토큰 관리의 공통 기능을 제공합니다.
 """
 from abc import ABC, abstractmethod
-from typing import Optional
 
-from backend.domains.services.dependency import get_service
 from backend.core.logger import get_logger
+from backend.domains.services.dependency import get_service
 from backend.domains.stock_api import BrokerType
 
 logger = get_logger(__name__)
@@ -24,27 +23,24 @@ class BaseTokenManager(ABC):
         self.broker_name = broker_type.value  # "kiwoom", "kis", "ls"
         self.tokens_service = get_service('tokens')
 
-        self.token_type: Optional[str] = None
-        self.token: Optional[str] = None
-        self.expires_dt: Optional[str] = None
+        self.token_type: str | None = None
+        self.token: str | None = None
+        self.expires_dt: str | None = None
 
     @property
     @abstractmethod
     def base_url(self) -> str:
         """토큰 발급 API 베이스 URL"""
-        pass
 
     @property
     @abstractmethod
     def app_key(self) -> str:
         """앱 키"""
-        pass
 
     @property
     @abstractmethod
     def app_secret(self) -> str:
         """시크릿 키"""
-        pass
 
     async def get_token(self) -> str:
         """유효한 토큰 반환"""
@@ -74,22 +70,18 @@ class BaseTokenManager(ABC):
     @abstractmethod
     async def issue_access_token(self) -> dict:
         """토큰 발급 - 증권사별 구현"""
-        pass
 
     @abstractmethod
     async def discard_token(self):
         """토큰 폐기 - 증권사별 구현"""
-        pass
 
     @abstractmethod
     def _is_token_expire_soon(self) -> bool:
         """만료 임박 여부 확인 - 증권사별 날짜 형식 다름"""
-        pass
 
     @abstractmethod
     def _create_auth_exception(self, message: str) -> Exception:
         """인증 예외 생성 - 증권사별 예외 클래스"""
-        pass
 
     async def _load_token_from_db(self):
         """DB에서 토큰 로드 (tokens 테이블 사용)"""

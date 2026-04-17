@@ -8,10 +8,11 @@ stk_cache 테이블을 간단한 key-value 인터페이스로 관리합니다.
 - put, get, clear 등의 간단한 API 제공
 - CacheKey Enum으로 타입 안전한 캐시 키 관리
 """
-from typing import Optional, Union
+import json
+from typing import Optional
+
 from backend.core.logger import get_logger
 from backend.domains.services.cache_keys import CacheKey
-import json
 
 logger = get_logger(__name__)
 
@@ -46,7 +47,7 @@ class CacheManager:
         return cls._instance
 
     async def put(
-        self, stk_cd: str, name: Union[str, CacheKey], value: str
+        self, stk_cd: str, name: str | CacheKey, value: str
     ) -> bool:
         """
         캐시에 데이터 저장 (생성 또는 업데이트)
@@ -69,8 +70,8 @@ class CacheManager:
             return False
 
     async def get(
-        self, stk_cd: str, name: Union[str, CacheKey]
-    ) -> Optional[str]:
+        self, stk_cd: str, name: str | CacheKey
+    ) -> str | None:
         """
         캐시에서 데이터 조회
 
@@ -100,8 +101,8 @@ class CacheManager:
             return None
 
     async def get_dict(
-        self, stk_cd: str, name: Union[str, CacheKey]
-    ) -> Optional[dict]:
+        self, stk_cd: str, name: str | CacheKey
+    ) -> dict | None:
         """
         캐시에서 데이터 조회 (자동 JSON 파싱)
 
@@ -140,7 +141,7 @@ class CacheManager:
             return None
 
     async def clear(
-        self, stk_cd: str, name: Union[str, CacheKey]
+        self, stk_cd: str, name: str | CacheKey
     ) -> bool:
         """
         특정 캐시 삭제
@@ -187,7 +188,7 @@ class CacheManager:
             return False
 
     async def clear_name(
-        self, name: Union[str, CacheKey]
+        self, name: str | CacheKey
     ) -> bool:
         """
         특정 캐시명의 모든 데이터 삭제

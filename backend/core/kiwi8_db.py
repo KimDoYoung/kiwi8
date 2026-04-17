@@ -1,5 +1,6 @@
-import sqlite3
 import os
+import sqlite3
+
 from backend.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -68,12 +69,12 @@ def create_kiwi8_db(db_path: str):
         
     except FileNotFoundError as e:
         # DDL 파일을 찾을 수 없는 경우
-        logger.error(f"DDL 파일 오류: {str(e)}")
-        raise DatabaseCreationError(f"DDL 파일 오류: {str(e)}") from e
+        logger.error(f"DDL 파일 오류: {e!s}")
+        raise DatabaseCreationError(f"DDL 파일 오류: {e!s}") from e
         
     except sqlite3.Error as e:
         # SQLite 관련 오류
-        logger.error(f"SQLite 데이터베이스 오류: {str(e)}")
+        logger.error(f"SQLite 데이터베이스 오류: {e!s}")
         
         # 손상된 데이터베이스 파일 삭제 시도
         if os.path.exists(db_path):
@@ -83,22 +84,22 @@ def create_kiwi8_db(db_path: str):
             except OSError as delete_error:
                 logger.warning(f"데이터베이스 파일 삭제 실패: {delete_error}")
         
-        raise DatabaseCreationError(f"데이터베이스 생성 오류: {str(e)}") from e
+        raise DatabaseCreationError(f"데이터베이스 생성 오류: {e!s}") from e
         
-    except (IOError, OSError) as e:
+    except OSError as e:
         # 파일 입출력 오류
-        logger.error(f"파일 시스템 오류: {str(e)}")
-        raise DatabaseCreationError(f"파일 시스템 오류: {str(e)}") from e
+        logger.error(f"파일 시스템 오류: {e!s}")
+        raise DatabaseCreationError(f"파일 시스템 오류: {e!s}") from e
         
     except ValueError as e:
         # DDL 내용 관련 오류
-        logger.error(f"DDL 내용 오류: {str(e)}")
-        raise DatabaseCreationError(f"DDL 내용 오류: {str(e)}") from e
+        logger.error(f"DDL 내용 오류: {e!s}")
+        raise DatabaseCreationError(f"DDL 내용 오류: {e!s}") from e
         
     except Exception as e:
         # 예상치 못한 오류
-        logger.error(f"예상치 못한 오류 발생: {str(e)}", exc_info=True)
-        raise DatabaseCreationError(f"데이터베이스 생성 중 예상치 못한 오류: {str(e)}") from e
+        logger.error(f"예상치 못한 오류 발생: {e!s}", exc_info=True)
+        raise DatabaseCreationError(f"데이터베이스 생성 중 예상치 못한 오류: {e!s}") from e
         
     finally:
         # 데이터베이스 연결 종료
@@ -131,7 +132,7 @@ def create_kiwi8_db_with_retry(db_path: str, max_retries: int = 3) -> bool:
                 return True
                 
         except DatabaseCreationError as e:
-            logger.warning(f"데이터베이스 생성 실패 (시도 {attempt}/{max_retries}): {str(e)}")
+            logger.warning(f"데이터베이스 생성 실패 (시도 {attempt}/{max_retries}): {e!s}")
             
             if attempt == max_retries:
                 logger.error(f"모든 재시도 실패. 데이터베이스 생성 포기: {db_path}")
@@ -184,7 +185,7 @@ def validate_database(db_path: str) -> bool:
         return True
         
     except Exception as e:
-        logger.error(f"데이터베이스 검증 실패: {str(e)}")
+        logger.error(f"데이터베이스 검증 실패: {e!s}")
         return False
 
 
@@ -221,7 +222,7 @@ def initialize_kiwi8_database(db_path: str = "data/kiwi8.db"):
             raise DatabaseCreationError("데이터베이스 생성 실패")
             
     except Exception as e:
-        logger.error(f"데이터베이스 초기화 실패: {str(e)}")
+        logger.error(f"데이터베이스 초기화 실패: {e!s}")
         # 실패한 경우 기본 테이블만이라도 생성하는 폴백 로직
         create_minimal_database(db_path)
         
@@ -260,5 +261,5 @@ def create_minimal_database(db_path: str):
         logger.info("기본 데이터베이스 생성 완료")
         
     except Exception as e:
-        logger.error(f"기본 데이터베이스 생성도 실패: {str(e)}")
-        raise DatabaseCreationError(f"모든 데이터베이스 생성 시도 실패: {str(e)}")
+        logger.error(f"기본 데이터베이스 생성도 실패: {e!s}")
+        raise DatabaseCreationError(f"모든 데이터베이스 생성 시도 실패: {e!s}")

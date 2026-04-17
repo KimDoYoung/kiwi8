@@ -12,14 +12,16 @@
 버전: 1.0
 """
 
-from fastapi import APIRouter, Query, Depends
-from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
 
 from backend.core.logger import get_logger
 from backend.domains.models.scheduler_model import (
-    SchedulerJobCreate, SchedulerJobUpdate, SchedulerJobFilter,
+    SchedulerJobCreate,
+    SchedulerJobFilter,
+    SchedulerJobUpdate,
+    SchedulerLockCreate,
     SchedulerRunHistoryFilter,
-    SchedulerLockCreate
 )
 from backend.domains.services.scheduler_service import SchedulerService
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomResponse
@@ -72,10 +74,10 @@ async def create_job(
 
 @router.get("/jobs", response_model=KiwoomResponse, summary="스케줄러 작업 목록 조회")
 async def get_jobs(
-    enabled: Optional[int] = Query(None, description="활성화 여부 필터 (0: 비활성, 1: 활성)"),
-    schedule_type: Optional[str] = Query(None, description="스케줄 타입 필터"),
-    func_name_like: Optional[str] = Query(None, description="함수명 부분 검색"),
-    name_like: Optional[str] = Query(None, description="작업명 부분 검색"),
+    enabled: int | None = Query(None, description="활성화 여부 필터 (0: 비활성, 1: 활성)"),
+    schedule_type: str | None = Query(None, description="스케줄 타입 필터"),
+    func_name_like: str | None = Query(None, description="함수명 부분 검색"),
+    name_like: str | None = Query(None, description="작업명 부분 검색"),
     service: SchedulerService = Depends(get_scheduler_service)
 ):
     """스케줄러 작업 목록을 조회합니다."""
@@ -327,10 +329,10 @@ async def disable_job(
 
 @router.get("/history", response_model=KiwoomResponse, summary="스케줄러 실행 이력 조회")
 async def get_run_history(
-    job_name: Optional[str] = Query(None, description="특정 작업명 필터"),
-    status: Optional[str] = Query(None, description="실행 상태 필터"),
-    started_after: Optional[str] = Query(None, description="시작 시각 이후 필터 (ISO8601)"),
-    started_before: Optional[str] = Query(None, description="시작 시각 이전 필터 (ISO8601)"),
+    job_name: str | None = Query(None, description="특정 작업명 필터"),
+    status: str | None = Query(None, description="실행 상태 필터"),
+    started_after: str | None = Query(None, description="시작 시각 이후 필터 (ISO8601)"),
+    started_before: str | None = Query(None, description="시작 시각 이전 필터 (ISO8601)"),
     limit: int = Query(100, description="조회할 최대 개수"),
     service: SchedulerService = Depends(get_scheduler_service)
 ):
