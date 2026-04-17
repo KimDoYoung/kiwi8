@@ -12,7 +12,7 @@
 """
 
 from fastapi import HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.core.config import config
@@ -45,13 +45,20 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             cookie_name = config.ACCESS_TOKEN_NAME
             token = request.cookies.get(cookie_name)
 
+        def get_unauthorized_response():
+            # API 요청인 경우 401 Unauthorized JSON을 반환하여 프론트엔드가 감지하게 함
+            if path.startswith('/api/'):
+                return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+            # 일반 페이지 요청인 경우 로그인 페이지로 리다이렉트
+            return RedirectResponse(url=f'{root}/login')
+
         try:
             if token:
                 verify_token(token)
                 response = await call_next(request)
             else:
-                return RedirectResponse(url=f'{root}/login')
+                return get_unauthorized_response()
         except HTTPException:
-            return RedirectResponse(url=f'{root}/login')
+            return get_unauthorized_response()
 
         return response

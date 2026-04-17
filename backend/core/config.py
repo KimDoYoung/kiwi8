@@ -46,6 +46,8 @@ class Config:
         self.ALGORITHM = os.getenv('ALGORITHM','HS256')
         self.ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 60)
         self.ACCESS_TOKEN_NAME = os.getenv('ACCESS_TOKEN_NAME', 'kiwi8_token')
+        self.REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
+        self.REFRESH_TOKEN_NAME = os.getenv('REFRESH_TOKEN_NAME', 'kiwi8_refresh_token')
         
         self.DATA_FOLDER = self.BASE_DIR + '/data'
         self.FILE_FOLDER = self.BASE_DIR + '/files'

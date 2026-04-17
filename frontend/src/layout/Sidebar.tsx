@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { fetchMenuTree, type MenuItem } from '@/services/menuService'
 import { useLayoutStore } from '@/store/layoutStore'
+import { useAuthStore } from '@/store/authStore'
 
 // Lucide 아이콘 매핑 (DDL의 icon 필드 kebab-case → 컴포넌트)
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -167,10 +168,12 @@ export default function Sidebar() {
   const [activeId, setActiveId] = useState<number | null>(null)
   const [pinned, setPinned] = useState(false)
 
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const { data: menus = [] } = useQuery({
     queryKey: ['menus'],
     queryFn: fetchMenuTree,
     staleTime: 1000 * 60 * 10,
+    enabled: isLoggedIn,
   })
 
   const activeMenu = menus.find((m) => m.id === activeId) ?? null
@@ -195,7 +198,7 @@ export default function Sidebar() {
   return (
     <div className="flex h-full shrink-0">
       {/* 아이콘 레일 */}
-      <div className="w-12 bg-gray-900 flex flex-col items-center py-2 gap-1">
+      <div className="w-12 bg-gray-700 flex flex-col items-center py-2 gap-1">
         {menus.map((menu) => {
           const Icon = getIcon(menu.icon)
           const isActive = activeId === menu.id

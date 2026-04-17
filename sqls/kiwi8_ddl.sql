@@ -1,3 +1,15 @@
+-- jwt token 관리 
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    token_id TEXT PRIMARY KEY,             -- Refresh Token 고유 식별자 (UUID 등)
+    user_id TEXT NOT NULL,                 -- 사용자 ID
+    hashed_token TEXT NOT NULL,            -- Refresh Token 해시값 (보안용)
+    expires_at TIMESTAMP NOT NULL,         -- 토큰 만료 일시
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_revoked INTEGER DEFAULT 0           -- 폐기 여부 (1: 폐기됨, 강제 로그아웃 시 사용)
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+
 -- settings table 실상은 name value
 CREATE TABLE IF NOT EXISTS settings (
     name TEXT PRIMARY KEY,
@@ -191,6 +203,9 @@ CREATE TABLE IF NOT EXISTS menus (
 CREATE INDEX IF NOT EXISTS idx_menus_parent ON menus(parent_id);
 CREATE INDEX IF NOT EXISTS idx_menus_screen_no ON menus(screen_no);
 
+
+-- 메뉴를 모두 지우고 다시 삽입 (초기화)
+DELETE FROM menus;
 
 -- 1. 대분류 (Level 1)
 -- id를 명시하여 하위 메뉴 연결을 확실히 합니다.

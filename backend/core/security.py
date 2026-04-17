@@ -13,8 +13,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 JWT_SECRET_KEY = config.JWT_SECRET_KEY
 ALGORITHM = config.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
+ACCESS_TOKEN_EXPIRE_MINUTES = int(config.ACCESS_TOKEN_EXPIRE_MINUTES)
 ACCESS_TOKEN_NAME =  config.ACCESS_TOKEN_NAME
+REFRESH_TOKEN_EXPIRE_DAYS = int(config.REFRESH_TOKEN_EXPIRE_DAYS)
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -27,10 +28,16 @@ def create_jwt_access_token(data: dict, expires_delta: Optional[timedelta] = Non
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # 기본 만료 시간 설정
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
-    
+    return encoded_jwt
+
+def create_jwt_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 

@@ -1,7 +1,19 @@
 import { useEffect, useState } from 'react'
+import { useStatusStore, type StatusType } from '@/store/statusStore'
+
+function getStatusStyles(type: StatusType) {
+  switch (type) {
+    case 'error': return { icon: '❌', text: 'text-red-700', bg: 'bg-red-50' }
+    case 'warning': return { icon: '⚠️', text: 'text-orange-700', bg: 'bg-orange-50' }
+    case 'success': return { icon: '✅', text: 'text-green-700', bg: 'bg-green-50' }
+    default: return { icon: '📢', text: 'text-rose-900', bg: 'bg-white/40' }
+  }
+}
 
 export default function StatusBar() {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString('ko-KR'))
+  const { message, type } = useStatusStore()
+  const styles = getStatusStyles(type)
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -27,9 +39,9 @@ export default function StatusBar() {
 
       {/* 2. 중앙: 시스템 메시지 영역 */}
       <div className="flex-[2] text-center px-6">
-        <div className="inline-flex items-center bg-white/40 px-5 py-2 rounded-xl border border-rose-200/40 backdrop-blur-sm">
-          <span className="text-rose-900 font-bold tracking-tight">
-            📢 <span className="ml-1">서버에 안정적으로 연결되었습니다. 실시간 시세 데이터 스트리밍 중입니다.</span>
+        <div className={`inline-flex items-center px-5 py-2 rounded-xl border border-rose-200/40 backdrop-blur-sm transition-colors duration-300 ${styles.bg}`}>
+          <span className={`font-bold tracking-tight ${styles.text}`}>
+            {styles.icon} <span className="ml-1">{message}</span>
           </span>
         </div>
       </div>

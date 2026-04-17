@@ -58,6 +58,11 @@ This file provides guidance to Gemini Code (Gemini.ai/code) when working with co
 - jwtmiddelware.py
 - auth_routes의 post login, get logout
 
+## 메뉴 및 layout
+
+- docs/메뉴체계-설계.md 을 참조
+
+
 ## 유틸리티
 
 - b.sh : backend 즉 fastapi를 수행한다.

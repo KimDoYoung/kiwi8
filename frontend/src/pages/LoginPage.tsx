@@ -3,10 +3,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/services/api'
 
-export default function LoginPage() {
+export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
   const queryClient = useQueryClient()
-  const login = useAuthStore((s) => s.login)
-  const [userId, setUserId] = useState('')
+  const { login, username } = useAuthStore()
+  const [userId, setUserId] = useState(username || '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -36,13 +36,21 @@ export default function LoginPage() {
     }
   }
 
+  const containerClass = isModal
+    ? 'bg-white rounded-xl shadow-2xl p-10 w-full max-w-sm border border-gray-100'
+    : 'min-h-screen bg-gray-50 flex items-center justify-center'
+
+  const innerClass = isModal ? '' : 'bg-white rounded-xl shadow-lg p-10 w-full max-w-sm'
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-lg p-10 w-full max-w-sm">
+    <div className={containerClass}>
+      <div className={innerClass}>
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-green-600 tracking-tight">kiwi8</h1>
-          <p className="text-sm text-gray-400 mt-1">주식 자산관리 시스템</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {isModal ? '세션 만료 - 다시 로그인' : '주식 자산관리 시스템'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
