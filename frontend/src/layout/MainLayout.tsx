@@ -1,11 +1,9 @@
-import { useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import TopBar from '@/components/layout/TopBar'
-import Sidebar from '@/components/layout/Sidebar'
-import StatusBar from '@/components/layout/StatusBar'
-import Workspace from '@/components/workspace/Workspace'
+import TopBar from '@/layout/TopBar'
+import Workspace from '@/layout/Workspace'
+import Sidebar from '@/layout/Sidebar'
+import StatusBar from '@/layout/StatusBar'
 import { fetchMenuTree } from '@/services/menuService'
-import { useLayoutStore } from '@/store/layoutStore'
+import { useQuery } from '@tanstack/react-query'
 
 export default function MainLayout() {
   // menus 쿼리만 유지 (데이터 캐싱용)
