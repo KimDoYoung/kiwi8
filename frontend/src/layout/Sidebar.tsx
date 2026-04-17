@@ -198,7 +198,7 @@ export default function Sidebar() {
   return (
     <div className="flex h-full shrink-0">
       {/* 아이콘 레일 */}
-      <div className="w-12 bg-gray-700 flex flex-col items-center py-2 gap-1">
+      <div className="w-12 flex flex-col items-center py-2 gap-1" style={{ background: 'linear-gradient(180deg, #1e3a5f 0%, #1e40af 50%, #1d4ed8 100%)' }}>
         {menus.map((menu) => {
           const Icon = getIcon(menu.icon)
           const isActive = activeId === menu.id

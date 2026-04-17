@@ -50,7 +50,7 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-12 bg-white border-b border-gray-200 flex items-center px-3 shrink-0 z-10 gap-2">
+    <header className="h-12 bg-blue-100 border-b border-green-200 flex items-center px-3 shrink-0 z-10 gap-2">
 
       {/* 1) Logo Area */}
       <span className="text-xl font-bold text-green-600 tracking-tight shrink-0 mr-2">kiwi8</span>

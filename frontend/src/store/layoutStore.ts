@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Actions, DockLocation, Model } from 'flexlayout-react'
+import { Actions, DockLocation, Model, TabSetNode } from 'flexlayout-react'
 import type { MenuItem } from '@/services/menuService'
 
 const STORAGE_KEY = 'kiwi8-layout'         // FlexLayout 자동저장 (매 변경마다)
@@ -55,11 +55,18 @@ function findMenuByScreenNo(screenNo: string, menus: MenuItem[]): MenuItem | nul
   return null
 }
 
-// 활성 tabset id 반환
+// 활성 tabset id 반환 (현재 포커스된 TabSet 우선)
 function getActiveTabsetId(): string {
   let tabsetId = 'main-tabset'
+  let foundActive = false
   _model.visitNodes((node) => {
-    if (node.getType() === 'tabset') tabsetId = node.getId()
+    if (node.getType() === 'tabset') {
+      if (!foundActive) tabsetId = node.getId() // 일단 첫 번째 거 저장
+      if ((node as TabSetNode).isActive()) {
+        tabsetId = node.getId()
+        foundActive = true
+      }
+    }
   })
   return tabsetId
 }
