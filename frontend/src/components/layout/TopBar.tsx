@@ -1,18 +1,18 @@
 import { useState, useRef, type KeyboardEvent } from 'react'
-import { LogOut, Save, PanelTopClose, FolderOpen } from 'lucide-react'
+import { LogOut, BookX, BookCheck, Settings } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { fetchMenuTree } from '@/services/menuService'
 import api from '@/services/api'
+import TopBarControlPanel from './topbar/TopBarControlPanel'
 
 export default function TopBar() {
   const { username, logout } = useAuthStore()
-  const { openByScreenNo, closeAllTabs, saveScreens, restoreScreens } = useLayoutStore()
+  const { openByScreenNo, closeAllTabs, saveScreens, restoreScreens, isClosed } = useLayoutStore()
 
   const [screenInput, setScreenInput] = useState('')
-  const [inputError, setInputError] = useState(false)   // 빨간 테두리
-  const [savedMsg, setSavedMsg] = useState(false)        // "저장됨" 표시
+  const [inputError, setInputError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const { data: menus = [] } = useQuery({
@@ -31,16 +31,18 @@ export default function TopBar() {
       setScreenInput('')
       setInputError(false)
     } else {
-      // 없는 화면번호 — 짧은 에러 표시
       setInputError(true)
       setTimeout(() => setInputError(false), 1000)
     }
   }
 
-  const handleSave = () => {
-    saveScreens()
-    setSavedMsg(true)
-    setTimeout(() => setSavedMsg(false), 1500)
+  const handleToggle = () => {
+    if (isClosed) {
+      restoreScreens(menus)
+    } else {
+      saveScreens()
+      closeAllTabs()
+    }
   }
 
   const handleLogout = async () => {
@@ -48,75 +50,70 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-12 bg-white border-b border-gray-200 flex items-center gap-3 px-4 shrink-0 z-10">
-      {/* 로고 */}
-      <span className="text-xl font-bold text-green-600 tracking-tight shrink-0">kiwi8</span>
+    <header className="h-12 bg-white border-b border-gray-200 flex items-center px-3 shrink-0 z-10 gap-2">
 
-      {/* 화면번호 입력창 */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={screenInput}
-        onChange={(e) => setScreenInput(e.target.value)}
-        onKeyDown={handleScreenEnter}
-        placeholder="화면번호"
-        maxLength={6}
-        className={`w-24 border rounded-lg px-2 py-1 text-sm font-mono text-center focus:outline-none transition-colors
-          ${inputError
-            ? 'border-red-400 bg-red-50 text-red-600 focus:ring-1 focus:ring-red-300'
-            : 'border-gray-200 focus:ring-2 focus:ring-green-300'
-          }`}
-      />
+      {/* 1) Logo Area */}
+      <span className="text-xl font-bold text-green-600 tracking-tight shrink-0 mr-2">kiwi8</span>
 
-      {/* 모두닫기 */}
-      <button
-        onClick={closeAllTabs}
-        title="모두 닫기 (홈으로)"
-        className="flex items-center gap-1 text-xs text-gray-500 hover:text-orange-500 transition-colors px-2 py-1 rounded-lg hover:bg-orange-50"
-      >
-        <PanelTopClose size={15} />
-        <span className="hidden sm:inline">모두닫기</span>
-      </button>
+      {/* 구분선 */}
+      <span className="h-5 w-px bg-gray-200 shrink-0" />
 
-      {/* 화면열기 */}
-      <button
-        onClick={() => restoreScreens(menus)}
-        title="저장된 화면 열기"
-        className="flex items-center gap-1 text-xs text-gray-500 hover:text-green-600 transition-colors px-2 py-1 rounded-lg hover:bg-green-50"
-      >
-        <FolderOpen size={15} />
-        <span className="hidden sm:inline">화면열기</span>
-      </button>
-
-      {/* 화면저장 */}
-      <div className="relative">
+      {/* 2) Screen Control Area */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        <input
+          ref={inputRef}
+          type="text"
+          value={screenInput}
+          onChange={(e) => setScreenInput(e.target.value)}
+          onKeyDown={handleScreenEnter}
+          placeholder="화면번호"
+          maxLength={6}
+          className={`w-22 border rounded-lg px-2 py-1 text-sm font-mono text-center focus:outline-none transition-colors
+            ${inputError
+              ? 'border-red-400 bg-red-50 text-red-600 focus:ring-1 focus:ring-red-300'
+              : 'border-gray-200 focus:ring-2 focus:ring-green-300'
+            }`}
+        />
         <button
-          onClick={handleSave}
-          title="현재 화면 저장"
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
+          onClick={handleToggle}
+          title={isClosed ? '저장된 화면 열기' : '모두 닫기'}
+          className={`p-1.5 rounded-lg transition-colors
+            ${isClosed
+              ? 'text-green-600 hover:text-green-800 hover:bg-green-50'
+              : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'
+            }`}
         >
-          <Save size={15} />
-          <span className="hidden sm:inline">화면저장</span>
+          {isClosed ? <BookCheck size={16} /> : <BookX size={16} />}
         </button>
-        {savedMsg && (
-          <span className="absolute top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap z-50">
-            저장됨
-          </span>
-        )}
       </div>
 
-      {/* 오른쪽 영역 */}
-      <div className="ml-auto flex items-center gap-3">
+      {/* 구분선 */}
+      <span className="h-5 w-px bg-gray-200 shrink-0" />
+
+      {/* 3) Control Area */}
+      <TopBarControlPanel />
+
+      {/* 구분선 */}
+      <span className="h-5 w-px bg-gray-200 shrink-0" />
+
+      {/* 4) User Area */}
+      <div className="flex items-center gap-2 shrink-0">
         <span className="text-sm text-gray-600">{username}</span>
+        <button
+          title="설정"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <Settings size={15} />
+        </button>
         <button
           onClick={handleLogout}
           title="로그아웃"
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
         >
-          <LogOut size={14} />
-          <span className="hidden sm:inline">로그아웃</span>
+          <LogOut size={15} />
         </button>
       </div>
+
     </header>
   )
 }

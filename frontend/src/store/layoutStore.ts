@@ -66,6 +66,7 @@ function getActiveTabsetId(): string {
 
 interface LayoutState {
   modelVersion: number
+  isClosed: boolean
   getModel: () => Model
   openTab: (menu: MenuItem) => void
   openByScreenNo: (screenNo: string, menus: MenuItem[]) => boolean
@@ -77,6 +78,7 @@ interface LayoutState {
 
 export const useLayoutStore = create<LayoutState>((set, get) => ({
   modelVersion: 0,
+  isClosed: !!localStorage.getItem(SAVED_LAYOUT_KEY) && !localStorage.getItem(STORAGE_KEY),
 
   getModel: () => _model,
 
@@ -95,7 +97,7 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
         )
       )
     }
-    set((s) => ({ modelVersion: s.modelVersion + 1 }))
+    set((s) => ({ modelVersion: s.modelVersion + 1, isClosed: false }))
   },
 
   // 화면번호로 탭 열기. 성공 여부 반환 (TopBar 입력창 에러 표시용)
@@ -115,7 +117,7 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
           )
         )
       }
-      set((s) => ({ modelVersion: s.modelVersion + 1 }))
+      set((s) => ({ modelVersion: s.modelVersion + 1, isClosed: false }))
       return true
     }
     const menu = findMenuByScreenNo(screenNo, menus)
@@ -128,7 +130,7 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   closeAllTabs: () => {
     _model = Model.fromJson(DEFAULT_LAYOUT)
     localStorage.removeItem(STORAGE_KEY)
-    set((s) => ({ modelVersion: s.modelVersion + 1 }))
+    set((s) => ({ modelVersion: s.modelVersion + 1, isClosed: true }))
   },
 
   // 현재 FlexLayout 전체 모델(탭 목록 + 패널 배치)을 명시적으로 저장
@@ -148,7 +150,7 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
       _model = Model.fromJson(JSON.parse(raw))
       // auto-save 키도 동기화
       localStorage.setItem(STORAGE_KEY, raw)
-      set((s) => ({ modelVersion: s.modelVersion + 1 }))
+      set((s) => ({ modelVersion: s.modelVersion + 1, isClosed: false }))
     } catch {
       // 저장된 레이아웃이 손상된 경우 무시
     }
@@ -161,5 +163,7 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
     } catch {
       // localStorage 용량 초과 시 무시
     }
+    // 탭이 하나도 없거나(HOME 제외) 특정 조건 시 isClosed를 업데이트 할 수도 있으나, 
+    // 여기서는 명시적 토글을 우선시함
   },
 }))

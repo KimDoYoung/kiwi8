@@ -8,21 +8,12 @@ import { fetchMenuTree } from '@/services/menuService'
 import { useLayoutStore } from '@/store/layoutStore'
 
 export default function MainLayout() {
-  const { data: menus = [] } = useQuery({
+  // menus 쿼리만 유지 (데이터 캐싱용)
+  useQuery({
     queryKey: ['menus'],
     queryFn: fetchMenuTree,
     staleTime: 1000 * 60 * 10,
   })
-
-  const restoreScreens = useLayoutStore((s) => s.restoreScreens)
-  const restored = useRef(false)
-
-  useEffect(() => {
-    if (menus.length > 0 && !restored.current) {
-      restored.current = true
-      restoreScreens(menus)
-    }
-  }, [menus, restoreScreens])
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">

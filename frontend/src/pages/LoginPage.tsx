@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/services/api'
 
 export default function LoginPage() {
+  const queryClient = useQueryClient()
   const login = useAuthStore((s) => s.login)
   const [userId, setUserId] = useState('')
   const [password, setPassword] = useState('')
@@ -20,6 +22,8 @@ export default function LoginPage() {
       form.append('password', password)
       const res = await api.post('/login', form)
       if (res.data?.user_id) {
+        // 로그인 성공 시 캐시 무효화 (메뉴 등 다시 불러오기)
+        await queryClient.invalidateQueries()
         login(res.data.user_id)
       } else {
         setError('로그인 실패')
