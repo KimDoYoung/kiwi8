@@ -21,6 +21,12 @@ export default function TopBar() {
     staleTime: 1000 * 60 * 10,
   })
 
+  const { data: health } = useQuery({
+    queryKey: ['health'],
+    queryFn: () => fetch('/kiwi8/health').then((r) => r.json()) as Promise<{ version: string }>,
+    staleTime: Infinity,
+  })
+
   const handleScreenEnter = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return
     const val = screenInput.trim()
@@ -53,7 +59,12 @@ export default function TopBar() {
     <header className="h-12 bg-blue-100 border-b border-green-200 flex items-center px-3 shrink-0 z-10 gap-2">
 
       {/* 1) Logo Area */}
-      <span className="text-xl font-bold text-green-600 tracking-tight shrink-0 mr-2">kiwi8</span>
+      <div className="flex items-baseline gap-1.5 shrink-0 mr-2">
+        <span className="text-xl font-bold text-green-600 tracking-tight">kiwi8</span>
+        {health?.version && (
+          <span className="text-[10px] text-gray-400 font-mono">v{health.version}</span>
+        )}
+      </div>
 
       {/* 구분선 */}
       <span className="h-5 w-px bg-gray-200 shrink-0" />
