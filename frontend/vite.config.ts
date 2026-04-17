@@ -14,6 +14,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      '/kiwi8': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+      },
+    },
   }
 })

@@ -14,6 +14,7 @@ from backend.domains.services.stk_info_service import StkInfoService
 from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
 from backend.domains.services.tokens_service import TokensService
 from backend.domains.services.cache_manager import CacheManager
+from backend.domains.services.menus_service import MenusService
 
 
 _services = {}
@@ -44,6 +45,7 @@ def get_service(name: str):
         'stk_trade_history': StkTradeHistoryService,
         'tokens': TokensService,
         'cache_manager': CacheManager,
+        'menus': MenusService,
     }
     
     if name not in service_classes:
