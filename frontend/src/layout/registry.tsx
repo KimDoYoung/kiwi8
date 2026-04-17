@@ -1,5 +1,9 @@
 import React from 'react'
 import PlaceholderPage from '@/pages/PlaceholderPage'
+import AccountSummaryPage from '@/pages/AccountSummaryPage'
+import RealtimeBalancePage from '@/pages/RealtimeBalancePage'
+import ProfitTrendPage from '@/pages/ProfitTrendPage'
+import ExecutionHistoryPage from '@/pages/ExecutionHistoryPage'
 
 // screen_no → React 컴포넌트 매핑
 // 향후 실제 페이지 구현 시 PlaceholderPage를 교체
@@ -7,10 +11,10 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   // 홈
   'HOME': PlaceholderPage,
   // [1100 자산 현황]
-  '1101': PlaceholderPage,
-  '1102': PlaceholderPage,
-  '1103': PlaceholderPage,
-  '1104': PlaceholderPage,
+  '1101': AccountSummaryPage,
+  '1102': RealtimeBalancePage,
+  '1103': ProfitTrendPage,
+  '1104': ExecutionHistoryPage,
   // [1200 시장 분석]
   '1201': PlaceholderPage,
   '1202': PlaceholderPage,
