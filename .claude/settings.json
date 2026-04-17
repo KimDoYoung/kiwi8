@@ -3,5 +3,24 @@
     "allow": [
       "Bash(python3:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; echo \"$f\" | grep -qE 'backend/.*\\.py$' && cd /home/kdy987/work/kiwi8 && ./b.sh lint; } 2>/dev/null || true",
+            "statusMessage": "백엔드 lint 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; echo \"$f\" | grep -qE 'frontend/.*\\.(ts|tsx)$' && cd /home/kdy987/work/kiwi8 && ./f.sh lint; } 2>/dev/null || true",
+            "statusMessage": "프론트엔드 lint 검사 중..."
+          }
+        ]
+      }
+    ]
   }
 }
