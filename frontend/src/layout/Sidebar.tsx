@@ -44,6 +44,9 @@ function LeafItem({ menu, onSelect }: { menu: MenuItem; onSelect: () => void }) 
       className="w-full text-left px-4 py-1.5 text-sm text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-md transition-colors truncate"
     >
       {menu.title}
+      {menu.screen_no && (
+        <span className="ml-1 text-xs text-gray-400">({menu.screen_no})</span>
+      )}
     </button>
   )
 }

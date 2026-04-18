@@ -150,7 +150,7 @@ export default function TopBarControlPanel() {
       <button
         onClick={() => setPanelIndex((i) => (i + 1) % 2)}
         title={panelIndex === 0 ? '링크 패널로 전환' : '시세 패널로 전환'}
-        className="shrink-0 p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        className="shrink-0 p-1 rounded text-blue-300 hover:text-blue-600 hover:bg-blue-200 transition-colors"
       >
         <ChevronRight
           size={13}

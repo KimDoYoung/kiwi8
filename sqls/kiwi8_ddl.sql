@@ -272,14 +272,16 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 
 -- [3100 KIS] 특화
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(22, 3, '3101', 'KIS 조건검색', '/kis/psearch', 1),
-(22, 3, '3102', 'KIS 실시간 랭킹', '/kis/ranking', 2),
-(22, 3, '3103', 'KIS 관심종목', '/kis/attention', 3);
+(22, 3, '3101', 'KIS 계좌현황', '/kis/account/list', 1),
+(22, 3, '3102', 'KIS 조건검색', '/kis/psearch', 2),
+(22, 3, '3103', 'KIS 실시간 랭킹', '/kis/ranking', 3),
+(22, 3, '3104', 'KIS 관심종목', '/kis/attention', 4);
 
 -- [4100 LS증권] 특화
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(23, 3, '4101', 'LS 상위종목', '/ls/ranking', 1),
-(23, 3, '4102', 'LS 계좌상세', '/ls/account/detail', 2);
+(23, 3, '4101', 'LS 계좌현황', '/ls/account/list', 1),
+(23, 3, '4102', 'LS 상위종목', '/ls/ranking', 2),
+(23, 3, '4103', 'LS 계좌상세', '/ls/account/detail', 3);
 
 -- [8100 투자 기록] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 

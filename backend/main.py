@@ -15,6 +15,7 @@ from backend.api.v1.endpoints.menus_routes import router as menus_router
 from backend.api.v1.endpoints.mystock_routes import router as mystock_router
 from backend.api.v1.endpoints.scheduler_routes import router as scheduler_router
 from backend.api.v1.endpoints.settings_routes import router as settings_router
+from backend.api.v1.endpoints.stkcompany.account_routes import router as stkcompany_account_router
 from backend.api.v1.endpoints.stkcompany.kis_routes import router as kis_router
 from backend.api.v1.endpoints.stkcompany.kiwoom_routes import router as kiwoom_router
 from backend.api.v1.endpoints.stkcompany.ls_routes import router as ls_router
@@ -79,6 +80,7 @@ def add_routes(app: FastAPI):
     app.include_router(kiwoom_router, prefix='/api/v1/kiwoom', tags=['kiwoom'])
     app.include_router(kis_router, prefix='/api/v1/kis', tags=['kis'])
     app.include_router(ls_router, prefix='/api/v1/ls', tags=['ls'])
+    app.include_router(stkcompany_account_router, prefix='/api/v1/stkcompany', tags=['stkcompany'])
     # 서비스 라우터
     app.include_router(accounts_router, prefix='/api/v1/accounts', tags=['accounts'])
     app.include_router(kdemon_router, prefix='/api/v1/kdemon', tags=['kdemon'])

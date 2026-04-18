@@ -47,7 +47,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         def get_unauthorized_response():
             # API 요청인 경우 401 Unauthorized JSON을 반환하여 프론트엔드가 감지하게 함
             if path.startswith('/api/'):
-                return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+                return JSONResponse(status_code=401, content={"detail": "인증되지 않았습니다."})
             # 일반 페이지 요청인 경우 로그인 페이지로 리다이렉트
             return RedirectResponse(url=f'{root}/login')
 
