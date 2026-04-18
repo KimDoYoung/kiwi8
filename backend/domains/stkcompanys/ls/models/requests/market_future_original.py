@@ -4,7 +4,7 @@ MARKET_FUTURE_REQUESTS = {
     'C01': {
         'tr_cd': 'C01',
         'title': '선물주문체결',
-'url': '/futureoption/market-data',
+        'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -26,7 +26,7 @@ MARKET_FUTURE_REQUESTS = {
     'C02': {
         'tr_cd': 'C02',
         'title': 'KRX야간파생 선물체결',
-'url': '/futureoption/market-data',
+        'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
