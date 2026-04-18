@@ -143,6 +143,8 @@ async def ls_account_list():
             response.data = korea_data
             await _insert_prev_costs_ls(response.data.get('t0424OutBlock1', []))
             logger.info('[계좌현황] LS 계좌현황 조회 성공')
+        import json
+        # print('[DEBUG] ls/account/list response:', json.dumps(response.model_dump(mode='json'), ensure_ascii=False, indent=2))
         return response
 
     except Exception as e:

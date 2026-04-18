@@ -204,6 +204,7 @@ MARKET_CHART_REQUESTS = {
     },
     't9945': {
         'tr_cd': 't9945',
+        'url': '/stock/market-data',
         'title': '주식마스터조회API용',
         'blocks': {
             't9945InBlock': {

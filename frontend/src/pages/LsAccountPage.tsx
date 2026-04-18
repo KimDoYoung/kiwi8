@@ -31,9 +31,9 @@ export default function LsAccountPage() {
   const totalMaeip = useMemo(() =>
     stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
 
-  const 예수금 = toNum(summary['예수금'])
-  const 잔고평가 = toNum(summary['잔고평가금액'])
-  const 손익 = toNum(summary['평가손익합계'])
+  const 예수금 = toNum(summary['추정D2예수금'])
+  const 잔고평가 = toNum(summary['평가금액'])
+  const 손익 = toNum(summary['평가손익'])
 
   const colDefs = useMemo<ColDef[]>(() => [
     {
