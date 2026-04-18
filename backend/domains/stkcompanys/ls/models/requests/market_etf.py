@@ -4,6 +4,7 @@ MARKET_ETF_REQUESTS = {
     'B7_': {
         'tr_cd': 'B7_',
         'title': 'ETF호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -25,6 +26,7 @@ MARKET_ETF_REQUESTS = {
     'I5_': {
         'tr_cd': 'I5_',
         'title': '코스피ETF종목실시간NAV',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -46,6 +48,7 @@ MARKET_ETF_REQUESTS = {
     't1901': {
         'tr_cd': 't1901',
         'title': 'ETF현재가(시세)조회',
+'url': '/stock/market-data',
         'blocks': {
             't1901InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}],
@@ -56,6 +59,7 @@ MARKET_ETF_REQUESTS = {
     't1902': {
         'tr_cd': 't1902',
         'title': 'ETF시간별추이',
+'url': '/stock/market-data',
         'blocks': {
             't1902InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'time', 'name': '시간', 'type': 'string', 'length': 6, 'desc': '연속조회키 연속 조회시 이 값을 InBlock의 time 필드에 넣어준다.', 'required': True}],
@@ -66,6 +70,7 @@ MARKET_ETF_REQUESTS = {
     't1903': {
         'tr_cd': 't1903',
         'title': 'ETF일별추이',
+'url': '/stock/market-data',
         'blocks': {
             't1903InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'date', 'name': '일자', 'type': 'string', 'length': 8, 'desc': '연속조회키 연속 조회시 이 값을 InBlock의 date 필드에 넣어준다.', 'required': True}],
@@ -76,6 +81,7 @@ MARKET_ETF_REQUESTS = {
     't1904': {
         'tr_cd': 't1904',
         'title': 'ETF구성종목조회',
+'url': '/stock/market-data',
         'blocks': {
             't1904InBlock': {
                 'fields': [{'key': 'shcode', 'name': 'ETF단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'date', 'name': 'PDF적용일자', 'type': 'string', 'length': 8, 'required': True}, {'key': 'sgb', 'name': '정렬기준(1:평가금액2:증권수)', 'type': 'string', 'length': 1, 'required': True}],
@@ -86,6 +92,7 @@ MARKET_ETF_REQUESTS = {
     't1906': {
         'tr_cd': 't1906',
         'title': 'ETFLP호가',
+'url': '/stock/market-data',
         'blocks': {
             't1906InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}],

@@ -4,6 +4,7 @@ MARKET_ELW_REQUESTS = {
     'ESN': {
         'tr_cd': 'ESN',
         'title': '뉴ELW투자지표민감도',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -25,6 +26,7 @@ MARKET_ELW_REQUESTS = {
     'Ys3': {
         'tr_cd': 'Ys3',
         'title': 'ELW예상체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -46,6 +48,7 @@ MARKET_ELW_REQUESTS = {
     'h2_': {
         'tr_cd': 'h2_',
         'title': 'ELW장전시간외호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -67,6 +70,7 @@ MARKET_ELW_REQUESTS = {
     'h3_': {
         'tr_cd': 'h3_',
         'title': 'ELW호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -88,6 +92,7 @@ MARKET_ELW_REQUESTS = {
     'k1_': {
         'tr_cd': 'k1_',
         'title': 'ELW거래원',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -109,6 +114,7 @@ MARKET_ELW_REQUESTS = {
     's2_': {
         'tr_cd': 's2_',
         'title': 'ELW우선호가',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -130,6 +136,7 @@ MARKET_ELW_REQUESTS = {
     's3_': {
         'tr_cd': 's3_',
         'title': 'ELW체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -151,6 +158,7 @@ MARKET_ELW_REQUESTS = {
     's4_': {
         'tr_cd': 's4_',
         'title': 'ELW기세',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -172,6 +180,7 @@ MARKET_ELW_REQUESTS = {
     't1950': {
         'tr_cd': 't1950',
         'title': 'ELW현재가(시세)조회',
+'url': '/stock/market-data',
         'blocks': {
             't1950InBlock': {
                 'fields': [{'key': 'shcode', 'name': 'ELW단축코드', 'type': 'string', 'length': 6, 'required': True}],
@@ -182,6 +191,7 @@ MARKET_ELW_REQUESTS = {
     't1951': {
         'tr_cd': 't1951',
         'title': 'ELW시간대별체결조회',
+'url': '/stock/market-data',
         'blocks': {
             't1951InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'cvolume', 'name': '특이거래량', 'type': 'float', 'length': 12, 'desc': '체결량 > 특이체결량인 종목', 'required': True}, {'key': 'starttime', 'name': '시작시간', 'type': 'string', 'length': 4, 'required': True}, {'key': 'endtime', 'name': '종료시간', 'type': 'string', 'length': 4, 'required': True}, {'key': 'cts_time', 'name': '시간CTS', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space 연속 조회시에 이전 조회한 OutBlock의 cts_time 값으로 설정', 'required': True}],
@@ -192,6 +202,7 @@ MARKET_ELW_REQUESTS = {
     't1954': {
         'tr_cd': 't1954',
         'title': 'ELW일별주가',
+'url': '/stock/market-data',
         'blocks': {
             't1954InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'date', 'name': '날짜', 'type': 'string', 'length': 8, 'desc': '사용안함', 'required': True}, {'key': 'cnt', 'name': '건수', 'type': 'float', 'length': 3, 'desc': '조회개수', 'required': True}],
@@ -202,6 +213,7 @@ MARKET_ELW_REQUESTS = {
     't1956': {
         'tr_cd': 't1956',
         'title': 'ELW현재가(확정지급액)조회',
+'url': '/stock/market-data',
         'blocks': {
             't1956InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}],
@@ -212,6 +224,7 @@ MARKET_ELW_REQUESTS = {
     't1958': {
         'tr_cd': 't1958',
         'title': 'ELW종목비교',
+'url': '/stock/market-data',
         'blocks': {
             't1958InBlock': {
                 'fields': [{'key': 'shcode1', 'name': '종목코드1', 'type': 'string', 'length': 6, 'required': True}, {'key': 'shcode2', 'name': '종목코드2', 'type': 'string', 'length': 6, 'required': True}],
@@ -222,6 +235,7 @@ MARKET_ELW_REQUESTS = {
     't1960': {
         'tr_cd': 't1960',
         'title': 'ELW등락율상위',
+'url': '/stock/market-data',
         'blocks': {
             't1960InBlock': {
                 'fields': [{'key': 'gubun', 'name': '상승하락(0:상승1:하락)', 'type': 'string', 'length': 1, 'desc': '0:상승율 1:하락율', 'required': True}, {'key': 'ggubun', 'name': "권리유형구분(00:EX01:콜02:풋'':전체)", 'type': 'string', 'length': 2, 'desc': '  @콜/풋/EX 01@콜 02@풋 00@EX', 'required': True}, {'key': 'itemcode', 'name': '기초자산종목', 'type': 'string', 'length': 12, 'desc': '기초자산 종목코드 - 스페이스:전체 - basket:BASKET 기초자산 종목 - 종목코드(12자리 표준코드)', 'required': True}, {'key': 'lastdate', 'name': '조회만기일', 'type': 'string', 'length': 8, 'desc': 'YYYYMM 스페이스:전체', 'required': True}, {'key': 'exgubun', 'name': '대상제외', 'type': 'string', 'length': 6, 'desc': "1번째Byte > '0' : 결제제외 - 현금결제 2번째Byte > '0' : 결제제외 - 실물결제 3번재Byte > '0' : 권리행사방식- 유럽형 제외 4번째Byte > '0' : 권리행사방식- 미국형 제외 5번째Byte    1 : 비표준형 제외    2 : 표준형 제외    3 : 비표준형, 표준형 제외    4 : 디지털형 제외    5 : 비표준형, 디지털형 제외    6 : 표준형, 디지털형 제외    7 : 비표준형, 표준형 디지털형 제외 6번째Byte > '0' : Basket종목 제외", 'required': True}, {'key': 'sprice', 'name': '시작가격', 'type': 'float', 'length': 8, 'desc': '현재가 >= sprice', 'required': True}, {'key': 'eprice', 'name': '종료가격', 'type': 'float', 'length': 8, 'desc': '현재가 <= eprice', 'required': True}, {'key': 'volume', 'name': '거래량', 'type': 'float', 'length': 12, 'desc': '거래량 >= volume', 'required': True}, {'key': 'sjanday', 'name': '잔존시작일수', 'type': 'float', 'length': 8, 'desc': '잔존일수 >= sjanday', 'required': True}, {'key': 'ejanday', 'name': '잔존종료일수', 'type': 'float', 'length': 8, 'desc': '잔존일수 <= ejanday', 'required': True}, {'key': 'idx', 'name': 'IDX', 'type': 'float', 'length': 4, 'desc': '처음 조회시는 Space 연속 조회시에 이전 조회한 OutBlock의 idx 값으로 설정', 'required': True}],
@@ -232,6 +246,7 @@ MARKET_ELW_REQUESTS = {
     't1961': {
         'tr_cd': 't1961',
         'title': 'ELW거래량상위',
+'url': '/stock/market-data',
         'blocks': {
             't1961InBlock': {
                 'fields': [{'key': 'gubun', 'name': '당일전일(0:당일1:전일)', 'type': 'string', 'length': 1, 'desc': '0:당일 1:전일', 'required': True}, {'key': 'ggubun', 'name': "권리유형구분(00:EX01:콜02:풋'':전체)", 'type': 'string', 'length': 2, 'desc': '@콜/풋/EX 01@콜 02@풋 00@EX', 'required': True}, {'key': 'itemcode', 'name': '기초자산종목', 'type': 'string', 'length': 12, 'desc': '기초자산 표준코드(12자리)', 'required': True}, {'key': 'lastdate', 'name': '조회만기일', 'type': 'string', 'length': 8, 'desc': 'YYYYMMDD', 'required': True}, {'key': 'exgubun', 'name': '대상제외', 'type': 'string', 'length': 6, 'desc': "1번째Byte > '0' : 결제제외 - 현금결제 2번째Byte > '0' : 결제제외 - 실물결제 3번재Byte > '0' : 권리행사방식- 유럽형 제외 4번째Byte > '0' : 권리행사방식- 미국형 제외 5번째Byte    1 : 비표준형 제외    2 : 표준형 제외    3 : 비표준형, 표준형 제외    4 : 디지털형 제외    5 : 비표준형, 디지털형 제외    6 : 표준형, 디지털형 제외    7 : 비표준형, 표준형 디지털형 제외 6번째Byte > '0' : Basket종목 제외", 'required': True}, {'key': 'sprice', 'name': '시작가격', 'type': 'float', 'length': 8, 'desc': '현재가 >= sprice', 'required': True}, {'key': 'eprice', 'name': '종료가격', 'type': 'float', 'length': 8, 'desc': '현재가 <= eprice', 'required': True}, {'key': 'volume', 'name': '거래량', 'type': 'float', 'length': 12, 'desc': '거래량 >= volume', 'required': True}, {'key': 'sjanday', 'name': '잔존시작일수', 'type': 'float', 'length': 8, 'desc': '잔존일수 >= sjanday', 'required': True}, {'key': 'ejanday', 'name': '잔존종료일수', 'type': 'float', 'length': 8, 'desc': '잔존일수 <= ejanday', 'required': True}, {'key': 'idx', 'name': 'IDX', 'type': 'float', 'length': 4, 'desc': '처음 조회시는 Space 연속 조회시에 이전 조회한 OutBlock의 idx 값으로 설정', 'required': True}],
@@ -242,6 +257,7 @@ MARKET_ELW_REQUESTS = {
     't1964': {
         'tr_cd': 't1964',
         'title': 'ELW전광판',
+'url': '/stock/market-data',
         'blocks': {
             't1964InBlock': {
                 'fields': [{'key': 'item', 'name': '기초자산코드', 'type': 'string', 'length': 12, 'desc': '0:전체 basket:기초자산이 BASKET 종목 종목코드(12자리 표준코드)', 'required': True}, {'key': 'issuercd', 'name': '발행사', 'type': 'string', 'length': 12, 'desc': '000000000000:전체 발행사코드(3자리)   002 신한금융투자  033 JP모간   004 대신   005 대우   048 SG   030 삼성   006 신영   012 우리투자증권   003 한국   017 현대   049 미래에셋   035 맥쿼리   024 동양   031 동부   056 하나대투   054 노무라   034 KB 투자   067 BNP 파리바', 'required': True}, {'key': 'lastmonth', 'name': '만기월물', 'type': 'string', 'length': 6, 'desc': '전체@000000', 'required': True}, {'key': 'elwopt', 'name': '콜풋구분', 'type': 'string', 'length': 1, 'desc': '전체@0 콜@1 풋@2', 'required': True}, {'key': 'atmgubun', 'name': '머니구분', 'type': 'string', 'length': 1, 'desc': '전체@0 ATM@1 ITM@2 OTM@3', 'required': True}, {'key': 'elwtype', 'name': '권리행사방식', 'type': 'string', 'length': 2, 'desc': '권리전체@00 유럽형@01 미국형@02', 'required': True}, {'key': 'settletype', 'name': '결제방법', 'type': 'string', 'length': 2, 'desc': '결제방법전체@00 현금결제@01 실물결제@02', 'required': True}, {'key': 'elwexecgubun', 'name': '행사기초자산구분', 'type': 'string', 'length': 1, 'desc': '행사가/기초자산가격 검색 적용 여부(1이면 적용)', 'required': True}, {'key': 'fromrat', 'name': '시작비율', 'type': 'string', 'length': 5, 'desc': '행사가/기초자산가격 * 100 >= fromrat', 'required': True}, {'key': 'torat', 'name': '종료비율', 'type': 'string', 'length': 5, 'desc': '행사가/기초자산가격 * 100 <= torat', 'required': True}, {'key': 'volume', 'name': '거래량', 'type': 'string', 'length': 12, 'desc': '거래량 >= volume', 'required': True}],
@@ -252,6 +268,7 @@ MARKET_ELW_REQUESTS = {
     't1966': {
         'tr_cd': 't1966',
         'title': 'ELW거래대금상위',
+'url': '/stock/market-data',
         'blocks': {
             't1966InBlock': {
                 'fields': [{'key': 'gubun', 'name': '당일전일(0:당일1:전일)', 'type': 'string', 'length': 1, 'desc': '0:당일 1:전일', 'required': True}, {'key': 'ggubun', 'name': "권리유형구분(00:EX01:콜02:풋'':전체)", 'type': 'string', 'length': 2, 'desc': '@콜/풋/EX 01@콜 02@풋 00@EX', 'required': True}, {'key': 'itemcode', 'name': '기초자산종목', 'type': 'string', 'length': 12, 'desc': '기초자산 표준코드(12자리)', 'required': True}, {'key': 'lastdate', 'name': '조회만기일', 'type': 'string', 'length': 8, 'desc': 'YYYYMMDD', 'required': True}, {'key': 'exgubun', 'name': '대상제외', 'type': 'string', 'length': 6, 'desc': "1번째Byte > '0' : 결제제외 - 현금결제 2번째Byte > '0' : 결제제외 - 실물결제 3번재Byte > '0' : 권리행사방식- 유럽형 제외 4번째Byte > '0' : 권리행사방식- 미국형 제외 5번째Byte    1 : 비표준형 제외    2 : 표준형 제외    3 : 비표준형, 표준형 제외    4 : 디지털형 제외    5 : 비표준형, 디지털형 제외    6 : 표준형, 디지털형 제외    7 : 비표준형, 표준형 디지털형 제외 6번째Byte > '0' : Basket종목 제외", 'required': True}, {'key': 'sprice', 'name': '시작가격', 'type': 'float', 'length': 8, 'desc': '현재가 >= sprice', 'required': True}, {'key': 'eprice', 'name': '종료가격', 'type': 'float', 'length': 8, 'desc': '현재가 <= eprice', 'required': True}, {'key': 'volume', 'name': '거래량', 'type': 'float', 'length': 12, 'desc': '거래량 >= volume', 'required': True}, {'key': 'sjanday', 'name': '잔존시작일수', 'type': 'float', 'length': 8, 'desc': '잔존일수 >= sjanday', 'required': True}, {'key': 'ejanday', 'name': '잔존종료일수', 'type': 'float', 'length': 8, 'desc': '잔존일수 <= ejanday', 'required': True}, {'key': 'idx', 'name': 'IDX', 'type': 'float', 'length': 4, 'desc': '처음 조회시는 Space 연속 조회시에 이전 조회한 OutBlock의 idx 값으로 설정', 'required': True}],
@@ -262,6 +279,7 @@ MARKET_ELW_REQUESTS = {
     't1969': {
         'tr_cd': 't1969',
         'title': 'ELW지표검색',
+'url': '/stock/market-data',
         'blocks': {
             't1969InBlock': {
                 'fields': [{'key': 'chkitem', 'name': '기초자산chk구분', 'type': 'string', 'length': 1, 'desc': '0:기초자산 검색 안함 1:기초자산 검색', 'required': True}, {'key': 'cbitem', 'name': '기초자산코드', 'type': 'string', 'length': 12, 'desc': "전체''@000000000000 basket:기초자산이 BASKET 종목 종목코드(12자리 표준코드)", 'required': True}, {'key': 'chkissuer', 'name': '발행사chk구분', 'type': 'string', 'length': 1, 'desc': '0:발행사 검색 안함 1:발행사 검색', 'required': True}, {'key': 'cbissuer', 'name': '발행사', 'type': 'string', 'length': 12, 'desc': "전체''@000000000000", 'required': True}, {'key': 'chkcallput', 'name': '권리chk구분', 'type': 'string', 'length': 1, 'desc': '0:권리구분 검색 안함 1:권리구분 검색', 'required': True}, {'key': 'cbcallput', 'name': '권리(call:01.put:02)', 'type': 'string', 'length': 2, 'desc': '전체@00 콜@01 풋@02 EX@03', 'required': True}, {'key': 'chkexec', 'name': '행사가chk구분', 'type': 'string', 'length': 1, 'desc': '0:행사가/기초자산 비교 검색 안함 1:행사가/기초자산 비교 검색', 'required': True}, {'key': 'cbexec', 'name': '행사가(>=:1.<=:2)', 'type': 'string', 'length': 1, 'desc': '>=@1 <=@2', 'required': True}, {'key': 'chktype', 'name': '행사방식chk구분', 'type': 'string', 'length': 1, 'desc': '0:행사방식 검색 안함 1:행사방식 검색', 'required': True}, {'key': 'cbtype', 'name': '행사방식', 'type': 'string', 'length': 2, 'desc': '전체@00 유럽형@01 미국형@02 기타@03', 'required': True}, {'key': 'chksettle', 'name': '결제방법chk구분', 'type': 'string', 'length': 1, 'desc': '0:결제방법 검색 안함 1:결제방법 검색', 'required': True}, {'key': 'cbsettle', 'name': '결제방법', 'type': 'string', 'length': 2, 'desc': '전체@00 현금결제@01 실물결제@02 현금+실물@03', 'required': True}, {'key': 'chklast', 'name': '만기chk구분', 'type': 'string', 'length': 1, 'desc': '0:만기월 검색 안함 1:만기월 검색', 'required': True}, {'key': 'cblast', 'name': '만기월별', 'type': 'string', 'length': 6, 'desc': '전체@000000', 'required': True}, {'key': 'chkelwexec', 'name': '행사가격chk구분', 'type': 'string', 'length': 1, 'desc': '0:행사가 검색 안함 1:행사가 검색', 'required': True}, {'key': 'elwexecs', 'name': '행사가이상', 'type': 'float', 'length': 10.2, 'desc': '행사가 >= elwexecs', 'required': True}, {'key': 'elwexece', 'name': '행사가이하', 'type': 'float', 'length': 10.2, 'desc': '행사가 <= elwexece', 'required': True}, {'key': 'chkvolume', 'name': '거래량chk구분', 'type': 'string', 'length': 1, 'desc': '0:거래량 검색 안함 1:거래량 검색', 'required': True}, {'key': 'volumes', 'name': '거래량이상', 'type': 'float', 'length': 12, 'desc': '거래량 >= volumes', 'required': True}, {'key': 'volumee', 'name': '거래량이하', 'type': 'float', 'length': 12, 'desc': '거래량 <= volumee', 'required': True}, {'key': 'chkrate', 'name': '등락율chk구분', 'type': 'string', 'length': 1, 'desc': '0:등락율 검색 안함 1:등락율 검색', 'required': True}, {'key': 'rates', 'name': '등락율이상', 'type': 'float', 'length': 6.2, 'desc': '등락율 >= rates', 'required': True}, {'key': 'ratee', 'name': '등락율이하', 'type': 'float', 'length': 6.2, 'desc': '등락율 <= ratee', 'required': True}, {'key': 'chkpremium', 'name': '프리미엄chk구분', 'type': 'string', 'length': 1, 'desc': '0:프리미엄 검색 안함 1:프리미엄 검색', 'required': True}, {'key': 'premiums', 'name': '프리미엄이상', 'type': 'float', 'length': 6.2, 'desc': '프리미엄 >= premiums', 'required': True}, {'key': 'premiume', 'name': '프리미엄이하', 'type': 'float', 'length': 6.2, 'desc': '프리미엄 <= premiume', 'required': True}, {'key': 'chkparity', 'name': '패리티chk구분', 'type': 'string', 'length': 1, 'desc': '0:패리티 검색 안함 1:패리티 검색', 'required': True}, {'key': 'paritys', 'name': '패리티이상', 'type': 'float', 'length': 6.2, 'desc': '패리티 >= paritys', 'required': True}, {'key': 'paritye', 'name': '패리티이하', 'type': 'float', 'length': 6.2, 'desc': '패리티 <= paritye', 'required': True}, {'key': 'chkberate', 'name': '손익분기chk구분', 'type': 'string', 'length': 1, 'desc': '0:손익분기 검색 안함 1:손익분기 검색', 'required': True}, {'key': 'berates', 'name': '손익분기이상', 'type': 'float', 'length': 6.2, 'desc': '손익분기 >= berates', 'required': True}, {'key': 'beratee', 'name': '손익분기이하', 'type': 'float', 'length': 6.2, 'desc': '손익분기 <= beratee', 'required': True}, {'key': 'chkcapt', 'name': '자본지지chk구분', 'type': 'string', 'length': 1, 'desc': '0:자본지지 검색 안함 1:자본지지 검색', 'required': True}, {'key': 'capts', 'name': '자본지지이상', 'type': 'float', 'length': 6.2, 'desc': '자본지지 >= capts', 'required': True}, {'key': 'capte', 'name': '자본지지이하', 'type': 'float', 'length': 6.2, 'desc': '자본지지 <= capts', 'required': True}, {'key': 'chkegearing', 'name': 'e.기어링chk구분', 'type': 'string', 'length': 1, 'desc': '0:e.기어링 검색 안함 1:e.기어링 검색', 'required': True}, {'key': 'egearings', 'name': 'e.기어링이상', 'type': 'float', 'length': 6.2, 'desc': 'e.기어링 >= egearings', 'required': True}, {'key': 'egearinge', 'name': 'e.기어링이하', 'type': 'float', 'length': 6.2, 'desc': 'e.기어링 <= egearinge', 'required': True}, {'key': 'chkgearing', 'name': '기어링chk구분', 'type': 'string', 'length': 1, 'desc': '0:기어링 검색 안함 1:기어링 검색', 'required': True}, {'key': 'gearings', 'name': '기어링이상', 'type': 'float', 'length': 6.2, 'desc': '기어링 >= gearings', 'required': True}, {'key': 'gearinge', 'name': '기어링이하', 'type': 'float', 'length': 6.2, 'desc': '기어링 <= gearinge', 'required': True}, {'key': 'chkdelta', 'name': '델타chk구분', 'type': 'string', 'length': 1, 'desc': '0:델타 검색 안함 1:델타 검색', 'required': True}, {'key': 'deltas', 'name': '델타이상', 'type': 'float', 'length': 10.6, 'desc': '델타 >= deltas', 'required': True}, {'key': 'deltae', 'name': '델타이하', 'type': 'float', 'length': 10.6, 'desc': '델타 <= deltae', 'required': True}, {'key': 'chktheta', 'name': '쎄타chk구분', 'type': 'string', 'length': 1, 'desc': '0:쎄타 검색 안함 1:쎄타 검색', 'required': True}, {'key': 'thetas', 'name': '쎄타이상', 'type': 'float', 'length': 10.6, 'desc': '쎄타 >= thetas', 'required': True}, {'key': 'thetae', 'name': '쎄타이하', 'type': 'float', 'length': 10.6, 'desc': '쎄타 <= thetas', 'required': True}, {'key': 'chkduedate', 'name': '최종거래일chk구분', 'type': 'string', 'length': 1, 'desc': '0:최종거래일 검색 안함 1:최종거래일 검색', 'required': True}, {'key': 'duedates', 'name': '최종거래일이상', 'type': 'string', 'length': 8, 'desc': 'YYYYMMDD 형식 최종거래일 >= duedates', 'required': True}, {'key': 'duedatee', 'name': '최종거래일이하', 'type': 'string', 'length': 8, 'desc': 'YYYYMMDD 형식 최종거래일 <= duedatee', 'required': True}, {'key': 'onetickgubun', 'name': 'LP갭1틱', 'type': 'string', 'length': 1, 'required': True}, {'key': 'lp_liquidity', 'name': 'LP유동성공급', 'type': 'string', 'length': 1, 'required': True}, {'key': 'chklp_code', 'name': 'LPchk구분', 'type': 'string', 'length': 1, 'required': True}, {'key': 'lp_code', 'name': 'LP회원사코드', 'type': 'string', 'length': 3, 'required': True}, {'key': 'chkkoba', 'name': '조기종료chk구분', 'type': 'string', 'length': 1, 'required': True}, {'key': 'cbkoba', 'name': '조기종료(0:전체1:KOBA2:KOBA제외)', 'type': 'string', 'length': 1, 'desc': '전체@0 조기종료만@1 조기종료제외@2', 'required': True}],
@@ -272,6 +290,7 @@ MARKET_ELW_REQUESTS = {
     't1971': {
         'tr_cd': 't1971',
         'title': 'ELW현재가호가조회',
+'url': '/stock/market-data',
         'blocks': {
             't1971InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}],
@@ -282,6 +301,7 @@ MARKET_ELW_REQUESTS = {
     't1972': {
         'tr_cd': 't1972',
         'title': 'ELW현재가(거래원)조회',
+'url': '/stock/market-data',
         'blocks': {
             't1972InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}],
@@ -292,6 +312,7 @@ MARKET_ELW_REQUESTS = {
     't1973': {
         'tr_cd': 't1973',
         'title': 'ELW시간대별예상체결조회',
+'url': '/stock/market-data',
         'blocks': {
             't1973InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'cts_time', 'name': '시간CTS', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space 연속 조회시에 이전 조회한 OutBlock의 cts_time 값으로 설정', 'required': True}],
@@ -302,6 +323,7 @@ MARKET_ELW_REQUESTS = {
     't1974': {
         'tr_cd': 't1974',
         'title': 'ELW기초자산동일종목',
+'url': '/stock/market-data',
         'blocks': {
             't1974InBlock': {
                 'fields': [{'key': 'shcode', 'name': '종목코드', 'type': 'string', 'length': 6, 'required': True}],
@@ -312,6 +334,7 @@ MARKET_ELW_REQUESTS = {
     't8431': {
         'tr_cd': 't8431',
         'title': 'ELW종목조회',
+'url': '/stock/market-data',
         'blocks': {
             't8431InBlock': {
                 'fields': [{'key': 'dummy', 'name': 'Dummy', 'type': 'string', 'length': 1, 'required': True}],
@@ -322,6 +345,7 @@ MARKET_ELW_REQUESTS = {
     't9942': {
         'tr_cd': 't9942',
         'title': 'ELW마스터조회API용',
+'url': '/stock/market-data',
         'blocks': {
             't9942InBlock': {
                 'fields': [{'key': 'dummy', 'name': 'Dummy', 'type': 'string', 'length': 1, 'required': True}],

@@ -4,6 +4,7 @@ MARKET_REQUESTS = {
     'AFR': {
         'tr_cd': 'AFR',
         'title': 'API사용자조건검색실시간',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -25,6 +26,7 @@ MARKET_REQUESTS = {
     'BMT': {
         'tr_cd': 'BMT',
         'title': '시간대별투자자매매추이',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -46,6 +48,7 @@ MARKET_REQUESTS = {
     'BM_': {
         'tr_cd': 'BM_',
         'title': '업종별투자자별매매현황',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -67,6 +70,7 @@ MARKET_REQUESTS = {
     'CUR': {
         'tr_cd': 'CUR',
         'title': '현물정보USD실시간',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -88,6 +92,7 @@ MARKET_REQUESTS = {
     'DH1': {
         'tr_cd': 'DH1',
         'title': 'KOSPI시간외단일가호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -109,6 +114,7 @@ MARKET_REQUESTS = {
     'DHA': {
         'tr_cd': 'DHA',
         'title': 'KOSDAQ시간외단일가호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -130,6 +136,7 @@ MARKET_REQUESTS = {
     'DK3': {
         'tr_cd': 'DK3',
         'title': 'KOSDAQ시간외단일가체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -151,6 +158,7 @@ MARKET_REQUESTS = {
     'DS3': {
         'tr_cd': 'DS3',
         'title': 'KOSPI시간외단일가체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -172,6 +180,7 @@ MARKET_REQUESTS = {
     'DVI': {
         'tr_cd': 'DVI',
         'title': '시간외단일가VI발동해제',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -193,6 +202,7 @@ MARKET_REQUESTS = {
     'H1_': {
         'tr_cd': 'H1_',
         'title': 'KOSPI호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -214,6 +224,7 @@ MARKET_REQUESTS = {
     'H2_': {
         'tr_cd': 'H2_',
         'title': 'KOSPI장전시간외호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -235,6 +246,7 @@ MARKET_REQUESTS = {
     'HA_': {
         'tr_cd': 'HA_',
         'title': 'KOSDAQ호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -256,6 +268,7 @@ MARKET_REQUESTS = {
     'HB_': {
         'tr_cd': 'HB_',
         'title': 'KOSDAQ장전시간외호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -277,6 +290,7 @@ MARKET_REQUESTS = {
     'IJ_': {
         'tr_cd': 'IJ_',
         'title': '지수',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -298,6 +312,7 @@ MARKET_REQUESTS = {
     'JIF': {
         'tr_cd': 'JIF',
         'title': '장운영정보',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -319,6 +334,7 @@ MARKET_REQUESTS = {
     'K1_': {
         'tr_cd': 'K1_',
         'title': 'KOSPI거래원',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -340,6 +356,7 @@ MARKET_REQUESTS = {
     'K3_': {
         'tr_cd': 'K3_',
         'title': 'KOSDAQ체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -361,6 +378,7 @@ MARKET_REQUESTS = {
     'KH_': {
         'tr_cd': 'KH_',
         'title': 'KOSDAQ프로그램매매종목별',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -382,6 +400,7 @@ MARKET_REQUESTS = {
     'KM_': {
         'tr_cd': 'KM_',
         'title': 'KOSDAQ프로그램매매전체집계',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -403,6 +422,7 @@ MARKET_REQUESTS = {
     'KS_': {
         'tr_cd': 'KS_',
         'title': 'KOSDAQ우선호가',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -424,6 +444,7 @@ MARKET_REQUESTS = {
     'MK2': {
         'tr_cd': 'MK2',
         'title': 'US지수',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -445,6 +466,7 @@ MARKET_REQUESTS = {
     'NBM': {
         'tr_cd': 'NBM',
         'title': '(NXT)업종별투자자별매매현황',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -467,6 +489,7 @@ MARKET_REQUESTS = {
     'NBT': {
         'tr_cd': 'NBT',
         'title': '(NXT)시간대별투자자매매추이',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -488,6 +511,7 @@ MARKET_REQUESTS = {
     'NH1': {
         'tr_cd': 'NH1',
         'title': '(NXT)호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -509,6 +533,7 @@ MARKET_REQUESTS = {
     'NK1': {
         'tr_cd': 'NK1',
         'title': '(NXT)거래원',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -531,6 +556,7 @@ MARKET_REQUESTS = {
     'NPH': {
         'tr_cd': 'NPH',
         'title': '(NXT)프로그램매매종목별',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -552,6 +578,7 @@ MARKET_REQUESTS = {
     'NPM': {
         'tr_cd': 'NPM',
         'title': '(NXT)프로그램매매전체집계',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -573,6 +600,7 @@ MARKET_REQUESTS = {
     'NS2': {
         'tr_cd': 'NS2',
         'title': '(NXT)우선호가',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -594,6 +622,7 @@ MARKET_REQUESTS = {
     'NS3': {
         'tr_cd': 'NS3',
         'title': '(NXT)체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -615,6 +644,7 @@ MARKET_REQUESTS = {
     'NVI': {
         'tr_cd': 'NVI',
         'title': '(NXT)VI 발동 해제',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -636,6 +666,7 @@ MARKET_REQUESTS = {
     'NWS': {
         'tr_cd': 'NWS',
         'title': '실시간뉴스제목패킷',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -657,6 +688,7 @@ MARKET_REQUESTS = {
     'NYS': {
         'tr_cd': 'NYS',
         'title': '(NXT)예상체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -678,6 +710,7 @@ MARKET_REQUESTS = {
     'OK_': {
         'tr_cd': 'OK_',
         'title': 'KOSDAQ거래원',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -699,6 +732,7 @@ MARKET_REQUESTS = {
     'PH_': {
         'tr_cd': 'PH_',
         'title': 'KOSPI프로그램매매종목별',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -720,6 +754,7 @@ MARKET_REQUESTS = {
     'PM_': {
         'tr_cd': 'PM_',
         'title': 'KOSPI프로그램매매전체집계',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -741,6 +776,7 @@ MARKET_REQUESTS = {
     'S2_': {
         'tr_cd': 'S2_',
         'title': 'KOSPI우선호가',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -762,6 +798,7 @@ MARKET_REQUESTS = {
     'S3_': {
         'tr_cd': 'S3_',
         'title': 'KOSPI체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -783,6 +820,7 @@ MARKET_REQUESTS = {
     'S4_': {
         'tr_cd': 'S4_',
         'title': 'KOSPI기세',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -804,6 +842,7 @@ MARKET_REQUESTS = {
     'SC1': {
         'tr_cd': 'SC1',
         'title': '주식주문체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -825,6 +864,7 @@ MARKET_REQUESTS = {
     'SC2': {
         'tr_cd': 'SC2',
         'title': '주식주문정정',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -846,6 +886,7 @@ MARKET_REQUESTS = {
     'SC4': {
         'tr_cd': 'SC4',
         'title': '주식주문거부',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -867,6 +908,7 @@ MARKET_REQUESTS = {
     'SHC': {
         'tr_cd': 'SHC',
         'title': '상/하한가근접진입',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -888,6 +930,7 @@ MARKET_REQUESTS = {
     'SHD': {
         'tr_cd': 'SHD',
         'title': '상/하한가근접이탈',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -909,6 +952,7 @@ MARKET_REQUESTS = {
     'SHI': {
         'tr_cd': 'SHI',
         'title': '상/하한가진입',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -930,6 +974,7 @@ MARKET_REQUESTS = {
     'SHO': {
         'tr_cd': 'SHO',
         'title': '상/하한가이탈',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -951,6 +996,7 @@ MARKET_REQUESTS = {
     'UBM': {
         'tr_cd': 'UBM',
         'title': '(통합) 업종별투자자별매매현황',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -972,6 +1018,7 @@ MARKET_REQUESTS = {
     'UBT': {
         'tr_cd': 'UBT',
         'title': '(통합)시간대별투자자매매추이',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -993,6 +1040,7 @@ MARKET_REQUESTS = {
     'UH1': {
         'tr_cd': 'UH1',
         'title': '(통합)호가잔량',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1014,6 +1062,7 @@ MARKET_REQUESTS = {
     'UK1': {
         'tr_cd': 'UK1',
         'title': '(통합)거래원',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1036,6 +1085,7 @@ MARKET_REQUESTS = {
     'UPH': {
         'tr_cd': 'UPH',
         'title': '(통합)프로그램매매종목별',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1057,6 +1107,7 @@ MARKET_REQUESTS = {
     'UPM': {
         'tr_cd': 'UPM',
         'title': '(통합)프로그램매매전체집계',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1078,6 +1129,7 @@ MARKET_REQUESTS = {
     'US2': {
         'tr_cd': 'US2',
         'title': '(통합)우선호가',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1099,6 +1151,7 @@ MARKET_REQUESTS = {
     'US3': {
         'tr_cd': 'US3',
         'title': '(통합)체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1121,6 +1174,7 @@ MARKET_REQUESTS = {
     'UVI': {
         'tr_cd': 'UVI',
         'title': '(통합)VI발동해제',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1143,6 +1197,7 @@ MARKET_REQUESTS = {
     'UYS': {
         'tr_cd': 'UYS',
         'title': '(통합)예상체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1165,6 +1220,7 @@ MARKET_REQUESTS = {
     'VI_': {
         'tr_cd': 'VI_',
         'title': 'VI발동해제',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1186,6 +1242,7 @@ MARKET_REQUESTS = {
     'YJ_': {
         'tr_cd': 'YJ_',
         'title': '예상지수',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1207,6 +1264,7 @@ MARKET_REQUESTS = {
     'YK3': {
         'tr_cd': 'YK3',
         'title': 'KOSDAQ예상체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -1228,6 +1286,7 @@ MARKET_REQUESTS = {
     'YS3': {
         'tr_cd': 'YS3',
         'title': 'KOSPI예상체결',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',

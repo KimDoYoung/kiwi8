@@ -4,6 +4,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'C01': {
         'tr_cd': 'C01',
         'title': '선물주문체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -25,6 +26,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'C02': {
         'tr_cd': 'C02',
         'title': 'KRX야간파생 선물체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -44,6 +46,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'CD0': {
         'tr_cd': 'CD0',
         'title': '상품선물실시간상하한가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -65,6 +68,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DBM': {
         'tr_cd': 'DBM',
         'title': 'KRX야간파생 투자자매매현황',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -85,6 +89,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DBT': {
         'tr_cd': 'DBT',
         'title': 'KRX야간파생 투자자별현황',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -105,6 +110,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DC0': {
         'tr_cd': 'DC0',
         'title': 'KRX야간파생 체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -124,6 +130,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DD0': {
         'tr_cd': 'DD0',
         'title': 'KRX야간파생 실시간상하한가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -143,6 +150,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DH0': {
         'tr_cd': 'DH0',
         'title': 'KRX야간파생 호가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -162,6 +170,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DX0': {
         'tr_cd': 'DX0',
         'title': 'KRX야간파생 가격제한폭확대',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -181,6 +190,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'DYC': {
         'tr_cd': 'DYC',
         'title': 'KRX야간파생 예상체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -200,6 +210,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'FC0': {
         'tr_cd': 'FC0',
         'title': 'KOSPI200선물체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -221,6 +232,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'FD0': {
         'tr_cd': 'FD0',
         'title': 'KOSPI200선물실시간상하한가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -242,6 +254,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'FH0': {
         'tr_cd': 'FH0',
         'title': 'KOSPI200선물호가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -263,6 +276,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'FX0': {
         'tr_cd': 'FX0',
         'title': 'KOSPI200선물가격제한폭확대',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -284,6 +298,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'H01': {
         'tr_cd': 'H01',
         'title': '선물주문정정취소',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -305,6 +320,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'H02': {
         'tr_cd': 'H02',
         'title': 'KRX야간파생 선물정정취소',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -324,6 +340,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'JC0': {
         'tr_cd': 'JC0',
         'title': '주식선물체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -345,6 +362,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'JD0': {
         'tr_cd': 'JD0',
         'title': '주식선물실시간상하한가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -366,6 +384,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'JH0': {
         'tr_cd': 'JH0',
         'title': '주식선물호가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -387,6 +406,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'JX0': {
         'tr_cd': 'JX0',
         'title': '주식선물가격제한폭확대',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -408,6 +428,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'O01': {
         'tr_cd': 'O01',
         'title': '선물접수',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -429,6 +450,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'O02': {
         'tr_cd': 'O02',
         'title': 'KRX야간파생 선물접수',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'key': 'tr_cd',
@@ -448,6 +470,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'OC0': {
         'tr_cd': 'OC0',
         'title': 'KOSPI200옵션체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -469,6 +492,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'OD0': {
         'tr_cd': 'OD0',
         'title': 'KOSPI200옵션실시간상하한가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -490,6 +514,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'OH0': {
         'tr_cd': 'OH0',
         'title': 'KOSPI200옵션호가',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -511,6 +536,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'OMG': {
         'tr_cd': 'OMG',
         'title': 'KOSPI200옵션민감도',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -532,6 +558,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'OX0': {
         'tr_cd': 'OX0',
         'title': 'KOSPI200옵션가격제한폭확대',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -553,6 +580,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'SC0': {
         'tr_cd': 'SC0',
         'title': '주식주문접수',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -574,6 +602,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'SC3': {
         'tr_cd': 'SC3',
         'title': '주식주문취소',
+'url': '/stock/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -595,6 +624,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'YC3': {
         'tr_cd': 'YC3',
         'title': '상품선물예상체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -616,6 +646,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'YFC': {
         'tr_cd': 'YFC',
         'title': '지수선물예상체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -637,6 +668,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'YJC': {
         'tr_cd': 'YJC',
         'title': '주식선물예상체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
@@ -658,6 +690,7 @@ MARKET_DERIVATIVES_REALTIME_REQUESTS = {
     'YOC': {
         'tr_cd': 'YOC',
         'title': '지수옵션예상체결',
+'url': '/futureoption/market-data',
         'fields': [
             {
                 'desc': 'LS증권 거래코드',
