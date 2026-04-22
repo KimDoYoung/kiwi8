@@ -98,7 +98,7 @@ export default function KisAccountPage() {
     <div className="flex flex-col h-full text-base">
       {!isLoading && !error && (
         <AccountHeader
-          title="KIS 계좌현황" screenNo="3101" count={stocks.length}
+          title="KIS 계좌현황" screenNo="2101" count={stocks.length}
           예수금={예수금} 평가금액={평가금액} 손익={손익}
           onCsv={() => exportCsv(gridRef, 'KIS_계좌현황.csv')}
           onRefresh={() => refetch()}

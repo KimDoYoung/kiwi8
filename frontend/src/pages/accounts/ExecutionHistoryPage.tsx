@@ -54,8 +54,8 @@ function ProfitCell({ value }: { value: number | null }) {
 }
 
 // 증권사별 체결 건수 도넛
-const brokerCounts = ['키움', 'KIS', 'LS'].map((b) => ({
-  name: b, value: DATA.filter((d) => d.broker === b).length,
+const brokerCounts = ['KIS', 'LS', 'Kiwoom'].map((b) => ({
+  name: b, value: DATA.filter((d) => d.broker === b || (b === 'Kiwoom' && d.broker === '키움')).length,
 }))
 const donutOption: EChartsOption = {
   backgroundColor: '#fff',
@@ -65,9 +65,9 @@ const donutOption: EChartsOption = {
     type: 'pie', radius: ['48%', '72%'], center: ['50%', '45%'],
     label: { show: false },
     data: [
-      { ...brokerCounts[0], itemStyle: { color: '#22c55e' } },
-      { ...brokerCounts[1], itemStyle: { color: '#3b82f6' } },
-      { ...brokerCounts[2], itemStyle: { color: '#f59e0b' } },
+      { ...brokerCounts[0], itemStyle: { color: '#80624c' } },
+      { ...brokerCounts[1], itemStyle: { color: '#003378' } },
+      { ...brokerCounts[2], itemStyle: { color: '#e4007f' } },
     ],
   }],
 }
@@ -108,7 +108,7 @@ const buySellOption: EChartsOption = {
 }
 
 export default function ExecutionHistoryPage() {
-  const [filter, setFilter] = useState<'전체' | '키움' | 'KIS' | 'LS'>('전체')
+  const [filter, setFilter] = useState<'전체' | 'KIS' | 'LS' | 'Kiwoom'>('전체')
 
   const colDefs = useMemo<ColDef<ExecRow>[]>(() => [
     { field: 'time',   headerName: '체결시간', width: 90,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
@@ -122,7 +122,10 @@ export default function ExecutionHistoryPage() {
     { field: 'profit', headerName: '실현손익', width: 110, cellRenderer: ProfitCell },
   ], [])
 
-  const filtered = filter === '전체' ? DATA : DATA.filter((d) => d.broker === filter)
+  const filtered = filter === '전체' ? DATA : DATA.filter((d) => {
+    if (filter === 'Kiwoom') return d.broker === 'Kiwoom' || d.broker === '키움'
+    return d.broker === filter
+  })
   const totalProfit = DATA.reduce((s, d) => s + (d.profit ?? 0), 0)
 
   return (
@@ -158,7 +161,7 @@ export default function ExecutionHistoryPage() {
       {/* 필터 탭 + 그리드 */}
       <div className="flex-1 flex flex-col min-h-0 px-3 pb-3">
         <div className="flex gap-1 mb-2 shrink-0">
-          {(['전체', '키움', 'KIS', 'LS'] as const).map((b) => (
+          {(['전체', 'KIS', 'LS', 'Kiwoom'] as const).map((b) => (
             <button
               key={b}
               onClick={() => setFilter(b)}

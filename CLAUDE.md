@@ -78,6 +78,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   └── files/
 - **위 파일구조를 참조하여 log와 db를  조회**한다
 
+## 코딩 컨벤션
+
+- **docs/코딩지침.md** 을 참조할 것
+
 ## 참고 사이트
 
 ### 3개증권사 API문서

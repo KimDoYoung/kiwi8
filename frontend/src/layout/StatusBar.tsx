@@ -31,9 +31,9 @@ export default function StatusBar() {
           <span className="font-bold text-rose-950 text-xs">시스템 정상</span>
         </div>
         <div className="flex items-center gap-4 text-rose-700 font-semibold text-xs truncate border-l border-rose-300/50 pl-4 ml-1">
-          <span className="flex items-center gap-1.5">키움 <span className="text-green-600 font-black">ON</span></span>
           <span className="flex items-center gap-1.5">KIS <span className="text-green-600 font-black">ON</span></span>
           <span className="flex items-center gap-1.5">LS <span className="text-green-600 font-black">ON</span></span>
+          <span className="flex items-center gap-1.5">키움 <span className="text-green-600 font-black">ON</span></span>
         </div>
       </div>
 

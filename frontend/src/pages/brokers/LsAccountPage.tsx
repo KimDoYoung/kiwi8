@@ -98,7 +98,7 @@ export default function LsAccountPage() {
     <div className="flex flex-col h-full text-base">
       {!isLoading && !error && (
         <AccountHeader
-          title="LS 계좌현황" screenNo="4101" count={stocks.length}
+          title="LS 계좌현황" screenNo="3101" count={stocks.length}
           예수금Label="예수금" 예수금={예수금}
           평가금액Label="잔고평가" 평가금액={잔고평가}
           손익={손익}

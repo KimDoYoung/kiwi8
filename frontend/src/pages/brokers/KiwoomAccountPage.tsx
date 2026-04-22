@@ -103,7 +103,7 @@ export default function KiwoomAccountPage() {
     <div className="flex flex-col h-full text-base">
       {!isLoading && !error && (
         <AccountHeader
-          title="키움 계좌현황" screenNo="2101" count={stocks.length}
+          title="키움 계좌현황" screenNo="4101" count={stocks.length}
           예수금={예수금} 평가금액={평가금액} 손익={손익}
           onCsv={() => exportCsv(gridRef, '키움_계좌현황.csv')}
           onRefresh={() => refetch()}

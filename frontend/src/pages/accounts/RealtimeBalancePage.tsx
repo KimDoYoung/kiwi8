@@ -35,10 +35,6 @@ function PriceCell({ value }: { value: number }) {
 const fmtNum = (p: ValueFormatterParams) => numFmt(p.value)
 
 const ROW_DATA: BalanceRow[] = [
-  { broker: '키움', code: '005930', name: '삼성전자',    qty: 50,  avgPrice: 62_000, currentPrice: 71_800, evalAmount: 3_590_000, profitAmount: 490_000,  profitRate: 15.81, weight: 14.2 },
-  { broker: '키움', code: '000660', name: 'SK하이닉스',  qty: 10,  avgPrice: 185_000, currentPrice: 178_500, evalAmount: 1_785_000, profitAmount: -65_000, profitRate: -3.51, weight: 7.1  },
-  { broker: '키움', code: '035420', name: 'NAVER',       qty: 8,   avgPrice: 210_000, currentPrice: 228_000, evalAmount: 1_824_000, profitAmount: 144_000, profitRate: 8.57,  weight: 7.2  },
-  { broker: '키움', code: '373220', name: 'LG에너지솔루션', qty: 3, avgPrice: 380_000, currentPrice: 345_000, evalAmount: 1_035_000, profitAmount: -105_000, profitRate: -9.21, weight: 4.1 },
   { broker: 'KIS',  code: '005380', name: '현대차',      qty: 15,  avgPrice: 215_000, currentPrice: 238_000, evalAmount: 3_570_000, profitAmount: 345_000,  profitRate: 10.70, weight: 14.1 },
   { broker: 'KIS',  code: '051910', name: 'LG화학',      qty: 5,   avgPrice: 312_000, currentPrice: 287_000, evalAmount: 1_435_000, profitAmount: -125_000, profitRate: -8.01, weight: 5.7  },
   { broker: 'KIS',  code: '006400', name: '삼성SDI',     qty: 4,   avgPrice: 415_000, currentPrice: 398_000, evalAmount: 1_592_000, profitAmount: -68_000,  profitRate: -4.09, weight: 6.3  },
@@ -49,6 +45,10 @@ const ROW_DATA: BalanceRow[] = [
   { broker: 'LS',   code: '207940', name: '삼성바이오로직스', qty: 2, avgPrice: 820_000, currentPrice: 895_000, evalAmount: 1_790_000, profitAmount: 150_000, profitRate: 9.15, weight: 7.1 },
   { broker: 'LS',   code: '000270', name: '기아',        qty: 18,  avgPrice: 95_000,  currentPrice: 102_500, evalAmount: 1_845_000, profitAmount: 135_000,  profitRate: 7.89,  weight: 7.3  },
   { broker: 'LS',   code: '036570', name: 'NC소프트',    qty: 7,   avgPrice: 195_000, currentPrice: 172_000, evalAmount: 1_204_000, profitAmount: -161_000, profitRate: -11.79, weight: 4.8 },
+  { broker: 'Kiwoom', code: '005930', name: '삼성전자',    qty: 50,  avgPrice: 62_000, currentPrice: 71_800, evalAmount: 3_590_000, profitAmount: 490_000,  profitRate: 15.81, weight: 14.2 },
+  { broker: 'Kiwoom', code: '000660', name: 'SK하이닉스',  qty: 10,  avgPrice: 185_000, currentPrice: 178_500, evalAmount: 1_785_000, profitAmount: -65_000, profitRate: -3.51, weight: 7.1  },
+  { broker: 'Kiwoom', code: '035420', name: 'NAVER',       qty: 8,   avgPrice: 210_000, currentPrice: 228_000, evalAmount: 1_824_000, profitAmount: 144_000, profitRate: 8.57,  weight: 7.2  },
+  { broker: 'Kiwoom', code: '373220', name: 'LG에너지솔루션', qty: 3, avgPrice: 380_000, currentPrice: 345_000, evalAmount: 1_035_000, profitAmount: -105_000, profitRate: -9.21, weight: 4.1 },
 ]
 
 export default function RealtimeBalancePage() {

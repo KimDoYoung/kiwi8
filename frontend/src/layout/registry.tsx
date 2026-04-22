@@ -26,15 +26,17 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   // [1300 주문 센터]
   '1301': PlaceholderPage,
   '1302': PlaceholderPage,
-  // [2100 키움증권]
-  '2101': KiwoomAccountPage,
+  // [2000 KIS]
+  '2101': KisAccountPage,
   '2102': PlaceholderPage,
-  // [3100 KIS]
-  '3101': KisAccountPage,
+  '2103': PlaceholderPage,
+  '2104': PlaceholderPage,
+  // [3000 LS증권]
+  '3101': LsAccountPage,
   '3102': PlaceholderPage,
   '3103': PlaceholderPage,
-  // [4100 LS증권]
-  '4101': LsAccountPage,
+  // [4000 키움증권]
+  '4101': KiwoomAccountPage,
   '4102': PlaceholderPage,
   // [8100 투자 기록]
   '8101': PlaceholderPage,
