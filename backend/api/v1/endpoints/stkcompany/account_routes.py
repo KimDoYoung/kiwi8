@@ -161,7 +161,8 @@ async def _insert_prev_costs_kiwoom(stock_list: list):
             stk_cd = stk_cd[1:]
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-
+        stock['전일대비'] = int(stock.get('현재가', 0) or 0) - int(stock['전일종가'])
+        stock['1주당'] = int(float(stock.get('현재가', 0) or 0)) - int(float(stock.get('매입평균가격', 0) or 0))
 
 async def _insert_prev_costs_kis(stock_list: list):
     cache = get_prev_price_cache()
@@ -171,7 +172,8 @@ async def _insert_prev_costs_kis(stock_list: list):
             stk_cd = stk_cd[1:]
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-
+        stock['전일대비'] = int(stock.get('현재가', 0) or 0) - int(stock['전일종가'])
+        stock['1주당'] = int(float(stock.get('현재가', 0) or 0)) - int(float(stock.get('매입평균가격', 0) or 0))
 
 async def _insert_prev_costs_ls(stock_list: list):
     cache = get_prev_price_cache()
@@ -181,3 +183,5 @@ async def _insert_prev_costs_ls(stock_list: list):
             stk_cd = stk_cd[1:]
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
+        stock['전일대비'] = int(stock.get('현재가', 0) or 0) - int(stock['전일종가'])
+        stock['1주당'] = int(float(stock.get('현재가', 0) or 0)) - int(float(stock.get('매입평균가격', 0) or 0))

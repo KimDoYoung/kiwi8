@@ -1,5 +1,6 @@
 """종목 가격 추이 메모리 캐시 (10일치 + 추세 분석 + 멀티 API)"""
 
+import asyncio
 import random
 from datetime import datetime
 from typing import Literal
@@ -301,16 +302,19 @@ class PrevPriceCache:
         if data and len(data.prices) >= 2:
             return data.prices[-2]
 
-        # 캐시 미스: API 호출로 10일 데이터 로드
-        try:
-            prices, dates = await self._fetch_price_data(stk_cd)
-            if prices and dates and len(prices) >= 2:
-                await self.set(stk_cd, dates, prices)
-                return prices[-2]
-        except Exception as e:
-            logger.error(f"가격 데이터 조회 실패 ({stk_cd}): {e}")
+        # 캐시 미스: API 호출로 10일 데이터 로드 (최대 3회 재시도)
+        for attempt in range(3):
+            try:
+                prices, dates = await self._fetch_price_data(stk_cd)
+                if prices and dates and len(prices) >= 2:
+                    await self.set(stk_cd, dates, prices)
+                    return prices[-2]
+            except Exception as e:
+                logger.warning(f"가격 데이터 조회 실패 ({stk_cd}) [{attempt+1}/3]: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(0.3)
 
-        return None
+        logger.error(f"가격 데이터 조회 최종 실패 ({stk_cd}): 3회 시도 모두 실패")
 
     async def get_last_trend(self, stk_cd: str) -> Trend | None:
         """종목의 최신 추세 조회 (캐시 미스시 API 호출)
@@ -326,14 +330,19 @@ class PrevPriceCache:
         if data:
             return data.trend
 
-        # 캐시 미스: API 호출로 10일 데이터 로드
-        try:
-            prices, dates = await self._fetch_price_data(stk_cd)
-            if prices and dates:
-                await self.set(stk_cd, dates, prices)
-                return self._cache[stk_cd].trend
-        except Exception as e:
-            logger.error(f"가격 데이터 조회 실패 ({stk_cd}): {e}")
+        # 캐시 미스: API 호출로 10일 데이터 로드 (최대 3회 재시도)
+        for attempt in range(3):
+            try:
+                prices, dates = await self._fetch_price_data(stk_cd)
+                if prices and dates:
+                    await self.set(stk_cd, dates, prices)
+                    return self._cache[stk_cd].trend
+            except Exception as e:
+                logger.warning(f"추세 데이터 조회 실패 ({stk_cd}) [{attempt+1}/3]: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(0.3)
+
+        logger.error(f"추세 데이터 조회 최종 실패 ({stk_cd}): 3회 시도 모두 실패")
 
         return None
 
