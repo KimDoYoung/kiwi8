@@ -224,7 +224,7 @@ DELETE FROM menus;
 -- id를 명시하여 하위 메뉴 연결을 확실히 합니다.
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, icon, sort_order) VALUES 
 (1, NULL, 1, '1000', '통합 트레이딩 센터', NULL, 'layout-dashboard', 1),
-(2, NULL, 1, '3000', '증권사별 채널', NULL, 'building-2', 2),
+(2, NULL, 1, '5000', '증권사별 채널', NULL, 'building-2', 2),
 (3, NULL, 1, '8000', '매니지먼트', NULL, 'settings', 3);
 
 -- 2. 중분류 (Level 2)
@@ -236,9 +236,9 @@ INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALU
 
 -- 3000번대: 증권사별 채널 하위
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
-(22, 2, 2, '2000', '한국투자증권', NULL, 1),
-(23, 2, 2, '3000', 'LS증권', NULL, 2),
-(21, 2, 2, '4000', '키움증권', NULL, 3);
+(21, 2, 2, '2000', '한국투자증권', NULL, 1),
+(22, 2, 2, '3000', 'LS증권', NULL, 2),
+(23, 2, 2, '4000', '키움증권', NULL, 3);
 
 -- 8000번대: 매니지먼트 하위
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
@@ -267,21 +267,21 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 
 -- [2000 KIS] 특화
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(22, 3, '2101', 'KIS 계좌현황', '/kis/account/list', 1),
-(22, 3, '2102', 'KIS 조건검색', '/kis/psearch', 2),
-(22, 3, '2103', 'KIS 실시간 랭킹', '/kis/ranking', 3),
-(22, 3, '2104', 'KIS 관심종목', '/kis/attention', 4);
+(21, 3, '2101', 'KIS 계좌현황', '/kis/account/list', 1),
+(21, 3, '2102', 'KIS 조건검색', '/kis/psearch', 2),
+(21, 3, '2103', 'KIS 실시간 랭킹', '/kis/ranking', 3),
+(21, 3, '2104', 'KIS 관심종목', '/kis/attention', 4);
 
 -- [3000 LS증권] 특화
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(23, 3, '3101', 'LS 계좌현황', '/ls/account/list', 1),
-(23, 3, '3102', 'LS 상위종목', '/ls/ranking', 2),
-(23, 3, '3103', 'LS 계좌상세', '/ls/account/detail', 3);
+(22, 3, '3101', 'LS 계좌현황', '/ls/account/list', 1),
+(22, 3, '3102', 'LS 상위종목', '/ls/ranking', 2),
+(22, 3, '3103', 'LS 계좌상세', '/ls/account/detail', 3);
 
 -- [4000 키움증권] 특화
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(21, 3, '4101', '키움 계좌현황', '/kiwoom/account/list', 1),
-(21, 3, '4102', '키움 상세잔고', '/kiwoom/account/detail', 2);
+(23, 3, '4101', '키움 계좌현황', '/kiwoom/account/list', 1),
+(23, 3, '4102', '키움 상세잔고', '/kiwoom/account/detail', 2);
 
 -- [8100 투자 기록] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 

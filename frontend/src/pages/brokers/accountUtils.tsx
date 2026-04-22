@@ -1,8 +1,8 @@
 /**
  * 계좌현황 페이지 공통 유틸리티
  */
+import React, { type RefObject } from 'react'
 import type { AgGridReact } from 'ag-grid-react'
-import type { RefObject } from 'react'
 
 export const toNum = (v: unknown): number => {
   if (v === undefined || v === null || v === '') return 0
@@ -72,11 +72,17 @@ export function exportCsv(gridRef: RefObject<AgGridReact | null>, fileName: stri
 
 /** 헤더바 컴포넌트 */
 export function AccountHeader({
-  title, screenNo, count,
-  예수금Label = '예수금', 예수금 = 0,
-  평가금액Label = '평가금액', 평가금액 = 0,
+  title,
+  screenNo,
+  count,
+  예수금Label = '예수금',
+  예수금 = 0,
+  평가금액Label = '평가금액',
+  평가금액 = 0,
   손익 = 0,
-  onCsv, onRefresh,
+  onCsv,
+  onRefresh,
+  children,
 }: {
   title: string
   screenNo: string
@@ -88,6 +94,7 @@ export function AccountHeader({
   손익?: number
   onCsv: () => void
   onRefresh: () => void
+  children?: React.ReactNode
 }) {
   return (
     <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 flex items-center gap-0 shrink-0 text-sm flex-wrap">
@@ -96,15 +103,21 @@ export function AccountHeader({
       <span className="text-gray-400 font-mono ml-1 mr-3">[{screenNo}]</span>
 
       {/* 종목 수 */}
-      <span className="text-gray-500">총 <span className="font-semibold text-gray-800">{count}</span>종목</span>
+      <span className="text-gray-500">
+        총 <span className="font-semibold text-gray-800">{count}</span>종목
+      </span>
       <Pipe />
 
       {/* 예수금 */}
-      <span className="text-gray-500">{예수금Label} <span className="font-semibold text-gray-800">{fmt(예수금)}</span>원</span>
+      <span className="text-gray-500">
+        {예수금Label} <span className="font-semibold text-gray-800">{fmt(예수금)}</span>원
+      </span>
       <Pipe />
 
       {/* 평가금액 */}
-      <span className="text-gray-500">{평가금액Label} <span className="font-semibold text-gray-800">{fmt(평가금액)}</span>원</span>
+      <span className="text-gray-500">
+        {평가금액Label} <span className="font-semibold text-gray-800">{fmt(평가금액)}</span>원
+      </span>
       <Pipe />
 
       {/* 손익 */}
@@ -112,6 +125,10 @@ export function AccountHeader({
         손익 <span style={colorStyle(손익)} className="font-semibold">{fmt(손익)}</span>원
       </span>
       <Pipe />
+
+      {/* 커스텀 영역 (필터 라디오 버튼 등) */}
+      {children}
+      {children && <span className="mx-1" />}
 
       {/* 버튼들 */}
       <button
@@ -134,3 +151,4 @@ export function AccountHeader({
 function Pipe() {
   return <span className="mx-2 text-gray-300">|</span>
 }
+

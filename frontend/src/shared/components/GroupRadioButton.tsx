@@ -22,6 +22,7 @@ import { cn } from "@/shared/lib/utils";
 interface GroupOption {
   label: string;
   value: string;
+  className?: string; // 개별 스타일 추가
 }
 
 interface GroupRadioButtonProps {
@@ -30,6 +31,7 @@ interface GroupRadioButtonProps {
   value?: string;
   onValueChange?: (value: string) => void;
   className?: string;
+  itemClassName?: string;
 }
 
 export const GroupRadioButton = ({
@@ -38,6 +40,7 @@ export const GroupRadioButton = ({
   value,
   onValueChange,
   className,
+  itemClassName,
 }: GroupRadioButtonProps) => {
   return (
     <ToggleGroup
@@ -58,6 +61,8 @@ export const GroupRadioButton = ({
           value={option.value}
           className={cn(
             "px-4 transition-all data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm",
+            itemClassName,
+            option.className // 개별 클래스 적용
           )}
         >
           {option.label}

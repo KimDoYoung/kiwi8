@@ -8,7 +8,7 @@ import { ko, enUS } from "date-fns/locale";
  * 조건부 클래스 할당(clsx)과 클래스 중복 제거(twMerge)를 동시에 처리합니다.
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+    return twMerge(clsx(inputs));
 }
 
 /**
@@ -21,38 +21,38 @@ export function cn(...inputs: ClassValue[]) {
  * @returns 포맷팅된 날짜 문자열 (예: '2026-04-11 14:30:00 (토요일)')
  */
 export function formatDate(
-  dateInput: string | Date | undefined,
-  dayofweek = true,
-  short = true,
-  english = false,
-  time_display = false,
+    dateInput: string | Date | undefined,
+    dayofweek = true,
+    short = true,
+    english = false,
+    time_display = false,
 ): string {
-  if (!dateInput) return "-";
+    if (!dateInput) return "-";
 
-  let date: Date;
-  if (dateInput instanceof Date) {
-    date = dateInput;
-  } else if (dateInput.length === 8) {
-    date = parse(dateInput, "yyyyMMdd", new Date());
-  } else {
-    date = parseISO(dateInput);
-  }
+    let date: Date;
+    if (dateInput instanceof Date) {
+        date = dateInput;
+    } else if (dateInput.length === 8) {
+        date = parse(dateInput, "yyyyMMdd", new Date());
+    } else {
+        date = parseISO(dateInput);
+    }
 
-  if (!isValid(date)) return "Invalid Date : " + dateInput;
+    if (!isValid(date)) return "Invalid Date : " + dateInput;
 
-  let result = format(date, "yyyy-MM-dd");
+    let result = format(date, "yyyy-MM-dd");
 
-  if (time_display) {
-    result += " " + format(date, "HH:mm:ss");
-  }
+    if (time_display) {
+        result += " " + format(date, "HH:mm:ss");
+    }
 
-  if (dayofweek) {
-    const pattern = short ? "EEE" : "EEEE";
-    const locale = english ? enUS : ko;
-    result += ` (${format(date, pattern, { locale })})`;
-  }
+    if (dayofweek) {
+        const pattern = short ? "EEE" : "EEEE";
+        const locale = english ? enUS : ko;
+        result += ` (${format(date, pattern, { locale })})`;
+    }
 
-  return result;
+    return result;
 }
 
 /**
@@ -62,18 +62,18 @@ export function formatDate(
  * @param english - true이면 영어, false이면 한국어
  */
 export const getDayOfWeek = (dateStr: string, short = false, english = false): string => {
-  try {
-    const d = dateStr.length === 8
-      ? parse(dateStr, "yyyyMMdd", new Date())
-      : parseISO(dateStr);
-    if (!isValid(d)) return "";
-    const pattern = short ? "EEE" : "EEEE";
-    const locale = english ? enUS : ko;
-    return format(d, pattern, { locale });
-  } catch (e) {
-    console.error("Invalid date format", e);
-    return "";
-  }
+    try {
+        const d = dateStr.length === 8
+            ? parse(dateStr, "yyyyMMdd", new Date())
+            : parseISO(dateStr);
+        if (!isValid(d)) return "";
+        const pattern = short ? "EEE" : "EEEE";
+        const locale = english ? enUS : ko;
+        return format(d, pattern, { locale });
+    } catch (e) {
+        console.error("Invalid date format", e);
+        return "";
+    }
 }
 
 /**
@@ -82,10 +82,10 @@ export const getDayOfWeek = (dateStr: string, short = false, english = false): s
  * @returns 'yyyymmdd' 형식의 날짜 문자열 (예: '20260412')
  */
 export const formatYmd = (input: Date | string): string => {
-  if (input instanceof Date) {
-    return format(input, "yyyyMMdd");
-  }
-  return input.replace(/\D/g, "");
+    if (input instanceof Date) {
+        return format(input, "yyyyMMdd");
+    }
+    return input.replace(/\D/g, "");
 }
 
 /**
@@ -94,35 +94,35 @@ export const formatYmd = (input: Date | string): string => {
  * @returns 포맷팅된 파일 크기 문자열 (예: '1.5 MB', '320.0 KB')
  */
 export function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
 
 /**
  * yyyymmdd / yyyy-MM-dd / Date 입력값을 일 단위로 이동한 yyyymmdd 문자열로 반환합니다.
  */
 export function addYmd(input: string | Date, days: number): string {
-  const date = addDate(input, days)
-  if (!isValid(date)) return ''
+    const date = addDate(input, days)
+    if (!isValid(date)) return ''
 
-  return format(date, 'yyyyMMdd')
+    return format(date, 'yyyyMMdd')
 }
 
 /**
  * yyyymmdd / yyyy-MM-dd / Date 입력값을 일 단위로 이동한 Date 객체로 반환합니다.
  */
 export function addDate(input: string | Date, days: number): Date {
-  const normalizedYmd = formatYmd(input)
-  if (!/^\d{8}$/.test(normalizedYmd)) return new Date(NaN)
+    const normalizedYmd = formatYmd(input)
+    if (!/^\d{8}$/.test(normalizedYmd)) return new Date(NaN)
 
-  const date = parse(normalizedYmd, 'yyyyMMdd', new Date())
-  if (!isValid(date)) return new Date(NaN)
+    const date = parse(normalizedYmd, 'yyyyMMdd', new Date())
+    if (!isValid(date)) return new Date(NaN)
 
-  date.setDate(date.getDate() + days)
-  return date
+    date.setDate(date.getDate() + days)
+    return date
 }
 
 /**
@@ -132,8 +132,8 @@ export function addDate(input: string | Date, days: number): Date {
  * @returns 포맷팅된 숫자 문자열 또는 기본값
  */
 export function formatCount(count: number | undefined, defaultValue = '-'): string {
-  if (count === undefined || count === null) return defaultValue
-  return count.toLocaleString('en-US')
+    if (count === undefined || count === null) return defaultValue
+    return count.toLocaleString('en-US')
 }
 /**
  * 비용(cost) 숫자를 천단위로 콤마를 추가하여 포맷팅합니다.
@@ -142,8 +142,8 @@ export function formatCount(count: number | undefined, defaultValue = '-'): stri
  * @returns 포맷팅된 비용 문자열 또는 기본값
  */
 export function formatCost(cost: number | null | undefined, defaultValue = '0'): string {
-  if (cost === undefined || cost === null) return defaultValue
-  return cost.toLocaleString('en-US')
+    if (cost === undefined || cost === null) return defaultValue
+    return cost.toLocaleString('en-US')
 }
 
 /**
@@ -151,14 +151,14 @@ export function formatCost(cost: number | null | undefined, defaultValue = '0'):
  * 오늘 날짜면 시간(HH:mm), 그 외에는 yyyy. MM. dd. 형식으로 반환합니다.
  */
 export function formatRelativeDateTime(dateInput: string | null | undefined): string {
-  if (!dateInput) return ''
+    if (!dateInput) return ''
 
-  const date = parseISO(dateInput)
-  if (!isValid(date)) return ''
+    const date = parseISO(dateInput)
+    if (!isValid(date)) return ''
 
-  if (isToday(date)) {
-    return format(date, 'HH:mm')
-  }
+    if (isToday(date)) {
+        return format(date, 'HH:mm')
+    }
 
-  return format(date, 'yyyy. MM. dd.', { locale: ko })
+    return format(date, 'yyyy. MM. dd.', { locale: ko })
 }

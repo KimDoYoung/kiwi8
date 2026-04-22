@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
@@ -9,6 +9,9 @@ import {
   ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,
   numComparator, exportCsv, AccountHeader,
 } from './accountUtils'
+import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import Loading from '@/shared/components/Loading'
+import LoadingFail from '@/shared/components/LoadingFail'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -25,7 +28,21 @@ export default function LsAccountPage() {
     staleTime: 1000 * 30,
   })
 
-  const stocks: Record<string, unknown>[] = data?.data?.t0424OutBlock1 ?? []
+  const [profitFilter, setProfitFilter] = useState('all')
+
+  const rawStocks: Record<string, unknown>[] = data?.data?.t0424OutBlock1 ?? []
+
+  const stocks = useMemo(() => {
+    let list = rawStocks.map((s) => {
+      const code = String(s['종목번호'] ?? '')
+      return { ...s, 종목번호: code.startsWith('A') ? code.slice(1) : code }
+    })
+
+    if (profitFilter === 'minus') return list.filter(s => toNum(s['평가손익']) < 0)
+    if (profitFilter === 'plus') return list.filter(s => toNum(s['평가손익']) > 0)
+    return list
+  }, [rawStocks, profitFilter])
+
   const summary = data?.data?.t0424OutBlock ?? {}
 
   const totalMaeip = useMemo(() =>
@@ -38,10 +55,7 @@ export default function LsAccountPage() {
   const colDefs = useMemo<ColDef[]>(() => [
     {
       headerName: '종목코드', width: 100, pinned: 'left',
-      valueGetter: (p) => {
-        const code = String(p.data?.종목번호 ?? '')
-        return code.startsWith('A') ? code.slice(1) : code
-      },
+      valueGetter: (p) => p.data?.종목번호 ?? '',
       cellRenderer: CodeCell,
       comparator: (a: string, b: string) => a.localeCompare(b),
     },
@@ -94,33 +108,60 @@ export default function LsAccountPage() {
     sortable: true, resizable: true,
   }), [])
 
+  if (isLoading) {
+    return <Loading message="LS 계좌 정보를 불러오는 중..." />
+  }
+
+  if (error || !data) {
+    return <LoadingFail message="LS 계좌 정보를 불러오는데 실패했습니다." />
+  }
+
   return (
     <div className="flex flex-col h-full text-base">
-      {!isLoading && !error && (
-        <AccountHeader
-          title="LS 계좌현황" screenNo="3101" count={stocks.length}
-          예수금Label="예수금" 예수금={예수금}
-          평가금액Label="잔고평가" 평가금액={잔고평가}
-          손익={손익}
-          onCsv={() => exportCsv(gridRef, 'LS_계좌현황.csv')}
-          onRefresh={() => refetch()}
+      <AccountHeader
+        title="LS 계좌현황" screenNo="3101" count={stocks.length}
+        예수금Label="예수금" 예수금={예수금}
+        평가금액Label="잔고평가" 평가금액={잔고평가}
+        손익={손익}
+        onCsv={() => exportCsv(gridRef, 'LS_계좌현황.csv')}
+        onRefresh={() => refetch()}
+      >
+        <GroupRadioButton
+          options={[
+            { 
+              label: '-', 
+              value: 'minus', 
+              className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700 data-[state=on]:border-blue-300' 
+            },
+            { 
+              label: '全', 
+              value: 'all', 
+              className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-400' 
+            },
+            { 
+              label: '+', 
+              value: 'plus', 
+              className: 'data-[state=on]:bg-red-100 data-[state=on]:text-red-700 data-[state=on]:border-red-300' 
+            },
+          ]}
+          value={profitFilter}
+          onValueChange={setProfitFilter}
+          className="h-[26px] bg-white"
+          itemClassName="h-[24px] text-xs px-3"
         />
-      )}
-      {isLoading && <div className="flex-1 flex items-center justify-center text-gray-400">데이터 로딩 중...</div>}
-      {error && <div className="flex-1 flex items-center justify-center text-red-400">데이터를 불러오지 못했습니다.</div>}
-      {!isLoading && !error && (
-        <div className="flex-1 ag-theme-alpine overflow-hidden">
-          <AgGridReact
-            ref={gridRef}
-            rowData={stocks}
-            columnDefs={colDefs}
-            defaultColDef={defaultColDef}
-            domLayout="normal"
-            headerHeight={36}
-            rowHeight={32}
-          />
-        </div>
-      )}
+      </AccountHeader>
+      
+      <div className="flex-1 ag-theme-alpine overflow-hidden">
+        <AgGridReact
+          ref={gridRef}
+          rowData={stocks}
+          columnDefs={colDefs}
+          defaultColDef={defaultColDef}
+          domLayout="normal"
+          headerHeight={36}
+          rowHeight={32}
+        />
+      </div>
     </div>
   )
 }

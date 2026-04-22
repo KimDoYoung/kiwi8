@@ -10,10 +10,12 @@ import {
     RefreshCw,
     Building2,
     Banknote,
-    Briefcase
+    Briefcase,
+    Store,
+    Landmark
 } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
-import { cn } from '@/shared/lib/utils'
+import { cn, formatCost } from '@/shared/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 
@@ -43,14 +45,6 @@ interface AccountSummaryResponse {
     accounts: Record<string, AccountData>
 }
 
-const formatKRW = (val: number) =>
-    new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' })
-        .format(val)
-        .replace('₩', '₩ ')
-
-const formatNumber = (val: number) =>
-    new Intl.NumberFormat('ko-KR').format(val)
-
 export default function AccountSummaryPage() {
     const { data, isLoading, isError, refetch, isFetching } = useQuery<AccountSummaryResponse>({
         queryKey: ['accountSummary'],
@@ -69,7 +63,12 @@ export default function AccountSummaryPage() {
     }
 
     const { summary, accounts } = data
-    const accountList = Object.values(accounts)
+    
+    // 증권사 순서: 1. 한국투자증권(kis), 2. LS증권(ls), 3. 키움증권(kiwoom)
+    const BROKER_ORDER: Record<string, number> = { kis: 1, ls: 2, kiwoom: 3 }
+    const accountList = Object.values(accounts).sort((a, b) => 
+        (BROKER_ORDER[a.id] || 99) - (BROKER_ORDER[b.id] || 99)
+    )
 
     // 파이 차트 데이터 (자산 비중)
     const pieOption = {
@@ -109,7 +108,7 @@ export default function AccountSummaryPage() {
                     value: acc.평가손익,
                     itemStyle: { color: acc.평가손익 >= 0 ? '#ef4444' : '#3b82f6' }
                 })),
-                label: { show: true, position: 'top', fontSize: 10, formatter: (p: any) => formatNumber(p.value) }
+                label: { show: true, position: 'top', fontSize: 10, formatter: (p: any) => formatCost(p.value) }
             }
         ]
     }
@@ -133,15 +132,15 @@ export default function AccountSummaryPage() {
                 </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-8">
                 {/* 전체 요약 카드 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <Card className="shadow-sm hover:shadow-md transition-all duration-300 border-slate-200/60 overflow-hidden bg-white">
                         <CardContent className="p-0">
                             <div className="p-4 flex items-start justify-between">
                                 <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">전체 자산</p>
-                                    <p className="text-xl font-bold mt-1 text-slate-900">{formatKRW(summary.전체자산)}</p>
+                                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">전체 자산</p>
+                                    <p className="text-2xl lg:text-3xl font-bold mt-1.5 text-slate-900">{formatCost(summary.전체자산)}</p>
                                 </div>
                                 <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
                                     <Wallet className="w-5 h-5" />
@@ -154,12 +153,12 @@ export default function AccountSummaryPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                    <Card className="shadow-sm hover:shadow-md transition-all duration-300 border-slate-200/60 overflow-hidden bg-white">
                         <CardContent className="p-0">
                             <div className="p-4 flex items-start justify-between">
                                 <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">전체 매입</p>
-                                    <p className="text-xl font-bold mt-1 text-slate-900">{formatKRW(summary.전체매입금액)}</p>
+                                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">전체 매입</p>
+                                    <p className="text-2xl lg:text-3xl font-bold mt-1.5 text-slate-900">{formatCost(summary.전체매입금액)}</p>
                                 </div>
                                 <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
                                     <Banknote className="w-5 h-5" />
@@ -169,16 +168,16 @@ export default function AccountSummaryPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                    <Card className="shadow-sm hover:shadow-md transition-all duration-300 border-slate-200/60 overflow-hidden bg-white">
                         <CardContent className="p-0">
                             <div className="p-4 flex items-start justify-between">
                                 <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">전체 평가손익</p>
+                                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">전체 평가손익</p>
                                     <p className={cn(
-                                        "text-xl font-bold mt-1",
+                                        "text-2xl lg:text-3xl font-bold mt-1.5",
                                         summary.전체평가손익 >= 0 ? "text-red-600" : "text-blue-600"
                                     )}>
-                                        {summary.전체평가손익 >= 0 ? '+' : ''}{formatKRW(summary.전체평가손익)}
+                                        {summary.전체평가손익 >= 0 ? '+' : ''}{formatCost(summary.전체평가손익)}
                                     </p>
                                 </div>
                                 <div className={cn(
@@ -192,13 +191,13 @@ export default function AccountSummaryPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                    <Card className="shadow-sm hover:shadow-md transition-all duration-300 border-slate-200/60 overflow-hidden bg-white">
                         <CardContent className="p-0">
                             <div className="p-4 flex items-start justify-between">
                                 <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">전체 수익률</p>
+                                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">전체 수익률</p>
                                     <p className={cn(
-                                        "text-xl font-bold mt-1",
+                                        "text-2xl lg:text-3xl font-bold mt-1.5",
                                         summary.전체수익률.startsWith('-') ? "text-blue-600" : "text-red-600"
                                     )}>
                                         {summary.전체수익률}
@@ -246,65 +245,70 @@ export default function AccountSummaryPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {accountList.map((acc) => (
-                        <Card key={acc.id} className="shadow-sm border-slate-200 hover:border-primary/30 transition-colors group">
-                            <CardHeader className="py-3 px-4 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
-                                <div className="flex items-center gap-2">
+                    {accountList.map((acc) => {
+                        const brokerColor = acc.id === 'kis' ? '#80624c' : acc.id === 'ls' ? '#003378' : '#e4007f'
+                        const BrokerIcon = acc.id === 'kis' ? Landmark : acc.id === 'ls' ? Store : Building2
+                        
+                        return (
+                            <Card key={acc.id} className="shadow-sm hover:shadow-md transition-all duration-300 border-slate-200/80 hover:border-slate-300 bg-white">
+                                <CardHeader className="py-4 px-5 border-b border-slate-100 flex flex-row items-center gap-2 bg-white rounded-t-xl">
                                     <div 
-                                        className="w-2 h-2 rounded-full"
-                                        style={{ backgroundColor: acc.id === 'kis' ? '#80624c' : acc.id === 'ls' ? '#003378' : '#e4007f' }}
-                                    />
-                                    <span className="font-bold text-sm text-slate-700">{acc.증권사명}</span>
-                                </div>
-                                <span className="text-[10px] font-mono text-slate-400 tracking-wider">
-                                    {acc.계좌번호}
-                                </span>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-500 flex items-center gap-1.5">
-                                        <Briefcase className="w-3 h-3" /> 보유 종목수
+                                        className="px-3 py-1.5 rounded-md text-white font-bold text-sm flex items-center gap-1.5 shadow-sm"
+                                        style={{ backgroundColor: brokerColor }}
+                                    >
+                                        <BrokerIcon className="w-4 h-4" />
+                                        {acc.증권사명}
+                                    </div>
+                                    <span className="text-sm font-mono text-slate-400 ml-1">
+                                        ({acc.계좌번호})
                                     </span>
-                                    <span className="font-semibold text-slate-800">{acc.보유종목수}개</span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-500 flex items-center gap-1.5">
-                                        <TrendingUp className="w-3 h-3" /> 수익률
-                                    </span>
-                                    <span className={cn(
-                                        "font-bold",
-                                        acc.수익률.startsWith('-') ? "text-blue-600" : "text-red-600"
-                                    )}>
-                                        {acc.수익률}
-                                    </span>
-                                </div>
-                                <div className="h-px bg-slate-100 my-1" />
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase">총 자산</p>
-                                        <p className="text-sm font-bold text-slate-800 mt-0.5">{formatKRW(acc.총자산)}</p>
+                                </CardHeader>
+                                <CardContent className="p-5">
+                                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                                        {/* Row 1 */}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">종목수</span>
+                                            <span className="font-bold text-slate-800">{acc.보유종목수}개</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">수익률</span>
+                                            <span className={cn(
+                                                "font-bold",
+                                                acc.수익률.startsWith('-') ? "text-blue-600" : "text-red-600"
+                                            )}>
+                                                {acc.수익률}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Row 2 */}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">총자산</span>
+                                            <span className="font-bold text-slate-800">{formatCost(acc.총자산)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">매입금액</span>
+                                            <span className="font-bold text-slate-800">{formatCost(acc.매입금액)}</span>
+                                        </div>
+
+                                        {/* Row 3 */}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">평가손익</span>
+                                            <span className={cn(
+                                                "font-bold",
+                                                acc.평가손익 >= 0 ? "text-red-600" : "text-blue-600"
+                                            )}>
+                                                {acc.평가손익 > 0 ? '+' : ''}{formatCost(acc.평가손익)}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">주문가능</span>
+                                            <span className="font-bold text-sky-500">{formatCost(acc.주문가능금액)}</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase">매입 금액</p>
-                                        <p className="text-sm font-bold text-slate-800 mt-0.5">{formatKRW(acc.매입금액)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase">평가 손익</p>
-                                        <p className={cn(
-                                            "text-sm font-bold mt-0.5",
-                                            acc.평가손익 >= 0 ? "text-red-600" : "text-blue-600"
-                                        )}>
-                                            {acc.평가손익 >= 0 ? '+' : ''}{formatKRW(acc.평가손익)}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase">주문 가능</p>
-                                        <p className="text-sm font-bold text-emerald-600 mt-0.5">{formatKRW(acc.주문가능금액)}</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
                 </div>
             </div>
         </div>

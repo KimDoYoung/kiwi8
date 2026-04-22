@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
@@ -9,6 +9,7 @@ import {
   ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,
   numComparator, exportCsv, AccountHeader,
 } from './accountUtils'
+import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -27,6 +28,14 @@ export default function KisAccountPage() {
 
   const stocks: Record<string, unknown>[] = data?.data?.output1 ?? []
   const summary = data?.data?.output2?.[0] ?? {}
+
+  const [profitFilter, setProfitFilter] = useState('all')
+
+  const filteredStocks = useMemo(() => {
+    if (profitFilter === 'minus') return stocks.filter(s => toNum(s['평가손익금액']) < 0)
+    if (profitFilter === 'plus') return stocks.filter(s => toNum(s['평가손익금액']) > 0)
+    return stocks
+  }, [stocks, profitFilter])
 
   const totalMaeip = useMemo(() =>
     stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
@@ -94,31 +103,58 @@ export default function KisAccountPage() {
     sortable: true, resizable: true,
   }), [])
 
+  if (isLoading) {
+    return <Loading message="KIS 계좌 정보를 불러오는 중..." />
+  }
+
+  if (error || !data) {
+    return <LoadingFail message="KIS 계좌 정보를 불러오는데 실패했습니다." />
+  }
+
   return (
     <div className="flex flex-col h-full text-base">
-      {!isLoading && !error && (
-        <AccountHeader
-          title="KIS 계좌현황" screenNo="2101" count={stocks.length}
-          예수금={예수금} 평가금액={평가금액} 손익={손익}
-          onCsv={() => exportCsv(gridRef, 'KIS_계좌현황.csv')}
-          onRefresh={() => refetch()}
+      <AccountHeader
+        title="KIS 계좌현황" screenNo="2101" count={filteredStocks.length}
+        예수금={예수금} 평가금액={평가금액} 손익={손익}
+        onCsv={() => exportCsv(gridRef, 'KIS_계좌현황.csv')}
+        onRefresh={() => refetch()}
+      >
+        <GroupRadioButton
+          options={[
+            { 
+              label: '-', 
+              value: 'minus', 
+              className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700 data-[state=on]:border-blue-300' 
+            },
+            { 
+              label: '全', 
+              value: 'all', 
+              className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-400' 
+            },
+            { 
+              label: '+', 
+              value: 'plus', 
+              className: 'data-[state=on]:bg-red-100 data-[state=on]:text-red-700 data-[state=on]:border-red-300' 
+            },
+          ]}
+          value={profitFilter}
+          onValueChange={setProfitFilter}
+          className="h-[26px] bg-white"
+          itemClassName="h-[24px] text-xs px-3"
         />
-      )}
-      {isLoading && <div className="flex-1 flex items-center justify-center text-gray-400">데이터 로딩 중...</div>}
-      {error && <div className="flex-1 flex items-center justify-center text-red-400">데이터를 불러오지 못했습니다.</div>}
-      {!isLoading && !error && (
-        <div className="flex-1 ag-theme-alpine overflow-hidden">
-          <AgGridReact
-            ref={gridRef}
-            rowData={stocks}
-            columnDefs={colDefs}
-            defaultColDef={defaultColDef}
-            domLayout="normal"
-            headerHeight={36}
-            rowHeight={32}
-          />
-        </div>
-      )}
+      </AccountHeader>
+      
+      <div className="flex-1 ag-theme-alpine overflow-hidden">
+        <AgGridReact
+          ref={gridRef}
+          rowData={filteredStocks}
+          columnDefs={colDefs}
+          defaultColDef={defaultColDef}
+          domLayout="normal"
+          headerHeight={36}
+          rowHeight={32}
+        />
+      </div>
     </div>
   )
 }

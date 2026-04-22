@@ -1,14 +1,17 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import api from '@/shared/lib/api'
 import {
-  toNum, fmt, colorStyle,
+  toNum, fmt,
   ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,
   numComparator, exportCsv, AccountHeader,
 } from './accountUtils'
+import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import Loading from '@/shared/components/Loading'
+import LoadingFail from '@/shared/components/LoadingFail'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -25,14 +28,21 @@ export default function KiwoomAccountPage() {
     staleTime: 1000 * 30,
   })
 
+  const [profitFilter, setProfitFilter] = useState('all')
+
   const rawStocks: Record<string, unknown>[] = data?.data?.종목별계좌평가현황 ?? []
 
-  // 키움 종목코드 'A' 제거
-  const stocks = useMemo(() =>
-    rawStocks.map((s) => {
+  // 필터링 및 종목코드 가공
+  const stocks = useMemo(() => {
+    let list = rawStocks.map((s) => {
       const code = String(s['종목코드'] ?? '')
       return { ...s, 종목코드: code.startsWith('A') ? code.slice(1) : code }
-    }), [rawStocks])
+    })
+
+    if (profitFilter === 'minus') return list.filter(s => (toNum(s['평가금액']) - toNum(s['매입금액'])) < 0)
+    if (profitFilter === 'plus') return list.filter(s => (toNum(s['평가금액']) - toNum(s['매입금액'])) > 0)
+    return list
+  }, [rawStocks, profitFilter])
 
   const totalMaeip = useMemo(() =>
     stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
@@ -99,31 +109,58 @@ export default function KiwoomAccountPage() {
     sortable: true, resizable: true,
   }), [])
 
+  if (isLoading) {
+    return <Loading message="키움 계좌 정보를 불러오는 중..." />
+  }
+
+  if (error || !data) {
+    return <LoadingFail message="키움 계좌 정보를 불러오는데 실패했습니다." />
+  }
+
   return (
     <div className="flex flex-col h-full text-base">
-      {!isLoading && !error && (
-        <AccountHeader
-          title="키움 계좌현황" screenNo="4101" count={stocks.length}
-          예수금={예수금} 평가금액={평가금액} 손익={손익}
-          onCsv={() => exportCsv(gridRef, '키움_계좌현황.csv')}
-          onRefresh={() => refetch()}
+      <AccountHeader
+        title="키움 계좌현황" screenNo="4101" count={stocks.length}
+        예수금={예수금} 평가금액={평가금액} 손익={손익}
+        onCsv={() => exportCsv(gridRef, '키움_계좌현황.csv')}
+        onRefresh={() => refetch()}
+      >
+        <GroupRadioButton
+          options={[
+            { 
+              label: '-', 
+              value: 'minus', 
+              className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700 data-[state=on]:border-blue-300' 
+            },
+            { 
+              label: '全', 
+              value: 'all', 
+              className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-400' 
+            },
+            { 
+              label: '+', 
+              value: 'plus', 
+              className: 'data-[state=on]:bg-red-100 data-[state=on]:text-red-700 data-[state=on]:border-red-300' 
+            },
+          ]}
+          value={profitFilter}
+          onValueChange={setProfitFilter}
+          className="h-[26px] bg-white"
+          itemClassName="h-[24px] text-xs px-3"
         />
-      )}
-      {isLoading && <div className="flex-1 flex items-center justify-center text-gray-400">데이터 로딩 중...</div>}
-      {error && <div className="flex-1 flex items-center justify-center text-red-400">데이터를 불러오지 못했습니다.</div>}
-      {!isLoading && !error && (
-        <div className="flex-1 ag-theme-alpine overflow-hidden">
-          <AgGridReact
-            ref={gridRef}
-            rowData={stocks}
-            columnDefs={colDefs}
-            defaultColDef={defaultColDef}
-            domLayout="normal"
-            headerHeight={36}
-            rowHeight={32}
-          />
-        </div>
-      )}
+      </AccountHeader>
+      
+      <div className="flex-1 ag-theme-alpine overflow-hidden">
+        <AgGridReact
+          ref={gridRef}
+          rowData={stocks}
+          columnDefs={colDefs}
+          defaultColDef={defaultColDef}
+          domLayout="normal"
+          headerHeight={36}
+          rowHeight={32}
+        />
+      </div>
     </div>
   )
 }
