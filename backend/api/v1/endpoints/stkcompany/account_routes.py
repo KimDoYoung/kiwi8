@@ -10,17 +10,17 @@ from fastapi import APIRouter
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.services.prev_price_cache import get_prev_price_cache
-from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
-    KiwoomApiHelper,
-    KiwoomRequest,
-    KiwoomResponse,
-)
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import (
     KisApiHelper,
     KisRequest,
     KisResponse,
+)
+from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+    KiwoomApiHelper,
+    KiwoomRequest,
+    KiwoomResponse,
 )
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api
 from backend.domains.stkcompanys.ls.models.ls_schema import (
@@ -143,7 +143,6 @@ async def ls_account_list():
             response.data = korea_data
             await _insert_prev_costs_ls(response.data.get('t0424OutBlock1', []))
             logger.info('[계좌현황] LS 계좌현황 조회 성공')
-        import json
         # print('[DEBUG] ls/account/list response:', json.dumps(response.model_dump(mode='json'), ensure_ascii=False, indent=2))
         return response
 

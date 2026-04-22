@@ -3,7 +3,7 @@ import { Actions, Layout, TabNode, TabSetNode, BorderNode, I18nLabel } from 'fle
 import 'flexlayout-react/style/light.css'
 import { useLayoutStore } from '@/store/layoutStore'
 import registry from './registry'
-import PlaceholderPage from '@/pages/PlaceholderPage'
+import PlaceholderPage from '@/pages/common/PlaceholderPage'
 import { X, ArrowRight, Layers, Trash2, Home } from 'lucide-react'
 
 export default function Workspace() {

@@ -14,13 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+} from '@/shared/components/ui/dialog'
+import { Button } from '@/shared/components/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@/shared/components/ui/popover'
 
 export default function LayoutPresetPanel() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)

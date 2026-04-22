@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { fetchMenuTree } from '@/services/menuService'
-import api from '@/lib/api'
+import api from '@/shared/lib/api'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
 import LayoutPresetPanel from './topbar/LayoutPresetPanel'
 

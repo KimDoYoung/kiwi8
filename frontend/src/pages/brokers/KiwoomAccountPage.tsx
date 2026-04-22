@@ -3,45 +3,50 @@ import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
-import api from '@/lib/api'
+import api from '@/shared/lib/api'
 import {
-  toNum, fmt,
+  toNum, fmt, colorStyle,
   ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,
   numComparator, exportCsv, AccountHeader,
 } from './accountUtils'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
-async function fetchLsAccount() {
-  const res = await api.get('/api/v1/stkcompany/ls/account/list')
+async function fetchKiwoomAccount() {
+  const res = await api.get('/api/v1/stkcompany/kiwoom/account/list')
   return res.data
 }
 
-export default function LsAccountPage() {
+export default function KiwoomAccountPage() {
   const gridRef = useRef<AgGridReact>(null)
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['stkcompany', 'ls', 'account'],
-    queryFn: fetchLsAccount,
+    queryKey: ['stkcompany', 'kiwoom', 'account'],
+    queryFn: fetchKiwoomAccount,
     staleTime: 1000 * 30,
   })
 
-  const stocks: Record<string, unknown>[] = data?.data?.t0424OutBlock1 ?? []
-  const summary = data?.data?.t0424OutBlock ?? {}
+  const rawStocks: Record<string, unknown>[] = data?.data?.종목별계좌평가현황 ?? []
+
+  // 키움 종목코드 'A' 제거
+  const stocks = useMemo(() =>
+    rawStocks.map((s) => {
+      const code = String(s['종목코드'] ?? '')
+      return { ...s, 종목코드: code.startsWith('A') ? code.slice(1) : code }
+    }), [rawStocks])
 
   const totalMaeip = useMemo(() =>
     stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
 
-  const 예수금 = toNum(summary['추정D2예수금'])
-  const 잔고평가 = toNum(summary['평가금액'])
-  const 손익 = toNum(summary['평가손익'])
+  const summary = data?.data ?? {}
+  const 예수금 = toNum(summary['예수금'])
+  const 평가금액 = toNum(summary['유가잔고평가액'] ?? summary['예탁자산평가액'])
+  const 총매입 = toNum(summary['총매입금액'])
+  const 손익 = 평가금액 - 총매입
 
   const colDefs = useMemo<ColDef[]>(() => [
     {
       headerName: '종목코드', width: 100, pinned: 'left',
-      valueGetter: (p) => {
-        const code = String(p.data?.종목번호 ?? '')
-        return code.startsWith('A') ? code.slice(1) : code
-      },
+      valueGetter: (p) => p.data?.종목코드 ?? '',
       cellRenderer: CodeCell,
       comparator: (a: string, b: string) => a.localeCompare(b),
     },
@@ -59,7 +64,7 @@ export default function LsAccountPage() {
       valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
-      field: '잔고수량', headerName: '수량', width: 80, type: 'numericColumn',
+      field: '보유수량', headerName: '수량', width: 80, type: 'numericColumn',
       valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
@@ -76,11 +81,11 @@ export default function LsAccountPage() {
       valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
-      field: '평가손익', headerName: '손익금액', width: 120, type: 'numericColumn',
+      field: '손익금액', headerName: '손익금액', width: 120, type: 'numericColumn',
       cellRenderer: ProfitCell, comparator: numComparator,
     },
     {
-      field: '수익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
+      field: '손익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
       cellRenderer: RateCell, comparator: numComparator,
     },
     { field: '가격추세', headerName: '추세', width: 100, sortable: false },
@@ -98,11 +103,9 @@ export default function LsAccountPage() {
     <div className="flex flex-col h-full text-base">
       {!isLoading && !error && (
         <AccountHeader
-          title="LS 계좌현황" screenNo="4101" count={stocks.length}
-          예수금Label="예수금" 예수금={예수금}
-          평가금액Label="잔고평가" 평가금액={잔고평가}
-          손익={손익}
-          onCsv={() => exportCsv(gridRef, 'LS_계좌현황.csv')}
+          title="키움 계좌현황" screenNo="2101" count={stocks.length}
+          예수금={예수금} 평가금액={평가금액} 손익={손익}
+          onCsv={() => exportCsv(gridRef, '키움_계좌현황.csv')}
           onRefresh={() => refetch()}
         />
       )}

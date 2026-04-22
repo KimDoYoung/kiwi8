@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import api from '@/shared/lib/api'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { 
   Wallet, 
   TrendingUp, 
@@ -13,7 +13,7 @@ import {
   Briefcase
 } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 interface AccountData {
   id: string

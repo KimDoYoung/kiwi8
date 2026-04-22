@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
-import api from '@/lib/api'
+import api from '@/shared/lib/api'
 import {
   toNum, fmt,
   ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,
@@ -12,54 +12,54 @@ import {
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
-async function fetchKisAccount() {
-  const res = await api.get('/api/v1/stkcompany/kis/account/list')
+async function fetchLsAccount() {
+  const res = await api.get('/api/v1/stkcompany/ls/account/list')
   return res.data
 }
 
-export default function KisAccountPage() {
+export default function LsAccountPage() {
   const gridRef = useRef<AgGridReact>(null)
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['stkcompany', 'kis', 'account'],
-    queryFn: fetchKisAccount,
+    queryKey: ['stkcompany', 'ls', 'account'],
+    queryFn: fetchLsAccount,
     staleTime: 1000 * 30,
   })
 
-  const stocks: Record<string, unknown>[] = data?.data?.output1 ?? []
-  const summary = data?.data?.output2?.[0] ?? {}
+  const stocks: Record<string, unknown>[] = data?.data?.t0424OutBlock1 ?? []
+  const summary = data?.data?.t0424OutBlock ?? {}
 
   const totalMaeip = useMemo(() =>
     stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
 
-  const 예수금 = toNum(summary['예수금총금액'])
-  const 평가금액 = toNum(summary['총평가금액'])
-  const 손익 = toNum(summary['평가손익합계금액'])
+  const 예수금 = toNum(summary['추정D2예수금'])
+  const 잔고평가 = toNum(summary['평가금액'])
+  const 손익 = toNum(summary['평가손익'])
 
   const colDefs = useMemo<ColDef[]>(() => [
     {
       headerName: '종목코드', width: 100, pinned: 'left',
       valueGetter: (p) => {
-        const code = String(p.data?.상품번호 ?? '')
+        const code = String(p.data?.종목번호 ?? '')
         return code.startsWith('A') ? code.slice(1) : code
       },
       cellRenderer: CodeCell,
       comparator: (a: string, b: string) => a.localeCompare(b),
     },
-    { field: '상품명', headerName: '종목명', width: 150, pinned: 'left' },
+    { field: '종목명', headerName: '종목명', width: 150, pinned: 'left' },
     {
       field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn',
       cellRenderer: ProfitCell, comparator: numComparator,
     },
     {
-      field: '매입평균가격', headerName: '매입평단', width: 110, type: 'numericColumn',
-      valueFormatter: ({ value }) => fmt(Math.round(toNum(value))), comparator: numComparator,
+      field: '평균단가', headerName: '매입평단', width: 110, type: 'numericColumn',
+      valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
       field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn',
       valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
-      field: '보유수량', headerName: '수량', width: 80, type: 'numericColumn',
+      field: '잔고수량', headerName: '수량', width: 80, type: 'numericColumn',
       valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
@@ -76,11 +76,11 @@ export default function KisAccountPage() {
       valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
     },
     {
-      field: '평가손익금액', headerName: '손익금액', width: 120, type: 'numericColumn',
+      field: '평가손익', headerName: '손익금액', width: 120, type: 'numericColumn',
       cellRenderer: ProfitCell, comparator: numComparator,
     },
     {
-      field: '평가손익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
+      field: '수익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
       cellRenderer: RateCell, comparator: numComparator,
     },
     { field: '가격추세', headerName: '추세', width: 100, sortable: false },
@@ -98,9 +98,11 @@ export default function KisAccountPage() {
     <div className="flex flex-col h-full text-base">
       {!isLoading && !error && (
         <AccountHeader
-          title="KIS 계좌현황" screenNo="3101" count={stocks.length}
-          예수금={예수금} 평가금액={평가금액} 손익={손익}
-          onCsv={() => exportCsv(gridRef, 'KIS_계좌현황.csv')}
+          title="LS 계좌현황" screenNo="4101" count={stocks.length}
+          예수금Label="예수금" 예수금={예수금}
+          평가금액Label="잔고평가" 평가금액={잔고평가}
+          손익={손익}
+          onCsv={() => exportCsv(gridRef, 'LS_계좌현황.csv')}
           onRefresh={() => refetch()}
         />
       )}

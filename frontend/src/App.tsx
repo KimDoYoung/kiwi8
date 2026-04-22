@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/store/authStore'
-import LoginPage from '@/pages/LoginPage'
+import LoginPage from '@/pages/auth/LoginPage'
 import MainLayout from '@/layout/MainLayout'
 
 export default function App() {

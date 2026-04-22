@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/apiClient'
+import { apiClient } from '@/shared/lib/apiClient'
 
 export interface HanjaResult {
   korean: string

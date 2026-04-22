@@ -1,12 +1,12 @@
 import React from 'react'
-import PlaceholderPage from '@/pages/PlaceholderPage'
-import AccountSummaryPage from '@/pages/AccountSummaryPage'
-import RealtimeBalancePage from '@/pages/RealtimeBalancePage'
-import ProfitTrendPage from '@/pages/ProfitTrendPage'
-import ExecutionHistoryPage from '@/pages/ExecutionHistoryPage'
-import KiwoomAccountPage from '@/pages/KiwoomAccountPage'
-import KisAccountPage from '@/pages/KisAccountPage'
-import LsAccountPage from '@/pages/LsAccountPage'
+import PlaceholderPage from '@/pages/common/PlaceholderPage'
+import AccountSummaryPage from '@/pages/accounts/AccountSummaryPage'
+import RealtimeBalancePage from '@/pages/accounts/RealtimeBalancePage'
+import ProfitTrendPage from '@/pages/accounts/ProfitTrendPage'
+import ExecutionHistoryPage from '@/pages/accounts/ExecutionHistoryPage'
+import KiwoomAccountPage from '@/pages/brokers/KiwoomAccountPage'
+import KisAccountPage from '@/pages/brokers/KisAccountPage'
+import LsAccountPage from '@/pages/brokers/LsAccountPage'
 
 // screen_no → React 컴포넌트 매핑
 // 향후 실제 페이지 구현 시 PlaceholderPage를 교체
