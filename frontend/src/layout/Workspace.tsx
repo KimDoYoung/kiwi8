@@ -137,14 +137,19 @@ export default function Workspace() {
           if (!(tabSetNode instanceof TabSetNode)) return
           renderValues.buttons.push(
             <button
-              key="close-active"
-              title="현재 탭 닫기"
+              key="close-all"
+              title="모든 탭 닫기"
               onClick={() => {
-                const selected = tabSetNode.getSelectedNode()
-                if (selected instanceof TabNode && selected.isEnableClose()) {
-                  getModel().doAction(Actions.deleteTab(selected.getId()))
-                  useLayoutStore.setState((s) => ({ modelVersion: s.modelVersion + 1 }))
-                }
+                const idsToDelete: string[] = []
+                tabSetNode.getChildren().forEach((child) => {
+                  if (child instanceof TabNode && child.isEnableClose()) {
+                    idsToDelete.push(child.getId())
+                  }
+                })
+                idsToDelete.forEach((id) => {
+                  getModel().doAction(Actions.deleteTab(id))
+                })
+                useLayoutStore.setState((s) => ({ modelVersion: s.modelVersion + 1 }))
               }}
               className="flex items-center justify-center w-4 h-4 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
             >

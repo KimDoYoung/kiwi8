@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
-import api from '@/services/api'
+import api from '@/lib/api'
 import {
   toNum, fmt,
   ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,

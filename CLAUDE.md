@@ -67,6 +67,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - b.sh : backend 즉 fastapi를 수행한다.
 - f.sh : frontend vite로 react app을 수행한다.
+- db.sh : sqlite database 조작
+- deploy.sh : jskn서버 docker에 배포 수행
 
 ## DATA 위치
   /home/kdy987/work/kiwi8/data/
@@ -78,15 +80,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 참고 사이트
 
-### 키움
+### 3개증권사 API문서
 
-- [키움Restful API 홈](https://openapi.kiwoom.com/main/home)
-- [**API문서**](https://openapi.kiwoom.com/guide/apiguide)
-
-### KIS-한국투자증권
-
-- [API 문서](https://apiportal.koreainvestment.com/apiservice-apiservice)
-
-### LS-LS증권
-
-- [API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
+- [**키움 API문서**](https://openapi.kiwoom.com/guide/apiguide)
+- [**한국투자증권 API 문서**](https://apiportal.koreainvestment.com/apiservice-apiservice)
+- [**LS증권 API 문서**](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)

@@ -12,6 +12,11 @@ This file provides guidance to Gemini Code (Gemini.ai/code) when working with co
 - backend와 frontend로 나누고 backend는 fastapi로 frontend는 react 로 개발한다.
 - 개발시  PORT 는 backend는 **8003**으로, frontend는 **5173**을 사용
 - 이 프로젝트는 kwi7에서 구조를 변경하여 다시 진행하는 것이다.
+- **주요 변경 사항**
+  - frontend를 alpine -> react로 변경
+  - backend에서 jinja2를 배제하고 모든 UI는 react로 처리
+  - backend는 Restful api만을 제공
+  - DB 라이브러리 변경: sqlite3 -> aiosqlite
 
 ## 목적
 
@@ -28,6 +33,7 @@ This file provides guidance to Gemini Code (Gemini.ai/code) when working with co
   - fastapi
   - uvicorn
   - sqlite3
+  - aiosqlite
   - jwt
   - pydantic
   - dotenv
@@ -90,3 +96,7 @@ This file provides guidance to Gemini Code (Gemini.ai/code) when working with co
 ### LS-LS증권
 
 - [API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
+
+## 배포
+
+- docs/배포.md 참조

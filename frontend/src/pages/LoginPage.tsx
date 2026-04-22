@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
-import api from '@/services/api'
+import api from '@/lib/api'
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr]
