@@ -189,3 +189,23 @@
     @apply font-sans;
   }
 }
+
+/* AG Grid Custom Styles */
+.ag-theme-alpine .ag-row {
+  transition: background-color 0.1s;
+}
+
+/* 일반 행에만 hover 효과 적용 (합계 행 제외) */
+.ag-theme-alpine .ag-row:not(.summary-row):hover {
+  background-color: #f1f5f9 !important;
+}
+
+.ag-theme-alpine .ag-row-hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* 합계 행 강조 */
+.ag-theme-alpine .summary-row {
+  background-color: #f8fafc !important;
+  font-weight: bold;
+}

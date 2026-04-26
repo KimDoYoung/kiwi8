@@ -65,58 +65,74 @@ export default function KiwoomAccountPage() {
     const colDefs = useMemo<ColDef[]>(() => [
         {
             headerName: '종목코드', width: 100, pinned: 'left',
-            valueGetter: (p) => p.data?.종목코드 ?? '',
+            valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.종목코드 ?? ''),
             cellRenderer: CodeCell,
             comparator: (a: string, b: string) => a.localeCompare(b),
         },
         { field: '종목명', headerName: '종목명', width: 150, pinned: 'left' },
         {
             field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn',
-            cellRenderer: ProfitCell, comparator: numComparator,
+            cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+            comparator: numComparator,
         },
         {
             field: '평균단가', headerName: '매입평단', width: 110, type: 'numericColumn',
-            valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
+            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+            comparator: numComparator,
         },
         {
             field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn',
-            valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
+            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+            comparator: numComparator,
         },
         {
             field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn',
-            cellRenderer: ProfitCell, comparator: numComparator,
+            cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+            comparator: numComparator,
         },
         {
             field: '보유수량', headerName: '수량', width: 80, type: 'numericColumn',
-            valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
+            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+            comparator: numComparator,
         },
         {
             headerName: '비중(%)', width: 85, type: 'numericColumn',
-            valueGetter: (p) => totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0,
-            cellRenderer: WeightCell, comparator: numComparator,
+            valueGetter: (p) => {
+                if (p.data?._isSummary) return (sumMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0)
+                return totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0
+            },
+            cellRenderer: (p: any) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
+            comparator: numComparator,
         },
         {
             field: '매입금액', headerName: '매입금액', width: 120, type: 'numericColumn',
-            valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
+            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+            comparator: numComparator,
         },
         {
             field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn',
-            valueFormatter: ({ value }) => fmt(toNum(value)), comparator: numComparator,
+            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+            comparator: numComparator,
         },
         {
             field: '손익금액', headerName: '손익금액', width: 120, type: 'numericColumn',
-            cellRenderer: ProfitCell, comparator: numComparator,
+            cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <ProfitCell {...params} />,
+            comparator: numComparator,
         },
         {
             field: '손익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
-            cellRenderer: RateCell, comparator: numComparator,
+            cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <RateCell {...params} />,
+            comparator: numComparator,
         },
-        { field: '가격추세', headerName: '추세', width: 100, sortable: false },
+        { 
+            field: '가격추세', headerName: '추세', width: 100, sortable: false,
+            valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.가격추세 ?? '')
+        },
         {
             headerName: '', width: 145, sortable: false, resizable: false,
-            cellRenderer: ActionCell,
+            cellRenderer: (p: any) => p.data?._isSummary ? null : <ActionCell />,
         },
-    ], [totalMaeip])
+    ], [totalMaeip, sumMaeip])
 
     const defaultColDef = useMemo<ColDef>(() => ({
         sortable: true, resizable: true,
@@ -172,11 +188,12 @@ export default function KiwoomAccountPage() {
                     domLayout="normal"
                     headerHeight={36}
                     rowHeight={32}
+                    rowHoverable={true}
                     postSortRows={({ nodes }) => {
                         const idx = nodes.findIndex(n => n.data?._isSummary)
                         if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])
                     }}
-                    getRowStyle={(p) => p.data?._isSummary ? { fontWeight: 'bold', background: '#f0f4f8' } : undefined}
+                    getRowClass={(p) => p.data?._isSummary ? 'summary-row' : ''}
                 />
             </div>
         </div>
