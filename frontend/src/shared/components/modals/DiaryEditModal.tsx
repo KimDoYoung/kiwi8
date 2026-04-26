@@ -87,13 +87,13 @@ export default function DiaryEditModal() {
       let res
       if (diaryInitialData?.id) {
         // 수정
-        res = await api.put(`/api/v1/diary/${diaryInitialData.id}/`, {
+        res = await api.put(`/api/v1/diary/${diaryInitialData.id}`, {
           api_id: 'diary_update',
           payload: { id: diaryInitialData.id, ...payload }
         })
       } else {
         // 신규 저장
-        res = await api.post('/api/v1/diary/', {
+        res = await api.post('/api/v1/diary', {
           api_id: 'diary_create',
           payload
         })

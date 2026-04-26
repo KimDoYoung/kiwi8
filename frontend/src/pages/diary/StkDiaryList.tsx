@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef, GridReadyEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import { 
   Search, 
   Plus, 
@@ -82,7 +84,7 @@ export default function StkDiaryList() {
     if (!window.confirm('정말 삭제하시겠습니까?')) return
     
     try {
-      const res = await api.delete(`/api/v1/diary/${id}/`)
+      const res = await api.delete(`/api/v1/diary/${id}`)
       if (res.data && res.data.success) {
         fetchDiaries()
       } else {
