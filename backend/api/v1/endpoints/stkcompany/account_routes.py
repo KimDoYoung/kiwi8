@@ -28,6 +28,8 @@ from backend.domains.stkcompanys.ls.models.ls_schema import (
     LsRequest,
     LsResponse,
 )
+from backend.domains.market.open_time_checker import OpenTimeChecker
+from backend.utils.common_utils import parse_price
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -43,13 +45,15 @@ async def kiwoom_account_list():
             return KiwoomApiHelper.create_error_response(
                 error_code='999', error_message='Kiwoom API 인스턴스 생성 실패'
             )
-
+        checker = OpenTimeChecker.get()
+        price_market = await checker.market_choice_for_price() # "KRX" or "NXT"
+            
         req = KiwoomRequest(
             api_id='kt00004',
             title='stocklist',
             payload={
                 'qry_tp': '0',       # 0:전체
-                'dmst_stex_tp': 'KRX',  # KRX:한국거래소
+                'dmst_stex_tp': price_market,  # KRX:한국거래소, NXT:코넥스
             },
         )
 
@@ -73,6 +77,10 @@ async def kis_account_list():
     """KIS 계좌현황 조회 (TTTC8434R)"""
     logger.info('[계좌현황] KIS 계좌현황 조회 요청')
     try:
+        checker = OpenTimeChecker.get()
+        price_market = await checker.market_choice_for_price() # "KRX" or "NXT"
+        market = "X" if price_market == "NXT" else "N"
+                  
         kis = await get_kis_api()
         if not kis:
             return KisApiHelper.create_error_response(
@@ -85,7 +93,7 @@ async def kis_account_list():
             payload={
                 'CANO': config.KIS_ACCT_NO[:8],
                 'ACNT_PRDT_CD': config.KIS_ACCT_PRDT_CD,
-                'AFHR_FLPR_YN': 'N',
+                'AFHR_FLPR_YN': market,  # N:한국거래소, X:코넥스
                 'OFL_YN': '',
                 'INQR_DVSN': '02',
                 'UNPR_DVSN': '01',
@@ -159,10 +167,14 @@ async def _insert_prev_costs_kiwoom(stock_list: list):
         stk_cd = stock.get('종목코드', '')
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
+        
+        cur_price = int(float(str(stock.get('현재가', 0)).replace(',', '') or 0))
+        avg_price = int(float(str(stock.get('평균단가', 0)).replace(',', '') or 0))
+        
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-        stock['전일대비'] = int(stock.get('현재가', 0) or 0) - int(stock['전일종가'])
-        stock['1주당'] = int(float(stock.get('현재가', 0) or 0)) - int(float(stock.get('매입평균가격', 0) or 0))
+        stock['전일대비'] = cur_price - int(stock['전일종가'])
+        stock['1주당'] = cur_price - avg_price
 
 async def _insert_prev_costs_kis(stock_list: list):
     cache = get_prev_price_cache()
@@ -170,10 +182,14 @@ async def _insert_prev_costs_kis(stock_list: list):
         stk_cd = stock.get('상품번호', '')
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
+            
+        cur_price = int(float(str(stock.get('현재가', 0)).replace(',', '') or 0))
+        avg_price = int(float(str(stock.get('매입평균가격', 0)).replace(',', '') or 0))
+            
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-        stock['전일대비'] = int(stock.get('현재가', 0) or 0) - int(stock['전일종가'])
-        stock['1주당'] = int(float(stock.get('현재가', 0) or 0)) - int(float(stock.get('매입평균가격', 0) or 0))
+        stock['전일대비'] = cur_price - int(stock['전일종가'])
+        stock['1주당'] = cur_price - avg_price
 
 async def _insert_prev_costs_ls(stock_list: list):
     cache = get_prev_price_cache()
@@ -181,7 +197,11 @@ async def _insert_prev_costs_ls(stock_list: list):
         stk_cd = stock.get('종목번호', '')
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
+            
+        cur_price = int(float(str(stock.get('현재가', 0)).replace(',', '') or 0))
+        avg_price = int(float(str(stock.get('평균단가', 0)).replace(',', '') or 0))
+            
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-        stock['전일대비'] = int(stock.get('현재가', 0) or 0) - int(stock['전일종가'])
-        stock['1주당'] = int(float(stock.get('현재가', 0) or 0)) - int(float(stock.get('매입평균가격', 0) or 0))
+        stock['전일대비'] = cur_price - int(stock['전일종가'])
+        stock['1주당'] = cur_price - avg_price

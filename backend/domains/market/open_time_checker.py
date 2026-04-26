@@ -2,20 +2,34 @@
 # open_time_checker.py
 """
 모듈 설명: 
-    - 주식 시장의 개장 및 휴장 시간을 확인하는 기능을 제공하는 모듈입니다.
-    - 싱글레톤
-    - KST = ZoneInfo("Asia/Seoul")
-    - checker = OpenTimeChecker.get()
-    - now = datetime.now(tz=KST)
-    - await checker.await checker.getMarket(now)
-주요 기능:
-    -   주식 시장의 개장 및 휴장 시간 확인
-    -   정부 공휴일 및 주말에 따른 휴장일 판별
-    -   KRX 및 NXT 시장의 영업 시간 확인
+    - 주식 시장의 개장 및 휴장 시간을 확인하고, 현재 시각에 적합한 시장(KRX/NXT)을 선택하는 기능을 제공합니다.
+    - 싱글레톤 패턴으로 구현되어 있습니다.
+
+사용법 예시:
+    ```python
+    from backend.domains.market.open_time_checker import OpenTimeChecker
+    from datetime import datetime
+    
+    checker = OpenTimeChecker.get()
+    
+    # 1. 오늘이 장이 열리는 날인지 확인 (토/일/공휴일 제외)
+    is_open = await checker.is_open_day() # True or False
+    
+    # 2. 현재 시각 기준 가격 조회를 위한 시장 선택
+    # - 장 중(09:00-15:30)이면 KRX, 그 외 시간이나 휴장일에는 NXT 반환
+    price_market = await checker.market_choice_for_price() # "KRX" or "NXT"
+    
+    # 3. 현재 시각 기준 매매 가능 시장 선택
+    # - 휴장일이면 None
+    # - KRX 시간(09:00-15:30)이면 KRX
+    # - NXT 시간(Pre/Main/After)이면 NXT
+    # - 그 외 매매 불가 시간이면 None
+    trade_market = await checker.market_choice_for_trade() # "KRX", "NXT" or None
+    ```
 
 작성자: 김도영
 작성일: 2025-08-14
-버전: 1.0
+버전: 1.2 (주석 보강 및 사용법 추가)
 """
 from __future__ import annotations
 
@@ -29,25 +43,27 @@ from zoneinfo import ZoneInfo
 import aiohttp
 
 from backend.core.config import config  # GODATA_API_KEY, TZ
+from backend.domains.services.cache_keys import CacheKey
 
 Market = Literal["KRX", "NXT"]
 KST = ZoneInfo(getattr(config, "TIME_ZONE", "Asia/Seoul"))
 
 def now_kst() -> datetime:
+    """현재 한국 표준시 반환"""
     return datetime.now(tz=KST)
 
 def yyyymmdd(d: date) -> str:
+    """date 객체를 yyyymmdd 문자열로 변환"""
     return d.strftime("%Y%m%d")
 
 @dataclass
 class _MonthCache:
+    """월별 휴장일 데이터를 위한 메모리 캐시 구조체"""
     holidays: set[str] = field(default_factory=set)  # {"20250815", ...}
-    last_fetch_ymd: str = ""                        # 이 월 데이터를 마지막으로 가져온 '오늘' yyyymmdd
+    last_fetch_ymd: str = ""                        # 이 월 데이터를 마지막으로 가져온 날짜
 
 class OpenTimeChecker:
-    """정부공휴일 + 주말 기반 휴장/영업시간(KRX/NXT) 판정 (DB 없이 메모리 캐시).
-       변경점: 날짜 바뀌면 월 캐시 재조회(1일 1회/월별), 월말엔 다음 달 프리패치.
-    """
+    """정부공휴일 + 주말 기반 휴장/영업시간(KRX/NXT) 판정 (DB 및 메모리 캐시 활용)"""
     _instance: OpenTimeChecker | None = None
     _fetch_lock = asyncio.Lock()
 
@@ -64,11 +80,13 @@ class OpenTimeChecker:
 
     @classmethod
     def get(cls) -> OpenTimeChecker:
+        """싱글레톤 인스턴스 반환"""
         if cls._instance is None:
             cls._instance = OpenTimeChecker()
         return cls._instance
 
     async def getMarket(self, dt: datetime | None = None) -> Market | None:
+        """현재 시각 기준 운영 중인 시장 반환 (KRX 우선)"""
         dt = dt.astimezone(KST) if dt else now_kst()
         if await self.isHoliday(dt.date()):
             return None
@@ -78,23 +96,94 @@ class OpenTimeChecker:
             return "NXT"
         return None
 
+    async def is_open_day(self, d: date | None = None) -> bool:
+        """
+        해당 날짜가 장이 열리는 날(영업일)인지 확인합니다.
+        
+        - 토요일, 일요일은 False
+        - 공공데이터 API를 통한 공휴일 정보 확인
+        - CacheManager를 통해 결과를 캐싱하여 불필요한 API 호출 방지
+        """
+        d = d or now_kst().date()
+        key = yyyymmdd(d)
+        
+        try:
+            from backend.domains.services.cache_manager import CacheManager
+            cache_mgr = CacheManager.get_instance()
+            
+            # 1. cache_manager에서 먼저 확인
+            cached_val = await cache_mgr.get("SYSTEM", f"{CacheKey.OPENDAY}_{key}")
+            if cached_val:
+                return cached_val == "Y"
+        except Exception:
+            pass
+
+        # 2. 휴장일(주말 포함) 체크
+        is_hol = await self.isHoliday(d)
+        is_open = not is_hol
+        
+        try:
+            # 3. 결과 캐싱
+            val = "Y" if is_open else "N"
+            await cache_mgr.put("SYSTEM", f"{CacheKey.OPENDAY}_{key}", val)
+        except Exception:
+            pass
+
+        return is_open
+
+    async def market_choice_for_price(self, dt: datetime | None = None) -> Market:
+        """
+        가격 정보를 가져오기 위해 현재 시각을 기준으로 KRX, NXT 중 하나를 선택합니다.
+        
+        - 장 오픈일이고 KRX 정규장 시간(09:00-15:30)이면 'KRX' 반환
+        - 그 외 모든 상황(장 마감 후, 휴장일 등)에서는 'NXT' 반환 (데이터 조회를 위해)
+        """
+        dt = dt.astimezone(KST) if dt else now_kst()
+        
+        if await self.is_open_day(dt.date()):
+            if self.isKrxTime(dt):
+                return "KRX"
+            else:
+                return "NXT"
+        else:
+            return "NXT"
+
+    async def market_choice_for_trade(self, dt: datetime | None = None) -> Market | None:
+        """
+        매매 가능 여부를 판단하고 현재 시각을 기준으로 KRX, NXT 중 적합한 시장을 선택합니다.
+        
+        - 장 오픈일이 아니면 None 반환
+        - KRX 정규장 시간(09:00-15:30)이면 'KRX' 반환
+        - NXT 운영 시간(Pre/Main/After)이면 'NXT' 반환
+        - 매매 가능 시간이 아니면 None 반환
+        """
+        dt = dt.astimezone(KST) if dt else now_kst()
+        
+        if not await self.is_open_day(dt.date()):
+            return None
+            
+        if self.isKrxTime(dt):
+            return "KRX"
+        
+        if self.isNxtTime(dt):
+            return "NXT"
+            
+        return None
+
     async def isHoliday(self, d: date | None = None) -> bool:
+        """주말 및 정부 지정 공휴일 여부 확인"""
         d = d or now_kst().date()
         key = yyyymmdd(d)
 
-        # 오늘 캐시
         if self._today_key == key and self._today_is_holiday is not None:
             return self._today_is_holiday
 
-        # 주말
-        if d.weekday() >= 5:
+        if d.weekday() >= 5: # 토, 일
             self._set_today_cache(key, True)
             return True
 
-        # (중요) 월별 데이터: '오늘'이 바뀌었으면 이 달을 재조회
         hol_set = await self._get_month_holidays(d.year, d.month, today_ymd=key)
 
-        # 월말(예: 25일 이후)에는 다음 달 프리패치 (비차단; 실패해도 문제 없음)
         if d.day >= 25:
             asyncio.create_task(self._prefetch_next_month(d, today_ymd=key))
 
@@ -103,18 +192,27 @@ class OpenTimeChecker:
         return is_hol
 
     def isKrxTime(self, dt: datetime | None = None) -> bool:
+        """KRX 정규장 시간(09:00 - 15:30) 여부 확인"""
         dt = dt.astimezone(KST) if dt else now_kst()
         t = dt.time()
         return time(9, 0) <= t < time(15, 30)
 
     def isNxtTime(self, dt: datetime | None = None) -> bool:
+        """
+        NXT 운영 시간 여부 확인
+        1. Pre market   : 08:00 - 08:50
+        2. Main market  : 09:00:30 - 15:20
+        3. After market : 15:40 - 20:00
+        """
         dt = dt.astimezone(KST) if dt else now_kst()
         t = dt.time()
-        early = time(8, 0) <= t <= time(8, 50)
-        late  = time(15, 30) <= t < time(20, 0)
-        return early or late
+        pre = time(8, 0) <= t < time(8, 50)
+        main = time(9, 0, 30) <= t < time(15, 20)
+        after = time(15, 40) <= t < time(20, 0)
+        return pre or main or after
 
     async def force_refresh(self):
+        """메모리 캐시 강제 초기화"""
         self._today_key = None
         self._today_is_holiday = None
         self._month_cache.clear()
@@ -124,38 +222,34 @@ class OpenTimeChecker:
         self._today_is_holiday = value
 
     async def _get_month_holidays(self, year: int, month: int, today_ymd: str) -> set[str]:
-        """월 캐시가 없으면 생성, 있고 'last_fetch_ymd != today'면 재조회 → 일자 바뀌면 다시 호출."""
+        """특정 월의 휴장일 목록 조회 (메모리 캐시 활용)"""
         k = (year, month)
 
-        # 동시성 보호 (여러 코루틴이 같은 달을 동시에 갱신하려 할 때)
         async with self._fetch_lock:
             mc = self._month_cache.get(k)
 
-            # 캐시 없음 → API 호출
             if mc is None:
                 hol, fetched_today = await self._fetch_holidays_from_api(year, month), today_ymd
                 self._month_cache[k] = _MonthCache(holidays=hol, last_fetch_ymd=fetched_today)
                 return hol
 
-            # 캐시 있음 & 오늘이 바뀌었으면 → API 다시 호출(일 1회)
             if mc.last_fetch_ymd != today_ymd:
                 hol, fetched_today = await self._fetch_holidays_from_api(year, month), today_ymd
                 mc.holidays = hol
                 mc.last_fetch_ymd = fetched_today
                 return hol
 
-            # 오늘 이미 최신
             return mc.holidays
 
     async def _prefetch_next_month(self, d: date, today_ymd: str):
-        """월말 근처이면 다음 달도 '오늘' 기준으로 한 번 갱신(비동기)."""
+        """다음 달 휴장일 미리 가져오기"""
         nm_year = d.year + (1 if d.month == 12 else 0)
         nm_month = 1 if d.month == 12 else d.month + 1
         _ = await self._get_month_holidays(nm_year, nm_month, today_ymd=today_ymd)
 
     async def _fetch_holidays_from_api(self, year: int, month: int) -> set[str]:
-        # rate-limit 보호
-        await asyncio.sleep(1)
+        """공공데이터 API를 통한 공휴일 정보 조회"""
+        await asyncio.sleep(1) # Rate-limit 고려
         params = {
             "serviceKey": self._api_key,
             "solYear": str(year),

@@ -16,6 +16,8 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
 )
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest
+from backend.domains.market.open_time_checker import OpenTimeChecker
+from backend.utils.common_utils import parse_price
 from backend.utils.kiwi_utils import format_account_number
 
 logger = get_logger(__name__)
@@ -88,9 +90,12 @@ async def get_kiwoom_account_summary() -> AccountSummary | None:
 
         # kt00004: 계좌평가현황요청
         api_id = 'kt00004'
+        checker = OpenTimeChecker.get()
+        price_market = await checker.market_choice_for_price()
+        
         payload = {
             'qry_tp': '0',  # 상장폐지조회구분: 0=전체
-            'dmst_stex_tp': 'KRX',  # 국내거래소구분: KRX
+            'dmst_stex_tp': price_market,  # KRX or NXT
         }
 
         request = KiwoomRequest(api_id=api_id, payload=payload)
@@ -119,15 +124,11 @@ async def get_kiwoom_account_summary() -> AccountSummary | None:
             data = response.data
             if isinstance(data, dict):
                 # 예탁자산평가액 = 총자산 (예수금 + 유가잔고)
-                account_summary.data['총자산'] = int(
-                    data.get('예탁자산평가액', 0) or 0
-                )
+                account_summary.data['총자산'] = parse_price(data.get('예탁자산평가액'))
                 # 매입금액 계산
-                orderable = int(data.get('예수금', 0) or 0)
+                orderable = parse_price(data.get('예수금'))
                 account_summary.data['주문가능금액'] = orderable
-                account_summary.data['매입금액'] = int(
-                    data.get('총매입금액', 0) or 0
-                )
+                account_summary.data['매입금액'] = parse_price(data.get('총매입금액'))
                 # 종목별계좌평가현황 리스트의 길이 = 보유종목 개수
                 holdings_list = data.get('종목별계좌평가현황', [])
                 if isinstance(holdings_list, list):
@@ -218,10 +219,14 @@ async def get_kis_account_summary() -> AccountSummary | None:
         # 보유 종목 개수 조회 (TTTC8434R)
         try:
             api_id_balance = 'TTTC8434R'
+            checker = OpenTimeChecker.get()
+            price_market = await checker.market_choice_for_price()
+            market_flag = "X" if price_market == "NXT" else "N"
+            
             payload_balance = {
                 'CANO': cano,
                 'ACNT_PRDT_CD': acnt_prdt_cd,
-                'AFHR_FLPR_YN': 'N',
+                'AFHR_FLPR_YN': market_flag,  # N:정규장, X:NXT
                 'OFL_YN': '',
                 'INQR_DVSN': '02',
                 'UNPR_DVSN': '01',
