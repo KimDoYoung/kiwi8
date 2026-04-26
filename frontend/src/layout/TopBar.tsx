@@ -1,8 +1,9 @@
 import { useState, useRef, type KeyboardEvent } from 'react'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings, Search, PenLine } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
+import { useModalStore } from '@/store/modalStore'
 import { fetchMenuTree } from '@/services/menuService'
 import api from '@/shared/lib/api'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
@@ -11,6 +12,7 @@ import LayoutPresetPanel from './topbar/LayoutPresetPanel'
 export default function TopBar() {
   const { username, logout } = useAuthStore()
   const { openByScreenNo } = useLayoutStore()
+  const { openStockFindModal, openDiaryEditModal } = useModalStore()
 
   const [screenInput, setScreenInput] = useState('')
   const [inputError, setInputError] = useState(false)
@@ -93,6 +95,23 @@ export default function TopBar() {
       {/* 4) User Area */}
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-sm text-gray-600">{username}</span>
+        
+        <button
+          onClick={openStockFindModal}
+          title="종목 찾기"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+        >
+          <Search size={15} />
+        </button>
+
+        <button
+          onClick={() => openDiaryEditModal()}
+          title="일지 작성"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+        >
+          <PenLine size={15} />
+        </button>
+
         <button
           title="설정"
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"

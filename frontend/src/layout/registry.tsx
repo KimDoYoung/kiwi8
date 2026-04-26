@@ -7,6 +7,7 @@ import ExecutionHistoryPage from '@/pages/accounts/ExecutionHistoryPage'
 import KiwoomAccountPage from '@/pages/brokers/KiwoomAccountPage'
 import KisAccountPage from '@/pages/brokers/KisAccountPage'
 import LsAccountPage from '@/pages/brokers/LsAccountPage'
+import StkDiaryList from '@/pages/diary/StkDiaryList'
 import SettingsPage from '@/pages/settings/SettingsPage'
 
 // screen_no → React 컴포넌트 매핑
@@ -40,7 +41,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '4101': KiwoomAccountPage,
   '4102': PlaceholderPage,
   // [8100 투자 기록]
-  '8101': PlaceholderPage,
+  '8101': StkDiaryList,
   // [8200 시스템 엔진]
   '8201': PlaceholderPage,
   '8202': PlaceholderPage,
