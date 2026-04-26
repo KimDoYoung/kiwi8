@@ -44,3 +44,21 @@ async def update_stk_info(force: bool = False):
             error_code="STK_INFO_UPDATE_ERROR",
             error_message=f"stk_info 테이블 업데이트 중 오류가 발생했습니다: {e!s}"
         )
+
+@router.delete("/cache")
+async def delete_all_cache():
+    """stk_cache 테이블 삭제"""
+    try:
+        cache_mgr = get_service("cache_manager")
+        success = await cache_mgr.clear_all()
+        if success:
+            logger.info("모든 캐시가 삭제되었습니다.")
+            return KiwoomApiHelper.create_success_response(data={"message": "모든 캐시가 삭제되었습니다."})
+        else:
+            return KiwoomApiHelper.create_error_response(error_code="CACHE_DELETE_ERROR", error_message="캐시 삭제에 실패했습니다.")
+    except Exception as e:
+        logger.error(f"캐시 삭제 중 오류 발생: {e!s}", exc_info=True)
+        return KiwoomApiHelper.create_error_response(
+            error_code="CACHE_DELETE_ERROR",
+            error_message=f"캐시 삭제 중 오류가 발생했습니다: {e!s}"
+        )

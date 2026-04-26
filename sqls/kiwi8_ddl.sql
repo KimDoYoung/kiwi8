@@ -225,7 +225,8 @@ DELETE FROM menus;
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, icon, sort_order) VALUES 
 (1, NULL, 1, '1000', '통합 트레이딩 센터', NULL, 'layout-dashboard', 1),
 (2, NULL, 1, '5000', '증권사별 채널', NULL, 'building-2', 2),
-(3, NULL, 1, '8000', '매니지먼트', NULL, 'settings', 3);
+(3, NULL, 1, '8000', '매니지먼트', NULL, 'settings', 3),
+(4, NULL, 1, '9000', '환경 설정', NULL, 'settings-2', 4);
 
 -- 2. 중분류 (Level 2)
 -- 1000번대: 통합 트레이딩 센터 하위
@@ -244,6 +245,10 @@ INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALU
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
 (31, 3, 2, '8100', '투자 기록', NULL, 1),
 (32, 3, 2, '8200', '시스템 엔진', NULL, 2);
+
+-- 9000번대: 환경 설정 하위
+INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
+(41, 4, 2, '9100', '시스템 설정', NULL, 1);
 
 -- 3. 화면/기능 (Level 3 - 최하위 노드)
 -- [1100 자산 현황] 하위
@@ -291,3 +296,7 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
 (32, 3, '8201', 'K-데몬 상태', '/manage/daemon', 1),
 (32, 3, '8202', 'K-스케줄러 설정', '/manage/scheduler', 2);
+
+-- [9100 시스템 설정] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(41, 3, '9101', '시스템 제어', '/settings/system', 1);
