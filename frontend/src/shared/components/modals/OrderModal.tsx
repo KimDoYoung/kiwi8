@@ -24,8 +24,8 @@ const orderSchema = z.object({
   market: z.enum(['KRX', 'NXT']),
   pdno: z.string().min(1, '종목번호를 입력해주세요'),
   pdnm: z.string().min(1, '종목명을 입력해주세요'),
-  qty: z.coerce.number().min(1, '수량을 입력해주세요'),
-  price: z.coerce.number().min(0, '가격을 입력해주세요 (0은 시장가)'),
+  qty: z.number().min(1, '수량을 입력해주세요'),
+  price: z.number().min(0, '가격을 입력해주세요 (0은 시장가)'),
 })
 
 type OrderFormValues = z.infer<typeof orderSchema>
@@ -82,7 +82,7 @@ export default function OrderModal() {
     
     try {
       let api_id = ''
-      let payload: any = {}
+      let payload: Record<string, unknown> = {}
 
       if (broker === 'kis') {
         api_id = type === 'buy' ? 'TTTC0012U' : 'TTTC0011U'
@@ -130,8 +130,9 @@ export default function OrderModal() {
       } else {
         showMessage(res.error_message || '주문 실패', 'error')
       }
-    } catch (error: any) {
-      showMessage('주문 중 오류 발생: ' + error.message, 'error')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      showMessage('주문 중 오류 발생: ' + errorMessage, 'error')
     } finally {
       setLoadingType(null)
     }
@@ -167,7 +168,7 @@ export default function OrderModal() {
             {/* 증권사 선택 */}
             <div className="mb-6 shrink-0">
               <Label className="mb-2 block">증권사</Label>
-              <ToggleGroup type="single" value={broker} onValueChange={(v) => v && setBroker(v as any)} className="justify-start">
+              <ToggleGroup type="single" value={broker} onValueChange={(v) => v && setBroker(v as 'kis' | 'kiwoom' | 'ls')} className="justify-start">
                 <ToggleGroupItem value="kis" className="px-4">KIS</ToggleGroupItem>
                 <ToggleGroupItem value="kiwoom" className="px-4">키움</ToggleGroupItem>
                 <ToggleGroupItem value="ls" className="px-4">LS</ToggleGroupItem>
@@ -181,7 +182,7 @@ export default function OrderModal() {
                 <ToggleGroup 
                   type="single" 
                   value={form.watch('market')} 
-                  onValueChange={(v) => v && form.setValue('market', v as any)}
+                  onValueChange={(v) => v && form.setValue('market', v as 'KRX' | 'NXT')}
                   className="justify-start"
                 >
                   <ToggleGroupItem 
@@ -223,7 +224,7 @@ export default function OrderModal() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="qty">수량</Label>
-                  <Input id="qty" type="number" {...form.register('qty')} />
+                  <Input id="qty" type="number" {...form.register('qty', { valueAsNumber: true })} />
                   {form.formState.errors.qty && (
                     <p className="text-xs text-destructive">{form.formState.errors.qty.message}</p>
                   )}
@@ -232,7 +233,7 @@ export default function OrderModal() {
                   <Label htmlFor="price">
                     지정가 <span className="text-[10px] text-muted-foreground font-normal">(0:시장가)</span>
                   </Label>
-                  <Input id="price" type="number" {...form.register('price')} />
+                  <Input id="price" type="number" {...form.register('price', { valueAsNumber: true })} />
                   {form.formState.errors.price && (
                     <p className="text-xs text-destructive">{form.formState.errors.price.message}</p>
                   )}
@@ -257,7 +258,7 @@ export default function OrderModal() {
                     type="button" 
                     className="flex-1 h-12 text-lg font-bold bg-red-600 hover:bg-red-700 text-white"
                     disabled={loadingType !== null || isMarketClosed}
-                    onClick={form.handleSubmit((v) => onSubmit(v, 'buy'))}
+                    onClick={form.handleSubmit((v) => onSubmit(v as unknown as OrderFormValues, 'buy'))}
                   >
                     {loadingType === 'buy' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매수'}
                   </Button>
@@ -267,7 +268,7 @@ export default function OrderModal() {
                     type="button" 
                     className="flex-1 h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white"
                     disabled={loadingType !== null || isMarketClosed}
-                    onClick={form.handleSubmit((v) => onSubmit(v, 'sell'))}
+                    onClick={form.handleSubmit((v) => onSubmit(v as unknown as OrderFormValues, 'sell'))}
                   >
                     {loadingType === 'sell' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매도'}
                   </Button>
