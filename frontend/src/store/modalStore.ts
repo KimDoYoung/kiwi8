@@ -14,6 +14,7 @@ interface OrderInitialData {
   price?: number
   qty?: number
   broker?: 'kis' | 'kiwoom' | 'ls'
+  order_type?: 'buy' | 'sell'
 }
 
 interface ModalState {

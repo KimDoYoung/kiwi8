@@ -32,11 +32,11 @@ type OrderFormValues = z.infer<typeof orderSchema>
 
 export default function OrderModal() {
   const { isOrderModalOpen, closeOrderModal, orderInitialData } = useModalStore()
-  const [loading, setLoading] = useState(false)
+  const [loadingType, setLoadingType] = useState<'buy' | 'sell' | null>(null)
   const [message, setMessage] = useState<{ text: string; type: 'info' | 'error' | 'success' } | null>(null)
   const [broker, setBroker] = useState<'kis' | 'kiwoom' | 'ls'>('kis')
 
-  const { data: marketStatus, refetch: refetchMarketStatus } = useQuery({
+  const { data: marketStatus } = useQuery({
     queryKey: ['marketStatus'],
     queryFn: getMarketStatus,
     enabled: isOrderModalOpen,
@@ -77,7 +77,7 @@ export default function OrderModal() {
   }
 
   const onSubmit = async (values: OrderFormValues, type: 'buy' | 'sell') => {
-    setLoading(true)
+    setLoadingType(type)
     setMessage(null)
     
     try {
@@ -133,7 +133,7 @@ export default function OrderModal() {
     } catch (error: any) {
       showMessage('주문 중 오류 발생: ' + error.message, 'error')
     } finally {
-      setLoading(false)
+      setLoadingType(null)
     }
   }
 
@@ -252,22 +252,26 @@ export default function OrderModal() {
 
               {/* 매수/매도 버튼 */}
               <div className="flex gap-4 pt-4">
-                <Button 
-                  type="button" 
-                  className="flex-1 h-12 text-lg font-bold bg-red-600 hover:bg-red-700 text-white"
-                  disabled={loading || isMarketClosed}
-                  onClick={form.handleSubmit((v) => onSubmit(v, 'buy'))}
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '매수'}
-                </Button>
-                <Button 
-                  type="button" 
-                  className="flex-1 h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={loading || isMarketClosed}
-                  onClick={form.handleSubmit((v) => onSubmit(v, 'sell'))}
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '매도'}
-                </Button>
+                {(!orderInitialData?.order_type || orderInitialData.order_type === 'buy') && (
+                  <Button 
+                    type="button" 
+                    className="flex-1 h-12 text-lg font-bold bg-red-600 hover:bg-red-700 text-white"
+                    disabled={loadingType !== null || isMarketClosed}
+                    onClick={form.handleSubmit((v) => onSubmit(v, 'buy'))}
+                  >
+                    {loadingType === 'buy' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매수'}
+                  </Button>
+                )}
+                {(!orderInitialData?.order_type || orderInitialData.order_type === 'sell') && (
+                  <Button 
+                    type="button" 
+                    className="flex-1 h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={loadingType !== null || isMarketClosed}
+                    onClick={form.handleSubmit((v) => onSubmit(v, 'sell'))}
+                  >
+                    {loadingType === 'sell' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매도'}
+                  </Button>
+                )}
               </div>
               
               <Button 
