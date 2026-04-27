@@ -57,6 +57,26 @@ async def get_stock_info(stk_code: str):
         logger.error(f"Error occurred while fetching stock info: {e}")
         return KiwoomApiHelper.create_error_response(error_code="999", error_message= str(e))
 
+@router.get("/market/status")
+async def get_market_status():
+    """
+    현재 시장 상태(영업일 여부, 현재 운영 중인 시장)를 반환합니다.
+    """
+    from backend.domains.market.open_time_checker import OpenTimeChecker
+    checker = OpenTimeChecker.get()
+    
+    is_open = await checker.is_open_day()
+    trade_market = await checker.market_choice_for_trade()
+    price_market = await checker.market_choice_for_price()
+    
+    return {
+        "is_open": is_open,
+        "trade_market": trade_market, # "KRX", "NXT" or None
+        "price_market": price_market, # "KRX" or "NXT"
+        "is_krx_time": checker.isKrxTime(),
+        "is_nxt_time": checker.isNxtTime(),
+    }
+
 @router.post("/find", response_model=KiwoomResponse)
 async def find_stock(request: KiwoomRequest):
     """

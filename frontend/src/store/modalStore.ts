@@ -8,6 +8,13 @@ interface DiaryInitialData {
   note?: string
 }
 
+interface OrderInitialData {
+  stk_cd: string
+  stk_nm: string
+  price?: number
+  qty?: number
+}
+
 interface ModalState {
   // 종목 찾기 모달
   isStockFindModalOpen: boolean
@@ -19,6 +26,12 @@ interface ModalState {
   diaryInitialData: DiaryInitialData | null
   openDiaryEditModal: (data?: DiaryInitialData) => void
   closeDiaryEditModal: () => void
+
+  // 주문 모달
+  isOrderModalOpen: boolean
+  orderInitialData: OrderInitialData | null
+  openOrderModal: (data: OrderInitialData) => void
+  closeOrderModal: () => void
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -38,4 +51,16 @@ export const useModalStore = create<ModalState>((set) => ({
     isDiaryEditModalOpen: false, 
     diaryInitialData: null 
   }),
+
+  // 주문 모달
+  isOrderModalOpen: false,
+  orderInitialData: null,
+  openOrderModal: (data) => set({
+    isOrderModalOpen: true,
+    orderInitialData: data
+  }),
+  closeOrderModal: () => set({
+    isOrderModalOpen: false,
+    orderInitialData: null
+  })
 }))

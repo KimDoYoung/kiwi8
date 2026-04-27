@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import { useModalStore } from '@/store/modalStore'
 import api from '@/shared/lib/api'
 import {
     toNum, fmt,
@@ -22,6 +23,8 @@ async function fetchKisAccount() {
 
 export default function KisAccountPage() {
     const gridRef = useRef<AgGridReact>(null)
+    const openOrderModal = useModalStore((s) => s.openOrderModal)
+
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['stkcompany', 'kis', 'account'],
         queryFn: fetchKisAccount,
@@ -127,9 +130,24 @@ export default function KisAccountPage() {
         },
         {
             headerName: '', width: 145, sortable: false, resizable: false,
-            cellRenderer: (p: any) => p.data?._isSummary ? null : <ActionCell />,
+            cellRenderer: (p: any) => p.data?._isSummary ? null : (
+                <ActionCell 
+                    onBuy={() => openOrderModal({
+                        stk_cd: String(p.data?.상품번호 ?? '').replace(/^A/, ''),
+                        stk_nm: p.data?.상품명,
+                        price: toNum(p.data?.현재가),
+                        qty: 1
+                    })}
+                    onSell={() => openOrderModal({
+                        stk_cd: String(p.data?.상품번호 ?? '').replace(/^A/, ''),
+                        stk_nm: p.data?.상품명,
+                        price: toNum(p.data?.현재가),
+                        qty: toNum(p.data?.보유수량)
+                    })}
+                />
+            ),
         },
-    ], [totalMaeip, sumMaeip])
+    ], [totalMaeip, sumMaeip, openOrderModal])
 
     const defaultColDef = useMemo<ColDef>(() => ({
         sortable: true, resizable: true,
@@ -185,7 +203,6 @@ export default function KisAccountPage() {
                     domLayout="normal"
                     headerHeight={36}
                     rowHeight={32}
-                    rowHoverable={true}
                     postSortRows={({ nodes }) => {
                         const idx = nodes.findIndex(n => n.data?._isSummary)
                         if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])

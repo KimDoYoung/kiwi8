@@ -4,6 +4,7 @@ import Sidebar from '@/layout/Sidebar'
 import StatusBar from '@/layout/StatusBar'
 import StockFindModal from '@/shared/components/modals/StockFindModal'
 import DiaryEditModal from '@/shared/components/modals/DiaryEditModal'
+import OrderModal from '@/shared/components/modals/OrderModal'
 import { fetchMenuTree } from '@/services/menuService'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
@@ -29,6 +30,7 @@ export default function MainLayout() {
       <StatusBar />
       <StockFindModal />
       <DiaryEditModal />
+      <OrderModal />
     </div>
   )
 }

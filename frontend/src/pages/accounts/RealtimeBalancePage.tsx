@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { AgGridReact } from 'ag-grid-react'
-import type { ColDef, ValueFormatterParams } from 'ag-grid-community'
+import type { ColDef, ValueFormatterParams, CellClickedEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import { useModalStore } from '@/store/modalStore'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -52,10 +53,22 @@ const ROW_DATA: BalanceRow[] = [
 ]
 
 export default function RealtimeBalancePage() {
+  const openOrderModal = useModalStore((s) => s.openOrderModal)
+
+  const onCellClicked = useCallback((event: CellClickedEvent<BalanceRow>) => {
+    if (event.data) {
+      openOrderModal({
+        stk_cd: event.data.code,
+        stk_nm: event.data.name,
+        price: event.data.currentPrice,
+      })
+    }
+  }, [openOrderModal])
+
   const colDefs = useMemo<ColDef<BalanceRow>[]>(() => [
     { field: 'broker',        headerName: '증권사',   width: 72,  pinned: 'left' },
-    { field: 'code',          headerName: '종목코드', width: 90,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
-    { field: 'name',          headerName: '종목명',   width: 150, pinned: 'left' },
+    { field: 'code',          headerName: '종목코드', width: 90,  cellStyle: { fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' } },
+    { field: 'name',          headerName: '종목명',   width: 150, pinned: 'left', cellStyle: { cursor: 'pointer', textDecoration: 'underline' } },
     { field: 'qty',           headerName: '수량',     width: 70,  type: 'numericColumn', valueFormatter: fmtNum },
     { field: 'avgPrice',      headerName: '평균단가', width: 100, type: 'numericColumn', cellRenderer: PriceCell },
     { field: 'currentPrice',  headerName: '현재가',   width: 100, type: 'numericColumn', cellRenderer: PriceCell },
@@ -91,6 +104,7 @@ export default function RealtimeBalancePage() {
           domLayout="normal"
           headerHeight={32}
           rowHeight={26}
+          onCellClicked={onCellClicked}
         />
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import { useModalStore } from '@/store/modalStore'
 import api from '@/shared/lib/api'
 import {
     toNum, fmt,
@@ -22,6 +23,8 @@ async function fetchLsAccount() {
 
 export default function LsAccountPage() {
     const gridRef = useRef<AgGridReact>(null)
+    const openOrderModal = useModalStore((s) => s.openOrderModal)
+
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['stkcompany', 'ls', 'account'],
         queryFn: fetchLsAccount,
@@ -129,9 +132,24 @@ export default function LsAccountPage() {
         },
         {
             headerName: '', width: 145, sortable: false, resizable: false,
-            cellRenderer: (p: any) => p.data?._isSummary ? null : <ActionCell />,
+            cellRenderer: (p: any) => p.data?._isSummary ? null : (
+                <ActionCell 
+                    onBuy={() => openOrderModal({
+                        stk_cd: p.data?.종목번호,
+                        stk_nm: p.data?.종목명,
+                        price: toNum(p.data?.현재가),
+                        qty: 1
+                    })}
+                    onSell={() => openOrderModal({
+                        stk_cd: p.data?.종목번호,
+                        stk_nm: p.data?.종목명,
+                        price: toNum(p.data?.현재가),
+                        qty: toNum(p.data?.잔고수량)
+                    })}
+                />
+            ),
         },
-    ], [totalMaeip, sumMaeip])
+    ], [totalMaeip, sumMaeip, openOrderModal])
 
     const defaultColDef = useMemo<ColDef>(() => ({
         sortable: true, resizable: true,
@@ -189,7 +207,6 @@ export default function LsAccountPage() {
                     domLayout="normal"
                     headerHeight={36}
                     rowHeight={32}
-                    rowHoverable={true}
                     postSortRows={({ nodes }) => {
                         const idx = nodes.findIndex(n => n.data?._isSummary)
                         if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])

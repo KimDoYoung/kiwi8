@@ -45,17 +45,34 @@ export function CodeCell({ value }: { value: string }) {
   )
 }
 
-/** 매수/매도/상세 버튼 (동작 미구현) */
-export function ActionCell() {
+/** 매수/매도/상세 버튼 */
+export function ActionCell({ 
+  onBuy, 
+  onSell, 
+  onDetail 
+}: { 
+  onBuy?: () => void, 
+  onSell?: () => void, 
+  onDetail?: () => void 
+}) {
   return (
     <div className="flex gap-1 items-center h-full">
-      <button className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors">
+      <button 
+        onClick={(e) => { e.stopPropagation(); onBuy?.(); }}
+        className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors"
+      >
         매수
       </button>
-      <button className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+      <button 
+        onClick={(e) => { e.stopPropagation(); onSell?.(); }}
+        className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+      >
         매도
       </button>
-      <button className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 rounded hover:bg-gray-100 transition-colors">
+      <button 
+        onClick={(e) => { e.stopPropagation(); onDetail?.(); }}
+        className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
+      >
         상세
       </button>
     </div>
