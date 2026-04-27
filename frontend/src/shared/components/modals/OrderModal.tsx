@@ -56,6 +56,9 @@ export default function OrderModal() {
 
   useEffect(() => {
     if (isOrderModalOpen && orderInitialData) {
+      if (orderInitialData.broker) {
+        setBroker(orderInitialData.broker)
+      }
       form.reset({
         market: marketStatus?.trade_market === 'NXT' ? 'NXT' : 'KRX',
         pdno: orderInitialData.stk_cd,

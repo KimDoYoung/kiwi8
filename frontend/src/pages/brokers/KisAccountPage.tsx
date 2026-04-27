@@ -136,13 +136,15 @@ export default function KisAccountPage() {
                         stk_cd: String(p.data?.상품번호 ?? '').replace(/^A/, ''),
                         stk_nm: p.data?.상품명,
                         price: toNum(p.data?.현재가),
-                        qty: 1
+                        qty: 1,
+                        broker: 'kis'
                     })}
                     onSell={() => openOrderModal({
                         stk_cd: String(p.data?.상품번호 ?? '').replace(/^A/, ''),
                         stk_nm: p.data?.상품명,
                         price: toNum(p.data?.현재가),
-                        qty: toNum(p.data?.보유수량)
+                        qty: toNum(p.data?.보유수량),
+                        broker: 'kis'
                     })}
                 />
             ),

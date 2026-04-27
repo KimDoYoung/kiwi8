@@ -13,6 +13,7 @@ interface OrderInitialData {
   stk_nm: string
   price?: number
   qty?: number
+  broker?: 'kis' | 'kiwoom' | 'ls'
 }
 
 interface ModalState {

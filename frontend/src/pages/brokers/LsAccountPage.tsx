@@ -138,13 +138,15 @@ export default function LsAccountPage() {
                         stk_cd: p.data?.종목번호,
                         stk_nm: p.data?.종목명,
                         price: toNum(p.data?.현재가),
-                        qty: 1
+                        qty: 1,
+                        broker: 'ls'
                     })}
                     onSell={() => openOrderModal({
                         stk_cd: p.data?.종목번호,
                         stk_nm: p.data?.종목명,
                         price: toNum(p.data?.현재가),
-                        qty: toNum(p.data?.잔고수량)
+                        qty: toNum(p.data?.잔고수량),
+                        broker: 'ls'
                     })}
                 />
             ),

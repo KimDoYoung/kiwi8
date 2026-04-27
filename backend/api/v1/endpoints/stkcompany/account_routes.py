@@ -29,10 +29,44 @@ from backend.domains.stkcompanys.ls.models.ls_schema import (
     LsResponse,
 )
 from backend.domains.market.open_time_checker import OpenTimeChecker
+from backend.utils.acct_summary import (
+    get_kis_account_summary,
+    get_kiwoom_account_summary,
+    get_ls_account_summary,
+    get_summary_json,
+)
 from backend.utils.common_utils import parse_price
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+
+@router.get('/summary')
+async def get_summary():
+    """계좌 요약 정보 조회"""
+    logger.info('계좌 요약 정보 조회 요청 받음')
+
+    accounts = []
+
+    # 각 증권사별 계좌 조회
+    kiwoom_account = await get_kiwoom_account_summary()
+    if kiwoom_account:
+        accounts.append(kiwoom_account)
+
+    kis_account = await get_kis_account_summary()
+    if kis_account:
+        accounts.append(kis_account)
+
+    ls_account = await get_ls_account_summary()
+    if ls_account:
+        accounts.append(ls_account)
+
+    # 결과 반환
+    if accounts:
+        return get_summary_json(accounts)
+    else:
+        logger.error('조회된 계좌가 없습니다.')
+        return {'summary': {}, 'accounts': {}}
 
 
 @router.get('/kiwoom/account/list', response_model=KiwoomResponse)
@@ -130,7 +164,13 @@ async def ls_account_list():
             return LsApiHelper.create_error_response(
                 error_code='999', error_message='LS API 인스턴스 생성 실패'
             )
-
+# prcgb 단가구분 (1:평균단가,2:BEP단가),
+# chegb 체결구분 (0:결제기준잔고,2:체결기준잔고 - 잔고가 0이아 닌 종목만 조회) ,
+# dangb 단일가구분 (0:정규장, 1:시간외단일가),
+# charge 제비용 포함여부 (0:미포함,1:포함),
+        checker = OpenTimeChecker.get()
+        price_market = await checker.market_choice_for_price() # "KRX" or "NXT"
+        market = "1" if price_market == "NXT" else "0"
         req = LsRequest(
             api_id='t0424',
             title='stocklist',
@@ -138,7 +178,7 @@ async def ls_account_list():
                 't0424InBlock': {
                     'prcgb': '1',       # 단가구분: 1:평균단가
                     'chegb': '0',       # 체결구분: 0:전체
-                    'dangb': '0',       # 단일가구분: 0:전체
+                    'dangb': market,    # 단일가구분: 0:정규장, 1:시간외단일가
                     'charge': '1',      # 제비용포함여부: 1:포함
                     'cts_expcode': '',  # 연속조회키
                 },
@@ -168,8 +208,8 @@ async def _insert_prev_costs_kiwoom(stock_list: list):
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
         
-        cur_price = int(float(str(stock.get('현재가', 0)).replace(',', '') or 0))
-        avg_price = int(float(str(stock.get('평균단가', 0)).replace(',', '') or 0))
+        cur_price = parse_price(stock.get('현재가', 0))
+        avg_price = parse_price(stock.get('평균단가', 0))
         
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
@@ -183,8 +223,8 @@ async def _insert_prev_costs_kis(stock_list: list):
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
             
-        cur_price = int(float(str(stock.get('현재가', 0)).replace(',', '') or 0))
-        avg_price = int(float(str(stock.get('매입평균가격', 0)).replace(',', '') or 0))
+        cur_price = parse_price(stock.get('현재가', 0))
+        avg_price = parse_price(stock.get('매입평균가격', 0))
             
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
@@ -198,8 +238,8 @@ async def _insert_prev_costs_ls(stock_list: list):
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
             
-        cur_price = int(float(str(stock.get('현재가', 0)).replace(',', '') or 0))
-        avg_price = int(float(str(stock.get('평균단가', 0)).replace(',', '') or 0))
+        cur_price = parse_price(stock.get('현재가', 0))
+        avg_price = parse_price(stock.get('평균단가', 0))
             
         stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
         stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'

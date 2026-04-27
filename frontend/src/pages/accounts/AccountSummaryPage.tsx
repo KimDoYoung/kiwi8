@@ -49,7 +49,7 @@ export default function AccountSummaryPage() {
     const { data, isLoading, isError, refetch, isFetching } = useQuery<AccountSummaryResponse>({
         queryKey: ['accountSummary'],
         queryFn: async () => {
-            const res = await api.get('/api/v1/accounts/summary')
+            const res = await api.get('/api/v1/stkcompany/summary')
             return res.data
         }
     })

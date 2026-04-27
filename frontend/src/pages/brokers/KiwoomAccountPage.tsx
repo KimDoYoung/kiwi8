@@ -139,13 +139,15 @@ export default function KiwoomAccountPage() {
                         stk_cd: p.data?.종목코드,
                         stk_nm: p.data?.종목명,
                         price: toNum(p.data?.현재가),
-                        qty: 1
+                        qty: 1,
+                        broker: 'kiwoom'
                     })}
                     onSell={() => openOrderModal({
                         stk_cd: p.data?.종목코드,
                         stk_nm: p.data?.종목명,
                         price: toNum(p.data?.현재가),
-                        qty: toNum(p.data?.보유수량)
+                        qty: toNum(p.data?.보유수량),
+                        broker: 'kiwoom'
                     })}
                 />
             ),
