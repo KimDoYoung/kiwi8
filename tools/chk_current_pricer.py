@@ -15,7 +15,6 @@ CurrentPricer 현재가 조회 테스트
 """
 
 import asyncio
-import json
 import os
 import sys
 from datetime import datetime
