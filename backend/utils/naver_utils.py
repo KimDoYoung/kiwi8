@@ -55,73 +55,83 @@ def get_jisu_from_naver():
 
 def get_summary_from_naver(stk_code: str):
     '''주식 코드로부터 주식 요약 정보를 가져온다.'''
-    page = requests.get(f"https://finance.naver.com/item/main.nhn?code={stk_code}")
-    soup = BeautifulSoup(page.text, 'html.parser')
-    div_class_name = 'wrap_company'
-    stk_name = soup.select_one(f'div.{div_class_name} h2 a').text
-
-    # 기업개요: summary_info 클래스 내부의 모든 <p> 태그를 찾음
-    summary_info = soup.find('div', class_='summary_info')
-    paragraphs = summary_info.find_all('p')
-    
-    # <p> 태그 내용을 줄바꿈과 함께 합침
-    company_summary = "\n".join(p.get_text(strip=True) for p in paragraphs)
-    return company_summary
+    try:
+        page = requests.get(f"https://finance.naver.com/item/main.nhn?code={stk_code}")
+        soup = BeautifulSoup(page.text, 'html.parser')
+        
+        # 기업개요: summary_info 클래스 내부의 모든 <p> 태그를 찾음
+        summary_info = soup.find('div', class_='summary_info')
+        if not summary_info:
+            return ""
+            
+        paragraphs = summary_info.find_all('p')
+        if not paragraphs:
+            return ""
+        
+        # <p> 태그 내용을 줄바꿈과 함께 합침
+        company_summary = "\n".join(p.get_text(strip=True) for p in paragraphs)
+        return company_summary
+    except Exception as e:
+        print(f"Error fetching summary from Naver: {e}")
+        return ""
 
 
 def get_stock_info(stk_code: str):
     '''주식 코드로부터 주식 정보를 가져온다.'''
-    page = requests.get(f"https://finance.naver.com/item/main.nhn?code={stk_code}")
-    soup = BeautifulSoup(page.text, 'html.parser')
-    div_class_name = 'wrap_company'
-    stk_name = soup.select_one(f'div.{div_class_name} h2 a').text
+    try:
+        page = requests.get(f"https://finance.naver.com/item/main.nhn?code={stk_code}")
+        soup = BeautifulSoup(page.text, 'html.parser')
+        
+        div_class_name = 'wrap_company'
+        stk_name_tag = soup.select_one(f'div.{div_class_name} h2 a')
+        stk_name = stk_name_tag.text if stk_name_tag else None
 
-    # 기업개요: summary_info 클래스 내부의 모든 <p> 태그를 찾음
-    summary_info = soup.find('div', class_='summary_info')
-    paragraphs = summary_info.find_all('p')
-    
-    # <p> 태그 내용을 줄바꿈과 함께 합침
-    company_summary = "\n".join(p.get_text(strip=True) for p in paragraphs)
+        # 기업개요
+        summary_info = soup.find('div', class_='summary_info')
+        company_summary = ""
+        if summary_info:
+            paragraphs = summary_info.find_all('p')
+            company_summary = "\n".join(p.get_text(strip=True) for p in paragraphs)
 
-    # 필요한 div 컨테이너를 먼저 찾아서 그 안에서 작업
-    container_div = soup.find('div', id='tab_con1', class_='tab_con1')
-    
-    # 시가총액
-    market_cap = container_div.find('th', string='시가총액').find_next('td').get_text(separator='').strip()
+        # 필요한 div 컨테이너
+        container_div = soup.find('div', id='tab_con1', class_='tab_con1')
+        
+        market_cap = ""
+        market_cap_rank = ""
+        num_of_shares = ""
+        
+        if container_div:
+            # 시가총액
+            mc_th = container_div.find('th', string='시가총액')
+            if mc_th:
+                market_cap = mc_th.find_next('td').get_text(separator='').strip()
 
-    # 시가총액순위
-    market_cap_rank = container_div.find('a', string='시가총액순위').find_next('td').get_text(separator='').strip()
+            # 시가총액순위
+            mcr_a = container_div.find('a', string='시가총액순위')
+            if mcr_a:
+                market_cap_rank = mcr_a.find_next('td').get_text(separator='').strip()
 
-    # 상장주식수
-    num_of_shares = container_div.find('th', string='상장주식수').find_next('td').get_text(separator='').strip()
+            # 상장주식수
+            nos_th = container_div.find('th', string='상장주식수')
+            if nos_th:
+                num_of_shares = nos_th.find_next('td').get_text(separator='').strip()
 
-
-    # # 1. pArea 영역을 먼저 찾기
-    # pArea = soup.find('div', id='pArea')
-
-    # # 2. pArea 내부에서 class="cmp-table-cell td0301"을 찾기
-    # table_cell = pArea.find('td', class_='cmp-table-cell td0301')
-
-    # # 3. EPS, BPS, PER, 업종PER, PBR, 현금배당수익률을 추출
-    # eps = table_cell.find('dt', string='EPS ').find('b', class_='num').text
-    # bps = table_cell.find('dt', string='BPS ').find('b', class_='num').text
-    # per = table_cell.find('dt', string='PER ').find('b', class_='num').text
-    # sector_per = table_cell.find('dt', string='업종PER ').find('b', class_='num').text
-    # pbr = table_cell.find('dt', string='PBR ').find('b', class_='num').text
-    # div_yield = table_cell.find('dt', string='현금배당수익률 ').find('b', class_='num').text
-
-    stock_info = {
-        'stk_code': stk_code,
-        'stk_name': stk_name,
-        'company_summary': company_summary,
-        'market_cap': market_cap,
-        'market_cap_rank': market_cap_rank,
-        'num_of_shares': num_of_shares,
-        # 'EPS': eps,
-        # 'BPS': bps,
-        # 'PER': per,
-        # '업종PER': sector_per,
-        # 'PBR': pbr,
-        # '현금배당수익률': div_yield
-    }
-    return stock_info
+        stock_info = {
+            'stk_code': stk_code,
+            'stk_name': stk_name,
+            'company_summary': company_summary,
+            'market_cap': market_cap,
+            'market_cap_rank': market_cap_rank,
+            'num_of_shares': num_of_shares,
+        }
+        return stock_info
+    except Exception as e:
+        print(f"Error fetching stock info from Naver: {e}")
+        return {
+            'stk_code': stk_code,
+            'stk_name': None,
+            'company_summary': "",
+            'market_cap': "",
+            'market_cap_rank': "",
+            'num_of_shares': "",
+        }

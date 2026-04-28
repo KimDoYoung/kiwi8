@@ -9,6 +9,7 @@ import KisAccountPage from '@/pages/brokers/KisAccountPage'
 import LsAccountPage from '@/pages/brokers/LsAccountPage'
 import StkDiaryList from '@/pages/diary/StkDiaryList'
 import SettingsPage from '@/pages/settings/SettingsPage'
+import StockDetailPage from '@/pages/stock/StockDetailPage'
 
 // screen_no → React 컴포넌트 매핑
 // 향후 실제 페이지 구현 시 PlaceholderPage를 교체
@@ -21,7 +22,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '1103': ProfitTrendPage,
   '1104': ExecutionHistoryPage,
   // [1200 시장 분석]
-  '1201': PlaceholderPage,
+  '1201': StockDetailPage,
   '1202': PlaceholderPage,
   '1203': PlaceholderPage,
   '1204': PlaceholderPage,

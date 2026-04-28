@@ -4,6 +4,8 @@ import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useModalStore } from '@/store/modalStore'
+import { useStockDetailStore } from '@/store/stockDetailStore'
+import { useLayoutStore } from '@/store/layoutStore'
 import api from '@/shared/lib/api'
 import {
     toNum, fmt,
@@ -24,6 +26,10 @@ async function fetchKiwoomAccount() {
 export default function KiwoomAccountPage() {
     const gridRef = useRef<AgGridReact>(null)
     const openOrderModal = useModalStore((s) => s.openOrderModal)
+    const setStock = useStockDetailStore((s) => s.setStock)
+    const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
+
+    const { data: menus } = useQuery({ queryKey: ['menus'] })
 
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['stkcompany', 'kiwoom', 'account'],
@@ -160,6 +166,14 @@ export default function KiwoomAccountPage() {
         sortable: true, resizable: true,
     }), [])
 
+    const onRowDoubleClicked = (p: any) => {
+        if (p.data?._isSummary) return
+        const code = p.data?.종목코드
+        const name = p.data?.종목명
+        setStock(code, name)
+        openByScreenNo('1201', menus || [])
+    }
+
     if (isLoading) {
         return <Loading message="키움 계좌 정보를 불러오는 중..." />
     }
@@ -210,6 +224,7 @@ export default function KiwoomAccountPage() {
                     domLayout="normal"
                     headerHeight={36}
                     rowHeight={32}
+                    onRowDoubleClicked={onRowDoubleClicked}
                     postSortRows={({ nodes }) => {
                         const idx = nodes.findIndex(n => n.data?._isSummary)
                         if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])

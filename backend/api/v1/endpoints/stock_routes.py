@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from backend.core.exceptions import KiwoomApiException
 from backend.core.logger import get_logger
+from backend.domains.market.open_time_checker import OpenTimeChecker
 from backend.domains.services import get_service
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
@@ -28,22 +29,36 @@ async def get_stock_info(stk_code: str):
         return KiwoomApiHelper.create_error_response(error_code="999", error_message="Kiwoom API 클래스를 생성하는데 실패했습니다")
 
     try:
+        # 시간에 따라서  거래소를 선택해야함 :  거래소별 종목코드 (KRX:039490,NXT:039490_NX,SOR:039490_AL)
+        checker = OpenTimeChecker.get()
+        price_market = await checker.market_choice_for_price() # "KRX" or "NXT"
+        stk_code = stk_code + "_NX" if price_market == "NXT" else stk_code
+
         req = KiwoomRequest(api_id="ka10001", payload={"stk_cd": stk_code})
         response1 = await kiwoom.send_request(req)
         if response1.success:
             korea_data = KiwoomApiHelper.to_korea_data(response1.data, response1.api_info['api_id'])
             response1.data = korea_data           
 
-        req = KiwoomRequest(api_id="ka10100", payload={"stk_cd": stk_code})
+        # ka10100(종목정보조회)는 거래소 구분 없이 원본 코드로 조회해야 정보가 나옴
+        base_stk_code = stk_code.replace("_NX", "")
+        req = KiwoomRequest(api_id="ka10100", payload={"stk_cd": base_stk_code})
         response2 = await kiwoom.send_request(req)
         if response2.success:
             korea_data = KiwoomApiHelper.to_korea_data(response2.data, response2.api_info['api_id'])
             response2.data = korea_data
+        else:
+            logger.error(f"종목상세 실패 {base_stk_code} using ka10100: {response2.error_message}")
+            return KiwoomApiHelper.create_error_response(
+                error_code="999",
+                error_message=f"Failed to fetch stock info for {base_stk_code} using ka10100: {response2.error_message}"
+            )    
 
         response = merge_dicts(response1.data, response2.data)
 
-        # naver의 company_summary를 구한다.
-        company_summary = get_summary_from_naver(stk_code)
+        # naver의 company_summary를 구한다. (Naver는 _NX를 모르므로 원본 코드를 사용)
+        base_stk_code = stk_code.replace("_NX", "")
+        company_summary = get_summary_from_naver(base_stk_code)
         if company_summary:
             response['company_summary'] = company_summary
 
