@@ -6,7 +6,7 @@ import api from '@/shared/lib/api'
 import { toNum, fmt } from '@/pages/brokers/accountUtils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { RefreshCw, ExternalLink, TrendingUp, Minus, Info, BarChart3, PieChart, Coins, FileText } from 'lucide-react'
+import { RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, Coins, FileText } from 'lucide-react'
 
 async function fetchStockInfo(stk_cd: string | null) {
   if (!stk_cd) return null
@@ -129,16 +129,13 @@ export default function StockDetailPage() {
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="text-lg font-black text-gray-900 tracking-tight">{info.종목명 || stk_nm}</span>
-            <span className="font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-xs font-bold leading-none">
-              {stk_cd}
-            </span>
-            <button 
+            <span
               onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${stk_cd}`, '_blank')}
-              className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-blue-500"
+              className="font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-xs font-bold leading-none cursor-pointer hover:bg-blue-100 hover:border-blue-400 transition-colors"
               title="네이버 금융 열기"
             >
-              <ExternalLink size={15} />
-            </button>
+              {stk_cd}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
