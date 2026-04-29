@@ -1,22 +1,16 @@
 import { useState } from 'react'
 import {
   ChevronRight,
-  LineChart,
-  BarChart2,
-  TrendingUp,
-  Newspaper,
-  Globe,
-  DollarSign,
-  ExternalLink,
   X,
 } from 'lucide-react'
+import IndexBadge from '@/shared/components/IndexBadge'
 
 // ── Panel 1: Ticker 데이터 (더미) ──────────────────────────────────────────
 
 const INDICES = [
-  { label: 'KOSPI', value: '2,580.45', change: -1.2 },
-  { label: 'KOSDAQ', value: '850.12', change: +0.3 },
-  { label: 'USD/KRW', value: '1,380', change: +0.1 },
+  { name: 'KOSPI', value: 2580.45, change: -31.35, percentage: -1.20 },
+  { name: 'KOSDAQ', value: 850.12, change: 2.54, percentage: 0.30 },
+  { name: 'USD/KRW', value: 1380, change: 1.38, percentage: 0.10 },
 ]
 
 const NEWS = [
@@ -29,13 +23,24 @@ const NEWS = [
 // ── Panel 2: 외부 링크 ────────────────────────────────────────────────────
 
 const LINKS = [
-  { icon: LineChart,   label: '키움 OpenAPI',  url: 'https://openapi.kiwoom.com/main/home' },
-  { icon: BarChart2,   label: 'KIS API',        url: 'https://apiportal.koreainvestment.com' },
-  { icon: TrendingUp,  label: 'LS증권 API',     url: 'https://openapi.ls-sec.co.kr' },
-  { icon: Newspaper,   label: '네이버 증권',    url: 'https://finance.naver.com' },
-  { icon: Globe,       label: '한국거래소',     url: 'https://www.krx.co.kr' },
-  { icon: DollarSign,  label: '환율 정보',      url: 'https://finance.naver.com/marketindex/' },
+  { label: '키움 OpenAPI', url: 'https://openapi.kiwoom.com/guide/apiguide' },
+  { label: 'KIS API', url: 'https://apiportal.koreainvestment.com/apiservice-apiservice' },
+  { label: 'LS증권 API', url: 'https://openapi.ls-sec.co.kr/apiservice' },
+  { label: '네이버 증권', url: 'https://finance.naver.com' },
+  { label: '한국거래소', url: 'https://www.krx.co.kr' },
+  { label: '넥스트레이드', url: 'https://www.nextrade.co.kr' },
+  { label: '환율 정보', url: 'https://finance.naver.com/marketindex/' },
 ]
+
+const BADGE_COLORS: Record<string, string> = {
+  'KIS API': '#80624c',
+  'LS증권 API': '#003378',
+  '키움 OpenAPI': '#e4007f',
+  '한국거래소': '#00b4d5',
+  '네이버 증권': '#03c75a',
+  '넥스트레이드': '#ad0032',
+  '환율 정보': '#6b7280',
+}
 
 // ── 뉴스 팝업 ────────────────────────────────────────────────────────────
 
@@ -74,13 +79,13 @@ function TickerPanel() {
       {/* 지수 */}
       <div className="flex items-center gap-3 shrink-0">
         {INDICES.map((idx) => (
-          <span key={idx.label} className="flex items-center gap-1 text-xs font-mono">
-            <span className="text-gray-500 font-sans">{idx.label}</span>
-            <span className="text-gray-800">{idx.value}</span>
-            <span className={idx.change >= 0 ? 'text-green-600' : 'text-red-500'}>
-              {idx.change >= 0 ? '▲' : '▼'}{Math.abs(idx.change)}%
-            </span>
-          </span>
+          <IndexBadge
+            key={idx.name}
+            name={idx.name}
+            value={idx.value}
+            change={idx.change}
+            percentage={idx.percentage}
+          />
         ))}
       </div>
 
@@ -123,18 +128,26 @@ function TickerPanel() {
 
 function IconPanel() {
   return (
-    <div className="flex items-center gap-1 flex-1">
-      {LINKS.map(({ icon: Icon, label, url }) => (
-        <button
-          key={label}
-          onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
-          title={label}
-          className="flex items-center gap-0.5 px-2 py-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors text-xs"
-        >
-          <Icon size={14} />
-          <ExternalLink size={10} className="opacity-50" />
-        </button>
-      ))}
+    <div className="flex items-center gap-1 flex-1 flex-wrap">
+      {LINKS.map(({ label, url }) => {
+        const badgeColor = BADGE_COLORS[label]
+
+        return (
+          <button
+            key={label}
+            onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
+            title={label}
+            className="px-2.5 py-1 rounded-full border text-xs font-semibold transition-all"
+            style={
+              badgeColor
+                ? { backgroundColor: badgeColor, borderColor: badgeColor, color: '#ffffff' }
+                : { backgroundColor: '#ffffff', borderColor: '#d1d5db', color: '#4b5563' }
+            }
+          >
+            {label}
+          </button>
+        )
+      })}
     </div>
   )
 }

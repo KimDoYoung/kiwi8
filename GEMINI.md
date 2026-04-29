@@ -82,21 +82,16 @@ This file provides guidance to Gemini Code (Gemini.ai/code) when working with co
   └── files/
 - **위 파일구조를 참조하여 log와 db를  조회**한다
 
-## 참고 사이트
+## 각 증권사 API문서
 
-### 키움
-
-- [키움Restful API 홈](https://openapi.kiwoom.com/main/home)
-- [**API문서**](https://openapi.kiwoom.com/guide/apiguide)
-
-### KIS-한국투자증권
-
-- [API 문서](https://apiportal.koreainvestment.com/apiservice-apiservice)
-
-### LS-LS증권
-
-- [API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
+- [키움증권 API문서](https://openapi.kiwoom.com/guide/apiguide)
+- [한국투자증권 API 문서](https://apiportal.koreainvestment.com/apiservice-apiservice)
+- [LS증권 API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
 
 ## 배포
 
 - docs/배포.md 참조
+
+## 코딩
+
+- docs/코딩지침.md 참조

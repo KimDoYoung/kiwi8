@@ -12,6 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - backend와 frontend로 나누고 backend는 fastapi로 frontend는 react 로 개발한다.
 - 개발시  PORT 는 backend는 **8003**으로, frontend는 **5173**을 사용
 - 이 프로젝트는 kwi7에서 구조를 변경하여 다시 진행하는 것이다.
+- **주요 변경 사항**
+  - frontend를 alpine -> react로 변경
+  - backend에서 jinja2를 배제하고 모든 UI는 react로 처리
+  - backend는 Restful api만을 제공
+  - DB 라이브러리 변경: sqlite3 -> aiosqlite
 
 ## 목적
 
@@ -28,6 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - fastapi
   - uvicorn
   - sqlite3
+  - aiosqlite
   - jwt
   - pydantic
   - dotenv
@@ -50,11 +56,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 11 | axios              | 1.7.x              | MIT          | HTTP 클라이언트. 인터셉터 기반 JWT 토큰 자동 첨부, 공통 에러 처리 |
 | 12 | TanStack Query     | 5.x                | MIT          | 서버 상태 관리. API 캐싱, 자동 리페치, 뮤테이션 및 낙관적 업데이트 처리 |
 
-
-## 메뉴 및 layout
-
-- docs/메뉴체계-설계.md 을 참조
-
 ## 보안
 
 - auth 는 jwt사용
@@ -63,12 +64,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - jwtmiddelware.py
 - auth_routes의 post login, get logout
 
+## 메뉴 및 layout
+
+- docs/메뉴체계-설계.md 을 참조
+
+
 ## 유틸리티
 
 - b.sh : backend 즉 fastapi를 수행한다.
 - f.sh : frontend vite로 react app을 수행한다.
-- db.sh : sqlite database 조작
-- deploy.sh : jskn서버 docker에 배포 수행
 
 ## DATA 위치
   /home/kdy987/work/kiwi8/data/
@@ -78,14 +82,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   └── files/
 - **위 파일구조를 참조하여 log와 db를  조회**한다
 
-## 코딩 컨벤션
+## 각 증권사 API문서
 
-- **docs/코딩지침.md** 을 참조할 것
+- [키움증권 API문서](https://openapi.kiwoom.com/guide/apiguide)
+- [한국투자증권 API 문서](https://apiportal.koreainvestment.com/apiservice-apiservice)
+- [LS증권 API 문서](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
 
-## 참고 사이트
+## 배포
 
-### 3개증권사 API문서
+- docs/배포.md 참조
 
-- [**키움 API문서**](https://openapi.kiwoom.com/guide/apiguide)
-- [**한국투자증권 API 문서**](https://apiportal.koreainvestment.com/apiservice-apiservice)
-- [**LS증권 API 문서**](https://openapi.ls-sec.co.kr/apiservice?group_id=ffd2def7-a118-40f7-a0ab-cd4c6a538a90&api_id=33bd887a-6652-4209-88cd-5324bc7c5e36)
+## 코딩
+
+- docs/코딩지침.md 참조
