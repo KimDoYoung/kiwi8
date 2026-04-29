@@ -35,7 +35,7 @@ class Config:
         self.TIME_ZONE = "Asia/Seoul"
 
         # BASE_DIR 설정
-        self.BASE_DIR = os.getenv('BASE_DIR', 'c:\\kiwi8')
+        self.BASE_DIR = os.getenv('BASE_DIR', '/home/kdy987/work/kiwi8/data')
         self.DB_PATH =  f'{self.BASE_DIR}/db/kiwi8.db'
         # 로그 설정
         self.LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')

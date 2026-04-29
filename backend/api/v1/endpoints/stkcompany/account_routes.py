@@ -93,6 +93,8 @@ async def kiwoom_account_list():
         )
 
         response = await kiwoom.send_request(req)
+        # debug
+        logger.debug(f'[계좌현황] 키움 API 응답: {response.model_dump(mode="json")}')
         if response.success:
             korea_data = KiwoomApiHelper.to_korea_data(response.data, 'kt00004')
             response.data = korea_data
@@ -236,6 +238,7 @@ async def _insert_prev_costs_ls(stock_list: list, price_market: str):
     cache = get_prev_price_cache()
     for stock in stock_list:
         stk_cd = stock.get('종목번호', '')
+        # LS API는 NXT에서의 현재가를 가져오지 못한다. 그래서 NXT인 경우 현재가를 코넥스 종목코드로 다시 조회해서 넣어준다. 😡
         if price_market == "NXT":  # 코넥스는 종목코드에 시장구분이 없으므로 'A' 제거
            pricer = CurrentPricer.get() 
            cost = await pricer.get_price1(stk_cd) or 0
