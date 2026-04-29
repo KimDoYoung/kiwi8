@@ -15,6 +15,7 @@ import {
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
+import { fetchMenuTree } from '@/services/menuService'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -29,7 +30,11 @@ export default function KisAccountPage() {
     const setStock = useStockDetailStore((s) => s.setStock)
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
 
-    const { data: menus } = useQuery({ queryKey: ['menus'] })
+    const { data: menus } = useQuery({
+        queryKey: ['menus'],
+        queryFn: fetchMenuTree,
+        staleTime: 1000 * 60 * 10,
+    })
 
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['stkcompany', 'kis', 'account'],

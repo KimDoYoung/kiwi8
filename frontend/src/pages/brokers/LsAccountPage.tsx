@@ -15,6 +15,7 @@ import {
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
+import { fetchMenuTree } from '@/services/menuService'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -29,7 +30,11 @@ export default function LsAccountPage() {
     const setStock = useStockDetailStore((s) => s.setStock)
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
 
-    const { data: menus } = useQuery({ queryKey: ['menus'] })
+    const { data: menus } = useQuery({
+        queryKey: ['menus'],
+        queryFn: fetchMenuTree,
+        staleTime: 1000 * 60 * 10,
+    })
 
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['stkcompany', 'ls', 'account'],
@@ -39,12 +44,20 @@ export default function LsAccountPage() {
 
     const [profitFilter, setProfitFilter] = useState('all')
 
-    const rawStocks: Record<string, unknown>[] = data?.data?.t0424OutBlock1 ?? []
+    const accountData = data?.data ?? {}
+    const rawStocks: Record<string, unknown>[] =
+        (accountData as any)?.t0424OutBlock1 ??
+        (accountData as any)?.t0424OutBlock_1 ??
+        (accountData as any)?.output1 ??
+        []
 
     const stocks = useMemo(() => {
         const list: Record<string, unknown>[] = rawStocks.map((s) => {
-            const code = String(s['종목번호'] ?? '')
-            return { ...s, 종목번호: code.startsWith('A') ? code.slice(1) : code }
+            const code = String(s['종목번호'] ?? s['종목코드'] ?? '')
+            return {
+                ...s,
+                종목번호: code.startsWith('A') ? code.slice(1) : code,
+            }
         })
 
         if (profitFilter === 'minus') return list.filter(s => toNum(s['평가손익']) < 0)
@@ -52,7 +65,10 @@ export default function LsAccountPage() {
         return list
     }, [rawStocks, profitFilter])
 
-    const summary = data?.data?.t0424OutBlock ?? {}
+    const summary =
+        (accountData as any)?.t0424OutBlock ??
+        (accountData as any)?.output2?.[0] ??
+        {}
 
     const totalMaeip = useMemo(() =>
         stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
@@ -73,7 +89,7 @@ export default function LsAccountPage() {
     const colDefs = useMemo<ColDef[]>(() => [
         {
             headerName: '종목코드', width: 100, pinned: 'left',
-            valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.종목번호 ?? ''),
+            valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.종목번호 ?? p.data?.종목코드 ?? ''),
             cellRenderer: CodeCell,
             comparator: (a: string, b: string) => a.localeCompare(b),
         },
@@ -141,7 +157,7 @@ export default function LsAccountPage() {
             cellRenderer: (p: any) => p.data?._isSummary ? null : (
                 <ActionCell 
                     onBuy={() => openOrderModal({
-                        stk_cd: p.data?.종목번호,
+                        stk_cd: p.data?.종목번호 ?? p.data?.종목코드,
                         stk_nm: p.data?.종목명,
                         price: toNum(p.data?.현재가),
                         qty: 1,
@@ -149,7 +165,7 @@ export default function LsAccountPage() {
                         order_type: 'buy'
                     })}
                     onSell={() => openOrderModal({
-                        stk_cd: p.data?.종목번호,
+                        stk_cd: p.data?.종목번호 ?? p.data?.종목코드,
                         stk_nm: p.data?.종목명,
                         price: toNum(p.data?.현재가),
                         qty: toNum(p.data?.잔고수량),
@@ -167,7 +183,7 @@ export default function LsAccountPage() {
 
     const onRowDoubleClicked = (p: any) => {
         if (p.data?._isSummary) return
-        const code = p.data?.종목번호
+        const code = p.data?.종목번호 ?? p.data?.종목코드
         const name = p.data?.종목명
         setStock(code, name)
         openByScreenNo('1201', menus || [])
@@ -177,8 +193,8 @@ export default function LsAccountPage() {
         return <Loading message="LS 계좌 정보를 불러오는 중..." />
     }
 
-    if (error || !data) {
-        return <LoadingFail message="LS 계좌 정보를 불러오는데 실패했습니다." />
+    if (error || !data || data.success === false) {
+        return <LoadingFail message={data?.error_message || 'LS 계좌 정보를 불러오는데 실패했습니다.'} />
     }
 
     return (

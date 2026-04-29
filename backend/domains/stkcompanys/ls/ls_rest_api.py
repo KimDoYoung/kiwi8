@@ -70,14 +70,8 @@ class LsRestApi(StockApi):
           request_time=request_time,
         )
 
-      # 토큰 획득
-      token = await self.token_manager.get_token()
-
       # TR 코드
       tr_cd = get_tr_cd(request.api_id)
-
-      # 헤더 생성
-      headers = self.get_headers(request, token, tr_cd)
 
       # URL 구성
       api_def = get_request_definition(request.api_id)
@@ -91,10 +85,39 @@ class LsRestApi(StockApi):
 
       logger.info(f'[LS] {api_info["title"]} 요청 - URL: {url}, TR_CD: {tr_cd}')
 
-      # HTTP 요청 (LS는 주로 POST 사용)
-      async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=body) as response:
-          return await self._process_response(response, api_info, request_time)
+      last_result: LsResponse | None = None
+      for attempt in range(2):
+        # 2차 시도는 토큰 재발급 후 재요청
+        if attempt == 0:
+          token = await self.token_manager.get_token()
+        else:
+          logger.warning('[LS] 유효하지 않은 토큰 감지. 토큰 재발급 후 재시도합니다.')
+          await self.token_manager.issue_access_token()
+          token = await self.token_manager.get_token()
+
+        headers = self.get_headers(request, token, tr_cd)
+
+        # HTTP 요청 (LS는 주로 POST 사용)
+        async with aiohttp.ClientSession() as session:
+          async with session.post(url, headers=headers, json=body) as response:
+            result = await self._process_response(response, api_info, request_time)
+
+        # 성공이면 즉시 반환
+        if result.success:
+          return result
+
+        last_result = result
+
+        # 유효하지 않은 토큰(IGW00121)일 때만 1회 재시도
+        if result.error_code != 'IGW00121':
+          return result
+
+      return last_result or LsApiHelper.create_error_response(
+        error_code='500',
+        error_message='요청 처리 중 알 수 없는 오류가 발생했습니다.',
+        api_info=api_info,
+        request_time=request_time,
+      )
 
     except aiohttp.ClientError as e:
       logger.error(f'[LS] HTTP 요청 오류: {e}')
