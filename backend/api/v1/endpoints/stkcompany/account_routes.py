@@ -9,6 +9,7 @@ from fastapi import APIRouter
 
 from backend.core.config import config
 from backend.core.logger import get_logger
+from backend.domains.infrahub.current_pricer import CurrentPricer
 from backend.domains.services.prev_price_cache import get_prev_price_cache
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import (
@@ -189,7 +190,7 @@ async def ls_account_list():
         if response.success and response.data:
             korea_data = LsApiHelper.to_korea_data(response.data, 't0424')
             response.data = korea_data
-            await _insert_prev_costs_ls(response.data.get('t0424OutBlock1', []))
+            await _insert_prev_costs_ls(response.data.get('t0424OutBlock1', []), price_market)
             logger.info('[계좌현황] LS 계좌현황 조회 성공')
         # print('[DEBUG] ls/account/list response:', json.dumps(response.model_dump(mode='json'), ensure_ascii=False, indent=2))
         return response
@@ -231,13 +232,14 @@ async def _insert_prev_costs_kis(stock_list: list):
         stock['전일대비'] = cur_price - int(stock['전일종가'])
         stock['1주당'] = cur_price - avg_price
 
-async def _insert_prev_costs_ls(stock_list: list):
+async def _insert_prev_costs_ls(stock_list: list, price_market: str):
     cache = get_prev_price_cache()
     for stock in stock_list:
         stk_cd = stock.get('종목번호', '')
-        if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
-            stk_cd = stk_cd[1:]
-            
+        if price_market == "NXT":  # 코넥스는 종목코드에 시장구분이 없으므로 'A' 제거
+           pricer = CurrentPricer.get() 
+           cost = await pricer.get_price1(stk_cd) or 0
+           stock['현재가'] = cost 
         cur_price = parse_price(stock.get('현재가', 0))
         avg_price = parse_price(stock.get('평균단가', 0))
             

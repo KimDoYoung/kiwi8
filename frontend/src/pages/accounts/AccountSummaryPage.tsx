@@ -94,13 +94,25 @@ export default function AccountSummaryPage() {
         ]
     }
 
-    // 바 차트 데이터 (수익금액)
+    // 바 차트 데이터 (매입금액 vs 평가손익)
     const barOption = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         grid: { left: '3%', right: '4%', bottom: '10%', top: '5%', containLabel: true },
+        legend: { bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
         xAxis: { type: 'category', data: accountList.map(acc => acc.증권사명), axisLabel: { fontSize: 11 } },
         yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
         series: [
+            {
+                name: '매입금액',
+                type: 'bar',
+                data: accountList.map(acc => ({
+                    value: acc.매입금액,
+                    itemStyle: {
+                        color: acc.id === 'kis' ? '#80624c' : acc.id === 'ls' ? '#003378' : '#e4007f'
+                    }
+                })),
+                label: { show: false }
+            },
             {
                 name: '평가손익',
                 type: 'bar',
