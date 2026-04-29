@@ -7,11 +7,10 @@ from fastapi import status
 
 @pytest.mark.api
 def test_read_root(client):
-    """루트 경로 테스트"""
-    response = client.get("/")
-    
-    # 로그인 페이지로 리다이렉트되거나 200 응답을 받아야 함
-    assert response.status_code in [status.HTTP_200_OK, status.HTTP_307_TEMPORARY_REDIRECT]
+    """루트 경로 테스트 (mounted at /kiwi8/health)"""
+    response = client.get("/kiwi8/health")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["status"] == "ok"
 
 
 @pytest.mark.api

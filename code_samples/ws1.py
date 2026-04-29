@@ -3,7 +3,7 @@ import websockets
 import json
 from typing import Callable
 
-from backend.domains.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
+from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
 
 class KiwoomWsClient:
     def __init__(self, uri: str = 'wss://api.kiwoom.com:10000/api/dostk/websocket', token_manager: KiwoomTokenManager = None):
@@ -119,7 +119,7 @@ class KiwoomWsClient:
 
 
 async def main():
-    from backend.domains.kiwoom.kiwoom_service import get_token_manager
+    from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_token_manager
     token_manager = await get_token_manager()
 
     websocket_client = KiwoomWsClient(

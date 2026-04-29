@@ -16,7 +16,7 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
 )
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest
-from backend.domains.market.open_time_checker import OpenTimeChecker
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.utils.common_utils import parse_price
 from backend.utils.kiwi_utils import format_account_number
 

@@ -31,7 +31,7 @@ import asyncio
 from datetime import datetime, timedelta, date, time as dtime
 from zoneinfo import ZoneInfo
 
-from backend.domains.market.open_time_checker import OpenTimeChecker, yyyymmdd
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker, yyyymmdd
 
 # --------------------------------------------------
 # 유틸

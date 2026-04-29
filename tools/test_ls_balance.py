@@ -13,19 +13,19 @@ import asyncio
 from pprint import pprint
 
 from backend.core.config import config
-from backend.domains.ls.ls_rest_api import LsRestApi
-from backend.domains.ls.managers.ls_token_manager import LsTokenManager
-from backend.domains.ls.models.ls_request_definition import (
+from backend.domains.stkcompanys.ls.ls_rest_api import LsRestApi
+from backend.domains.stkcompanys.ls.managers.ls_token_manager import LsTokenManager
+from backend.domains.stkcompanys.ls.models.ls_request_definition import (
     get_request_definition,
     get_required_fields,
     get_tr_cd,
 )
-from backend.domains.ls.models.ls_response_definition import (
+from backend.domains.stkcompanys.ls.models.ls_response_definition import (
     get_field_name,
     get_response_definition,
     get_response_fields,
 )
-from backend.domains.ls.models.ls_schema import LsApiHelper, LsRequest
+from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest
 
 
 async def test_balance():

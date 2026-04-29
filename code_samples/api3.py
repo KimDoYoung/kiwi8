@@ -1,7 +1,7 @@
 # api1.py
 import asyncio
-from backend.domains.kiwoom.kiwoom_service import get_kiwoom_api
-from backend.domains.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
+from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
 
 async def main():
     try:

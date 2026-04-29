@@ -15,8 +15,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.domains.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
-from backend.domains.kis.managers.kis_token_manager import KisTokenManager
+from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import KiwoomTokenManager
+from backend.domains.stkcompanys.kis.managers.kis_token_manager import KisTokenManager
 
 
 async def check_kiwoom_token():

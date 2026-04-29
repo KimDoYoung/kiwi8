@@ -1,0 +1,148 @@
+2026-04-29 09:15:24,904 - backend.core.kiwi8_db - INFO - DDL 파일 읽기 시작: sqls/kiwi8_ddl.sql
+2026-04-29 09:15:24,905 - backend.core.kiwi8_db - INFO - 데이터베이스 연결 시작: /tmp/pytest-of-kdy987/pytest-1/data0/test_kiwi8.db
+2026-04-29 09:15:24,906 - backend.core.kiwi8_db - INFO - DDL 스크립트 실행 시작
+2026-04-29 09:15:24,911 - backend.core.kiwi8_db - INFO - 생성된 테이블: ['refresh_tokens', 'settings', 'kdemon_rules', 'sqlite_sequence', 'kdemon_commands', 'kdemon_state', 'tokens', 'my_stock', 'stk_diary', 'stk_trades_history', 'stk_cache', 'stk_info', 'kscheduler_job', 'kscheduler_run_history', 'kscheduler_lock', 'menus', 'layout_presets']
+2026-04-29 09:15:24,911 - backend.core.kiwi8_db - INFO - 데이터베이스 생성 완료: /tmp/pytest-of-kdy987/pytest-1/data0/test_kiwi8.db
+2026-04-29 09:15:24,911 - backend.core.kiwi8_db - DEBUG - 데이터베이스 연결 종료
+2026-04-29 09:15:24,922 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 요청 중...
+2026-04-29 09:15:24,923 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 발급된 토큰: mock_kiwoom_token_12... (만료: 20260120143000)
+2026-04-29 09:15:24,926 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:24,927 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:24,927 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 완료
+2026-04-29 09:15:24,929 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 조회 완료
+2026-04-29 09:15:24,931 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 삭제 완료
+2026-04-29 09:15:24,931 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 삭제 완료
+2026-04-29 09:15:24,940 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:24,941 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:24,942 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 조회 완료
+2026-04-29 09:15:24,945 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 폐기 요청 중...
+2026-04-29 09:15:24,945 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 토큰 폐기 응답: {'return_code': '0', 'return_msg': 'SUCCESS'}
+2026-04-29 09:15:24,946 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 삭제 완료
+2026-04-29 09:15:24,946 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 삭제 완료
+2026-04-29 09:15:24,947 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 폐기 완료
+2026-04-29 09:15:24,954 - backend.domains.base.base_token_manager - INFO - [kiwoom] 저장된 토큰이 없어 새로 발급받습니다.
+2026-04-29 09:15:24,954 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 요청 중...
+2026-04-29 09:15:24,955 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 발급된 토큰: refreshed_token_xyz... (만료: 20260121143000)
+2026-04-29 09:15:24,956 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:24,957 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:24,957 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 완료
+2026-04-29 09:15:24,958 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 삭제 완료
+2026-04-29 09:15:24,958 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 삭제 완료
+2026-04-29 09:15:54,037 - backend.core.kiwi8_db - INFO - DDL 파일 읽기 시작: sqls/kiwi8_ddl.sql
+2026-04-29 09:15:54,038 - backend.core.kiwi8_db - INFO - 데이터베이스 연결 시작: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,038 - backend.core.kiwi8_db - INFO - DDL 스크립트 실행 시작
+2026-04-29 09:15:54,043 - backend.core.kiwi8_db - INFO - 생성된 테이블: ['refresh_tokens', 'settings', 'kdemon_rules', 'sqlite_sequence', 'kdemon_commands', 'kdemon_state', 'tokens', 'my_stock', 'stk_diary', 'stk_trades_history', 'stk_cache', 'stk_info', 'kscheduler_job', 'kscheduler_run_history', 'kscheduler_lock', 'menus', 'layout_presets']
+2026-04-29 09:15:54,043 - backend.core.kiwi8_db - INFO - 데이터베이스 생성 완료: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,044 - backend.core.kiwi8_db - DEBUG - 데이터베이스 연결 종료
+2026-04-29 09:15:54,161 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,161 - backend.main - INFO - Startup 프로세스 시작 : 버전 0.0.2, 모드 test
+2026-04-29 09:15:54,161 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,162 - backend.core.kiwi8_db - INFO - DDL 파일 읽기 시작: sqls/kiwi8_ddl.sql
+2026-04-29 09:15:54,162 - backend.core.kiwi8_db - INFO - 데이터베이스 연결 시작: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,163 - backend.core.kiwi8_db - INFO - DDL 스크립트 실행 시작
+2026-04-29 09:15:54,165 - backend.core.kiwi8_db - INFO - 생성된 테이블: ['refresh_tokens', 'settings', 'kdemon_rules', 'sqlite_sequence', 'kdemon_commands', 'kdemon_state', 'tokens', 'my_stock', 'stk_diary', 'stk_trades_history', 'stk_cache', 'stk_info', 'kscheduler_job', 'kscheduler_run_history', 'kscheduler_lock', 'menus', 'layout_presets']
+2026-04-29 09:15:54,165 - backend.core.kiwi8_db - INFO - 데이터베이스 생성 완료: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,166 - backend.core.kiwi8_db - DEBUG - 데이터베이스 연결 종료
+2026-04-29 09:15:54,166 - backend.main - INFO - DB 파일 경로: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,166 - backend.main - INFO - scheduler 시작함...
+2026-04-29 09:15:54,167 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,168 - backend.main - INFO - Startup 프로세스 종료
+2026-04-29 09:15:54,168 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,177 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,177 - backend.main - INFO - Shutdown 프로세스 시작
+2026-04-29 09:15:54,178 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,178 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,178 - backend.main - INFO - Shutdown 프로세스 종료
+2026-04-29 09:15:54,178 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,279 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,280 - backend.main - INFO - Startup 프로세스 시작 : 버전 0.0.2, 모드 test
+2026-04-29 09:15:54,280 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,280 - backend.core.kiwi8_db - INFO - DDL 파일 읽기 시작: sqls/kiwi8_ddl.sql
+2026-04-29 09:15:54,281 - backend.core.kiwi8_db - INFO - 데이터베이스 연결 시작: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,281 - backend.core.kiwi8_db - INFO - DDL 스크립트 실행 시작
+2026-04-29 09:15:54,284 - backend.core.kiwi8_db - INFO - 생성된 테이블: ['refresh_tokens', 'settings', 'kdemon_rules', 'sqlite_sequence', 'kdemon_commands', 'kdemon_state', 'tokens', 'my_stock', 'stk_diary', 'stk_trades_history', 'stk_cache', 'stk_info', 'kscheduler_job', 'kscheduler_run_history', 'kscheduler_lock', 'menus', 'layout_presets', 'kscheduler_run']
+2026-04-29 09:15:54,284 - backend.core.kiwi8_db - INFO - 데이터베이스 생성 완료: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,284 - backend.core.kiwi8_db - DEBUG - 데이터베이스 연결 종료
+2026-04-29 09:15:54,284 - backend.main - INFO - DB 파일 경로: /tmp/pytest-of-kdy987/pytest-2/data0/test_kiwi8.db
+2026-04-29 09:15:54,285 - backend.main - INFO - scheduler 시작함...
+2026-04-29 09:15:54,285 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,285 - backend.main - INFO - Startup 프로세스 종료
+2026-04-29 09:15:54,286 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,289 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,289 - backend.main - INFO - Shutdown 프로세스 시작
+2026-04-29 09:15:54,290 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,290 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,290 - backend.main - INFO - Shutdown 프로세스 종료
+2026-04-29 09:15:54,291 - backend.main - INFO - ---------------------------------
+2026-04-29 09:15:54,310 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,313 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 저장 완료
+2026-04-29 09:15:54,314 - backend.domains.base.base_token_manager - INFO - [kis] 토큰 저장 완료
+2026-04-29 09:15:54,315 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 토큰 발급 완료 (만료: 2030-01-16 12:30:00)
+2026-04-29 09:15:54,317 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 삭제 완료
+2026-04-29 09:15:54,318 - backend.domains.base.base_token_manager - INFO - [kis] 토큰 삭제 완료
+2026-04-29 09:15:54,331 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,339 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,345 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,347 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 저장 완료
+2026-04-29 09:15:54,347 - backend.domains.base.base_token_manager - INFO - [kis] 토큰 저장 완료
+2026-04-29 09:15:54,347 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 토큰 발급 완료 (만료: 2030-01-16 12:30:00)
+2026-04-29 09:15:54,362 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 삭제 완료
+2026-04-29 09:15:54,362 - backend.domains.base.base_token_manager - INFO - [kis] 토큰 삭제 완료
+2026-04-29 09:15:54,370 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] WebSocket 승인키 발급 완료
+2026-04-29 09:15:54,378 - backend.domains.base.base_token_manager - INFO - [kis] 토큰 삭제 완료
+2026-04-29 09:15:54,378 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 토큰 폐기 완료
+2026-04-29 09:15:54,383 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,439 - backend.domains.stkcompanys.kis.managers.kis_token_manager - INFO - [KIS] 폐기할 토큰이 없습니다.
+2026-04-29 09:15:54,522 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 요청 중...
+2026-04-29 09:15:54,523 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 발급된 토큰: mock_kiwoom_token_12... (만료: 20260120143000)
+2026-04-29 09:15:54,524 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:54,525 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:54,525 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 완료
+2026-04-29 09:15:54,526 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 조회 완료
+2026-04-29 09:15:54,529 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 삭제 완료
+2026-04-29 09:15:54,530 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 삭제 완료
+2026-04-29 09:15:54,538 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:54,539 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:54,540 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 조회 완료
+2026-04-29 09:15:54,544 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 폐기 요청 중...
+2026-04-29 09:15:54,545 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 토큰 폐기 응답: {'return_code': '0', 'return_msg': 'SUCCESS'}
+2026-04-29 09:15:54,546 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 삭제 완료
+2026-04-29 09:15:54,547 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 삭제 완료
+2026-04-29 09:15:54,547 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 폐기 완료
+2026-04-29 09:15:54,556 - backend.domains.base.base_token_manager - INFO - [kiwoom] 저장된 토큰이 없어 새로 발급받습니다.
+2026-04-29 09:15:54,556 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 요청 중...
+2026-04-29 09:15:54,557 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 발급된 토큰: refreshed_token_xyz... (만료: 20260121143000)
+2026-04-29 09:15:54,558 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:54,558 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:54,559 - backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager - INFO - [KIWOOM] 액세스 토큰 발급 완료
+2026-04-29 09:15:54,560 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 삭제 완료
+2026-04-29 09:15:54,560 - backend.domains.base.base_token_manager - INFO - [kiwoom] 토큰 삭제 완료
+2026-04-29 09:15:54,569 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,570 - backend.domains.services.tokens_service - INFO - [LS] 토큰 저장 완료
+2026-04-29 09:15:54,571 - backend.domains.base.base_token_manager - INFO - [ls] 토큰 저장 완료
+2026-04-29 09:15:54,571 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 토큰 발급 완료 (만료: 2026-04-30 09:15:54)
+2026-04-29 09:15:54,573 - backend.domains.services.tokens_service - INFO - [LS] 토큰 삭제 완료
+2026-04-29 09:15:54,574 - backend.domains.base.base_token_manager - INFO - [ls] 토큰 삭제 완료
+2026-04-29 09:15:54,580 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,589 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,595 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,597 - backend.domains.services.tokens_service - INFO - [LS] 토큰 저장 완료
+2026-04-29 09:15:54,597 - backend.domains.base.base_token_manager - INFO - [ls] 토큰 저장 완료
+2026-04-29 09:15:54,597 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 토큰 발급 완료 (만료: 2026-04-30 09:15:54)
+2026-04-29 09:15:54,599 - backend.domains.services.tokens_service - INFO - [LS] 토큰 삭제 완료
+2026-04-29 09:15:54,600 - backend.domains.base.base_token_manager - INFO - [ls] 토큰 삭제 완료
+2026-04-29 09:15:54,609 - backend.domains.base.base_token_manager - INFO - [ls] 토큰 삭제 완료
+2026-04-29 09:15:54,610 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 토큰 폐기 완료
+2026-04-29 09:15:54,614 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 액세스 토큰 발급 요청...
+2026-04-29 09:15:54,678 - backend.domains.stkcompanys.ls.managers.ls_token_manager - INFO - [LS] 폐기할 토큰이 없습니다.
+2026-04-29 09:15:54,707 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 저장 완료
+2026-04-29 09:15:54,708 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 조회 완료
+2026-04-29 09:15:54,714 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 저장 완료
+2026-04-29 09:15:54,715 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 조회 완료
+2026-04-29 09:15:54,716 - backend.domains.services.tokens_service - INFO - [KIS] 토큰 저장 완료
+2026-04-29 09:15:54,722 - backend.domains.services.tokens_service - INFO - [LS] 토큰 저장 완료
+2026-04-29 09:15:54,723 - backend.domains.services.tokens_service - INFO - [LS] 토큰 삭제 완료
+2026-04-29 09:15:54,739 - backend.domains.services.tokens_service - INFO - [kiwoom] 토큰 조회 완료
+2026-04-29 09:15:54,740 - backend.domains.services.tokens_service - INFO - [kiwoom] 토큰 저장 완료
+2026-04-29 09:15:54,741 - backend.domains.services.tokens_service - INFO - [KIWOOM] 토큰 조회 완료
+2026-04-29 09:15:54,742 - backend.domains.services.tokens_service - INFO - [kiwoom] 토큰 조회 완료

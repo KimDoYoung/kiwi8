@@ -28,7 +28,7 @@ from backend.domains.stkcompanys.ls.models.ls_schema import (
     LsRequest,
     LsResponse,
 )
-from backend.domains.market.open_time_checker import OpenTimeChecker
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.utils.acct_summary import (
     get_kis_account_summary,
     get_kiwoom_account_summary,

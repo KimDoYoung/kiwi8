@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime, timedelta
 
-from backend.domains.ls.managers.ls_token_manager import LsTokenManager
+from backend.domains.stkcompanys.ls.managers.ls_token_manager import LsTokenManager
 from backend.core.exceptions import LsAuthException
 
 

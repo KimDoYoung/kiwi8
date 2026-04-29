@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from backend.core.exceptions import KiwoomApiException
 from backend.core.logger import get_logger
-from backend.domains.market.open_time_checker import OpenTimeChecker
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.services import get_service
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
@@ -77,7 +77,7 @@ async def get_market_status():
     """
     현재 시장 상태(영업일 여부, 현재 운영 중인 시장)를 반환합니다.
     """
-    from backend.domains.market.open_time_checker import OpenTimeChecker
+    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
     checker = OpenTimeChecker.get()
     
     is_open = await checker.is_open_day()

@@ -1,4 +1,4 @@
-# backend/domains/market/open_time_checker.py
+# backend/domains/infrahub/open_time_checker.py
 # open_time_checker.py
 """
 모듈 설명: 
@@ -7,7 +7,7 @@
 
 사용법 예시:
     ```python
-    from backend.domains.market.open_time_checker import OpenTimeChecker
+    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
     from datetime import datetime
     
     checker = OpenTimeChecker.get()

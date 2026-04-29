@@ -2,7 +2,7 @@
 Kiwoom 토큰 매니저 통합 테스트
 """
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 
 from backend.domains.stkcompanys.kiwoom.managers.kiwoom_token_manager import (
     KiwoomTokenManager,
@@ -46,12 +46,15 @@ async def test_kiwoom_issue_access_token_success(
     mock_response.status = 200
     mock_response.json = AsyncMock(return_value=mock_kiwoom_token_response)
 
-    mock_session = AsyncMock()
-    mock_session.post = AsyncMock(return_value=mock_response)
-    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session.__aexit__ = AsyncMock()
+    mock_session = MagicMock()
+    mock_session.post = MagicMock()
+    mock_session.post.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.post.return_value.__aexit__ = AsyncMock(return_value=None)
 
-    with patch('aiohttp.ClientSession', return_value=mock_session):
+    with patch('aiohttp.ClientSession') as mock_client:
+        mock_client.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_client.return_value.__aexit__ = AsyncMock(return_value=None)
+
         result = await kiwoom_token_manager.issue_access_token()
 
         assert result['token'] == 'mock_kiwoom_token_1234567890abcdef'
@@ -90,12 +93,15 @@ async def test_kiwoom_discard_token_success(kiwoom_token_manager):
         return_value={'return_code': '0', 'return_msg': 'SUCCESS'}
     )
 
-    mock_session = AsyncMock()
-    mock_session.post = AsyncMock(return_value=mock_response)
-    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session.__aexit__ = AsyncMock()
+    mock_session = MagicMock()
+    mock_session.post = MagicMock()
+    mock_session.post.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.post.return_value.__aexit__ = AsyncMock(return_value=None)
 
-    with patch('aiohttp.ClientSession', return_value=mock_session):
+    with patch('aiohttp.ClientSession') as mock_client:
+        mock_client.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_client.return_value.__aexit__ = AsyncMock(return_value=None)
+
         await kiwoom_token_manager.discard_token()
 
         # 버그 수정 검증: DB에서 토큰이 삭제되었는지 확인
@@ -123,12 +129,15 @@ async def test_kiwoom_token_refresh():
         }
     )
 
-    mock_session = AsyncMock()
-    mock_session.post = AsyncMock(return_value=mock_response)
-    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session.__aexit__ = AsyncMock()
+    mock_session = MagicMock()
+    mock_session.post = MagicMock()
+    mock_session.post.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.post.return_value.__aexit__ = AsyncMock(return_value=None)
 
-    with patch('aiohttp.ClientSession', return_value=mock_session):
+    with patch('aiohttp.ClientSession') as mock_client:
+        mock_client.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_client.return_value.__aexit__ = AsyncMock(return_value=None)
+
         # 토큰 갱신 (DB에서 로드 → 없으면 발급)
         result = await manager.refresh_token()
 

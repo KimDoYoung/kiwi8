@@ -4,7 +4,7 @@ KIS(한국투자증권) API 통합 테스트
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from backend.domains.kis.managers.kis_token_manager import KisTokenManager
+from backend.domains.stkcompanys.kis.managers.kis_token_manager import KisTokenManager
 from backend.core.exceptions import KisAuthException
 
 
@@ -14,7 +14,7 @@ def mock_kis_token_response():
     return {
         "access_token": "mock_kis_access_token_1234567890abcdef",
         "token_type": "Bearer",
-        "access_token_token_expired": "2026-01-16 12:30:00",
+        "access_token_token_expired": "2030-01-16 12:30:00",
         "expires_in": 86400
     }
 

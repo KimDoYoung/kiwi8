@@ -1,6 +1,6 @@
 # api1.py
 import asyncio
-from backend.domains.kiwoom.kiwoom_service import get_kiwoom_api
+from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
 
 async def main():
     try:
