@@ -15,6 +15,7 @@ import {
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
+import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
 
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -136,8 +137,8 @@ export default function KisAccountPage() {
             comparator: numComparator,
         },
         { 
-            field: '가격추세', headerName: '추세', width: 100, sortable: false,
-            valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.가격추세 ?? '')
+            field: '가격추세', headerName: '추세', width: 106, sortable: false,
+            cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
         },
         {
             headerName: '', width: 145, sortable: false, resizable: false,
