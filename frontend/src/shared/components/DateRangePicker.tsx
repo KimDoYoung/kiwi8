@@ -36,7 +36,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { CalendarDays } from "lucide-react"
 
-import { cn } from "@/shared/lib/utils"
+import { cn } from "@/lib/utils"
 import { DatePicker } from "@/shared/components/DatePicker"
 import { DateRangeSetter } from "@/shared/components/DateRangeSetter"
 import { Button, buttonVariants } from "@/shared/components/ui/button"

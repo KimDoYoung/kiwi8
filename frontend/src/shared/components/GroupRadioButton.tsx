@@ -1,5 +1,5 @@
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group";
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * 라디오 버튼 형태의 단일 선택 토글 그룹 컴포넌트.

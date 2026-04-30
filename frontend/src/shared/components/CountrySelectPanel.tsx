@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/shared/components/ui/button';
-import { cn } from '@/shared/lib/utils';
+import { cn } from '@/lib/utils';
 import {COUNTRIES} from '@/shared/data/countries';
 
 /**

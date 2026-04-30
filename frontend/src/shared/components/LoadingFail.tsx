@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react'
-import { cn } from '@/shared/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface LoadingFailProps {
   message?: string

@@ -1,4 +1,4 @@
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 
 export interface MenuItem {
   id: number

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { useModalStore } from '@/store/modalStore'
 import { fetchMenuTree } from '@/services/menuService'
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
 import LayoutPresetPanel from './topbar/LayoutPresetPanel'
 

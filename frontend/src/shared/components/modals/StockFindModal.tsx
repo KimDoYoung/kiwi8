@@ -16,7 +16,7 @@ import {
 } from '@/shared/components/ui/select'
 import { Search, Plus, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useModalStore } from '@/store/modalStore'
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 
 interface StockResult {
   stk_cd: string

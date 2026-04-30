@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
     Wallet,
@@ -15,7 +15,7 @@ import {
     Landmark
 } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
-import { cn, formatCost } from '@/shared/lib/utils'
+import { cn, formatCost } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 

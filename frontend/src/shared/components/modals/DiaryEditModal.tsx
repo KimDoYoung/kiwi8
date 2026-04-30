@@ -12,7 +12,7 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { Label } from '@/shared/components/ui/label'
 import { BookOpen, Search, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useModalStore } from '@/store/modalStore'
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 
 export default function DiaryEditModal() {
   const { isDiaryEditModalOpen, closeDiaryEditModal, diaryInitialData } = useModalStore()

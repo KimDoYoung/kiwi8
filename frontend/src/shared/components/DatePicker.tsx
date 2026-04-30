@@ -29,7 +29,7 @@ import { format, parse, isValid } from "date-fns"
 import { ko } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 
-import { cn } from "@/shared/lib/utils"
+import { cn } from "@/lib/utils"
 import { Calendar } from "@/shared/components/ui/calendar"
 import {
   Popover,

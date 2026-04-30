@@ -1,4 +1,4 @@
-import { formatCost } from '@/shared/lib/utils'
+import { formatCost } from '@/lib/utils'
 
 interface CombinedBadgeProps {
   label: string

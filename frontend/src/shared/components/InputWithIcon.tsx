@@ -1,6 +1,6 @@
 import { type LucideIcon, Search } from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
-import { cn } from '@/shared/lib/utils';
+import { cn } from '@/lib/utils';
 
 /**
  * InputWithIcon 컴포넌트

@@ -19,7 +19,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { useModalStore } from '@/store/modalStore'
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 

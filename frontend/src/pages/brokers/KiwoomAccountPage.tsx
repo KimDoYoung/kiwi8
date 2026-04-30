@@ -6,7 +6,7 @@ import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useModalStore } from '@/store/modalStore'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
-import api from '@/shared/lib/api'
+import api from '@/lib/api'
 import {
     toNum, fmt,
     ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,

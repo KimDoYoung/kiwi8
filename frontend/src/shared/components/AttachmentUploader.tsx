@@ -1,5 +1,5 @@
 import { Paperclip, Plus, X } from 'lucide-react'
-import { formatFileSize } from '@/shared/lib/utils'
+import { formatFileSize } from '@/lib/utils'
 
 interface AttachmentItem {
   fileId: number
