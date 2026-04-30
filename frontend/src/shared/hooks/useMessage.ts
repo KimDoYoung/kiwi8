@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useMessageStore, type MessageType, type MessagePosition } from '@/shared/store/messageStore'
+import { useMessageStore, type MessageType, type MessagePosition } from '@/store/messageStore'
 
 export function useMessage() {
   const addMessage = useMessageStore(state => state.addMessage)

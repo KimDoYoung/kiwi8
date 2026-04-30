@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
-import { useMessageStore, type Message, type MessagePosition } from '@/shared/store/messageStore'
+import { useMessageStore, type Message, type MessagePosition } from '@/store/messageStore'
 
 const POSITION_CLASSES: Record<MessagePosition, string> = {
   'top-center': 'top-4 left-1/2 -translate-x-1/2',
