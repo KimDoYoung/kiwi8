@@ -10,7 +10,7 @@ from fastapi import APIRouter
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.infrahub.current_pricer import CurrentPricer
-from backend.domains.services.prev_price_cache import get_prev_price_cache
+from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import (
     KisApiHelper,

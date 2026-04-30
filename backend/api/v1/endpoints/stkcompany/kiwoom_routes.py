@@ -8,7 +8,7 @@ from backend.core.config import config
 from backend.core.exceptions import KiwoomApiException
 from backend.core.logger import get_logger
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker
-from backend.domains.services.prev_price_cache import get_prev_price_cache
+from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api, get_token_manager
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
     KiwoomApiHelper,

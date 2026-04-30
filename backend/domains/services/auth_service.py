@@ -1,6 +1,6 @@
 import asyncio
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -53,7 +53,7 @@ class AuthService:
                 return None
             
             expires_at = datetime.fromisoformat(expires_at_str)
-            if expires_at < datetime.now():
+            if expires_at < datetime.now(UTC):
                 return None
                 
             return user_id

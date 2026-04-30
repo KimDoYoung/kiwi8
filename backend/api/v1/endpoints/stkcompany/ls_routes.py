@@ -5,7 +5,7 @@ from fastapi import APIRouter
 
 from backend.core.exceptions import LsApiException
 from backend.core.logger import get_logger
-from backend.domains.services.prev_price_cache import get_prev_price_cache
+from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api, get_ls_token_manager
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest, LsResponse
 

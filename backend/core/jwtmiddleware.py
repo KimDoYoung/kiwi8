@@ -24,13 +24,13 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         root = request.scope.get('root_path', '')
 
         # 토큰이 필요 없는 URL 경로 정의
-        STATIC_PATHS = ['/public', '/favicon.ico']
+        STATIC_PATHS = ['/public', '/favicon.ico', '/assets']
 
         # root_path를 제거한 실제 경로로 비교
         path = request.url.path
         path = path.removeprefix(root)
 
-        OPEN_PATHS = ['/login', '/logout', '/health', '/docs', '/redoc', '/openapi.json']
+        OPEN_PATHS = ['/login', '/logout', '/health', '/docs', '/redoc', '/openapi.json', '/api/auth/refresh']
 
         if path in OPEN_PATHS or any(path.startswith(p) for p in STATIC_PATHS):
             response = await call_next(request)

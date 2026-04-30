@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.core.logger import get_logger
-from backend.domains.services.prev_price_cache import get_prev_price_cache
+from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 
 logger = get_logger(__name__)
 

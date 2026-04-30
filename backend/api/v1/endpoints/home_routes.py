@@ -106,6 +106,7 @@ async def login_for_access_token(
         httponly=True,
         secure=False,
         samesite='lax',
+        path='/'
     )
     
     # 4. 쿠키 설정 (Refresh Token) - 경로 제한으로 보안 강화
@@ -161,6 +162,7 @@ async def refresh_access_token(request: Request, response: Response):
             httponly=True,
             secure=False,
             samesite='lax',
+            path='/'
         )
         
         return {"status": "success", "message": "Token refreshed"}
