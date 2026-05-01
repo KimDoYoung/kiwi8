@@ -46,12 +46,14 @@ async def custom_404_exception_handler(request: Request, exc: StarletteHTTPExcep
 
 async def create_error_response(request: Request, exc: Exception, errors=None) -> JSONResponse:
     """에러 응답 생성 함수"""
-    logger.error(f"xxx [500] xxx --> 서버동작 중 오류 발생: {exc}")
     status_code = getattr(exc, "status_code", 500)
+    logger.error(f"[{status_code}] {request.method} {request.url.path} --> 오류 발생: {exc}")
+    
     return JSONResponse(
         status_code=status_code,
         content={
             "request": request.url.path,
+            "method": request.method,
             "status_code": status_code,
             "detail": getattr(exc, "detail", "Internal Server Error :" + str(exc)),
             "errors": errors or [],
