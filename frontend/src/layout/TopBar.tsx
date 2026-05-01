@@ -54,7 +54,11 @@ export default function TopBar() {
 
       {/* 1) Logo Area */}
       <div className="flex items-center gap-1.5 shrink-0 mr-2">
-        <img src="/images/kiwi8-logo.svg" alt="KIWI8 Logo" className="w-6 h-6" />
+        <img 
+          src={`${import.meta.env.BASE_URL}images/kiwi8-logo.svg`} 
+          alt="KIWI8 Logo" 
+          className="w-6 h-6" 
+        />
         <span className="text-xl font-bold text-green-600 tracking-tight">kiwi8</span>
         {health?.version && (
           <span className="text-[10px] text-gray-400 font-mono">v{health.version}</span>

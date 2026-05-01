@@ -45,14 +45,22 @@ def create_app() -> FastAPI:
 
 
 def add_static_files(app: FastAPI):
-    """React 빌드 결과물 서빙"""
+    """React 빌드 결과물 서빙 개선"""
     dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
     dist_path = os.path.abspath(dist_path)
+    
     if os.path.exists(dist_path):
+        # 1. /assets 경로는 항상 마운트
         app.mount('/assets', StaticFiles(directory=os.path.join(dist_path, 'assets')), name='assets')
 
         @app.get('/{full_path:path}', include_in_schema=False)
         async def serve_spa(full_path: str):
+            # favicon.ico, images/xxx.png 등 실제 파일이 존재하는지 확인
+            file_path = os.path.join(dist_path, full_path)
+            if os.path.isfile(file_path):
+                return FileResponse(file_path)
+            
+            # 파일이 없으면 index.html 반환 (SPA 라우팅 지원)
             index_file = os.path.join(dist_path, 'index.html')
             return FileResponse(index_file)
 
