@@ -98,13 +98,14 @@ export default function AccountSummaryPage() {
     const barOption = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         grid: { left: '3%', right: '4%', bottom: '10%', top: '5%', containLabel: true },
-        legend: { bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
+        legend: { data: ['매입금액'], bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
         xAxis: { type: 'category', data: accountList.map(acc => acc.증권사명), axisLabel: { fontSize: 11 } },
         yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
         series: [
             {
                 name: '매입금액',
                 type: 'bar',
+                color: '#cbd5e1',
                 data: accountList.map(acc => ({
                     value: acc.매입금액,
                     itemStyle: {
@@ -118,7 +119,7 @@ export default function AccountSummaryPage() {
                 type: 'bar',
                 data: accountList.map(acc => ({
                     value: acc.평가손익,
-                    itemStyle: { color: acc.평가손익 >= 0 ? '#ef4444' : '#3b82f6' }
+                    itemStyle: { color: '#cbd5e1' }
                 })),
                 label: { show: true, position: 'top', fontSize: 10, formatter: (p: any) => formatCost(p.value) }
             }
