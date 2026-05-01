@@ -82,6 +82,40 @@ sync_env() {
     info "업로드 완료"
 }
 
+# ── Git 상태 확인 ─────────────────────────────────────────────────────────────
+check_git_status() {
+    header "Git 상태 확인"
+    
+    # 1. 미커밋 변경사항 확인 (Staged + Unstaged)
+    if [[ -n $(git status --porcelain) ]]; then
+        error "커밋되지 않은 변경사항이 있습니다."
+        git status -s
+        echo ""
+        warn "모든 변경사항을 커밋한 후 다시 실행해주세요."
+        exit 1
+    fi
+
+    # 2. 푸시되지 않은 커밋 확인
+    # 로컬 브랜치와 추적 중인 원격 브랜치 비교
+    local branch=$(git rev-parse --abbrev-ref HEAD)
+    local upstream=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "")
+    
+    if [[ -n "$upstream" ]]; then
+        local unpushed=$(git log "$upstream..$branch" --oneline)
+        if [[ -n "$unpushed" ]]; then
+            error "원격 서버로 푸시되지 않은 커밋이 있습니다."
+            echo "$unpushed"
+            echo ""
+            warn "git push 명령어로 커밋을 원격 저장소에 올린 후 다시 실행해주세요."
+            exit 1
+        fi
+    else
+        warn "원격 추적 브랜치가 없어 푸시 여부를 확인할 수 없습니다. 계속 진행합니다."
+    fi
+    
+    info "Git 상태 확인 완료: 모든 변경사항이 커밋 및 푸시되었습니다."
+}
+
 # ── 사용자 확인 ─────────────────────────────────────────────────────────────
 confirm_deploy() {
     header "배포 확인"
@@ -106,6 +140,7 @@ main() {
     header "Kiwi8 배포 시작 → $SSH_HOST"
 
     check_ssh
+    check_git_status
     sync_env
     confirm_deploy
 
