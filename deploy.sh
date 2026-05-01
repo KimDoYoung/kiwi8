@@ -61,19 +61,27 @@ sync_env() {
 
     # .env.jskn 업데이트 또는 생성
     if [ -f ".env.jskn" ]; then
+        # VERSION 업데이트
         if grep -q "^VERSION=" .env.jskn; then
             sed -i "s/^VERSION=.*/VERSION=$VERSION/" .env.jskn
         else
             echo "VERSION=$VERSION" >> .env.jskn
         fi
-        info ".env.jskn의 VERSION을 $VERSION으로 업데이트했습니다."
+        # BASE_DIR을 도커 환경에 맞게 /app/data로 고정
+        if grep -q "^BASE_DIR=" .env.jskn; then
+            sed -i "s|^BASE_DIR=.*|BASE_DIR=/app/data|" .env.jskn
+        else
+            echo "BASE_DIR=/app/data" >> .env.jskn
+        fi
+        info ".env.jskn 설정을 업데이트했습니다 (VERSION=$VERSION, BASE_DIR=/app/data)."
     else
         echo "VERSION=$VERSION" > .env.jskn
-        # env.sample이 있다면 참고하여 기본값 생성
+        echo "BASE_DIR=/app/data" >> .env.jskn
+        # env.sample이 있다면 참고하여 나머지 기본값 생성 (VERSION, BASE_DIR 제외)
         if [ -f "env.sample" ]; then
-             grep -v "^VERSION=" env.sample >> .env.jskn
+             grep -v -E "^VERSION=|^BASE_DIR=" env.sample >> .env.jskn
         fi
-        info ".env.jskn 파일을 생성했습니다."
+        info ".env.jskn 파일을 생성했습니다 (BASE_DIR=/app/data)."
     fi
 
     # 서버로 업로드
