@@ -1,21 +1,22 @@
 version: '3.8'
 
 services:
+  # 9. kiwi8
   kiwi8:
     build:
-      context: .
-      dockerfile: Dockerfile
-    image: kiwi8-img
-    container_name: kiwi8-app
-    restart: unless-stopped
+      context: /home/kdy987/work/kiwi8
+      dockerfile: /home/kdy987/work/kiwi8/Dockerfile
+    image: jskn_kiwi8_img
+    container_name: jskn_kiwi8
+    restart: always
+    user: "1000:1000"
+    ports:
+      - "8003:8003"
+    volumes:
+      - /data/docker/apps/kiwi8:/app/data
+    env_file:
+      - /home/kdy987/work/kiwi8/.env.jskn
     environment:
       - TZ=Asia/Seoul
-    ports:
-      - "8001:8001"
-    volumes:
-      - /home/kdy987/kiwi8:/kiwi8
-    env_file:
-      - .env.docker      
-    # sqlite 사용시 별도 db 컨테이너 불필요
-    # depends_on: []
-    # command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+      - PYTHONPATH=/app
+      - KIWI8_MODE=jskn

@@ -10,7 +10,6 @@ import {
     RefreshCw,
     Building2,
     Banknote,
-    Briefcase,
     Store,
     Landmark
 } from 'lucide-react'

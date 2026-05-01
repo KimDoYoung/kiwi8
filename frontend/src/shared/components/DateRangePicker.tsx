@@ -102,7 +102,7 @@ export function DateRangePicker({
 
   const quickPopover = (
     <Popover open={quickOpen} onOpenChange={setQuickOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger>
         <Button variant="outline" size="icon" disabled={disabled} aria-label="빠른 날짜 범위 선택">
           <CalendarDays className="size-4" />
         </Button>

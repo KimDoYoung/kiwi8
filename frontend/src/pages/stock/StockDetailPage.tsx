@@ -6,7 +6,7 @@ import api from '@/lib/api'
 import { toNum, fmt } from '@/pages/brokers/accountUtils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, Coins, FileText } from 'lucide-react'
+import { RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText } from 'lucide-react'
 
 async function fetchStockInfo(stk_cd: string | null) {
   if (!stk_cd) return null

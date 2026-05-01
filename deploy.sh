@@ -42,11 +42,72 @@ check_ssh() {
     info "SSH 접속 확인: $SSH_HOST"
 }
 
+# ── 버전 동기화 및 파일 업로드 ──────────────────────────────────────────────
+sync_env() {
+    header "설정 파일 동기화"
+
+    if [ ! -f ".env.local" ]; then
+        error ".env.local 파일이 없습니다."
+        exit 1
+    fi
+
+    # VERSION 추출
+    VERSION=$(grep "^VERSION=" .env.local | cut -d'=' -f2)
+    if [ -z "$VERSION" ]; then
+        error ".env.local에 VERSION 설정이 없습니다."
+        exit 1
+    fi
+    info ".env.local에서 VERSION=$VERSION 확인"
+
+    # .env.jskn 업데이트 또는 생성
+    if [ -f ".env.jskn" ]; then
+        if grep -q "^VERSION=" .env.jskn; then
+            sed -i "s/^VERSION=.*/VERSION=$VERSION/" .env.jskn
+        else
+            echo "VERSION=$VERSION" >> .env.jskn
+        fi
+        info ".env.jskn의 VERSION을 $VERSION으로 업데이트했습니다."
+    else
+        echo "VERSION=$VERSION" > .env.jskn
+        # env.sample이 있다면 참고하여 기본값 생성
+        if [ -f "env.sample" ]; then
+             grep -v "^VERSION=" env.sample >> .env.jskn
+        fi
+        info ".env.jskn 파일을 생성했습니다."
+    fi
+
+    # 서버로 업로드
+    info ".env.jskn 파일을 $SSH_HOST 서버로 업로드합니다..."
+    scp ".env.jskn" "$SSH_HOST:$REMOTE_SRC/.env.jskn"
+    info "업로드 완료"
+}
+
+# ── 사용자 확인 ─────────────────────────────────────────────────────────────
+confirm_deploy() {
+    header "배포 확인"
+    echo -e "${BOLD}수행할 작업 목록:${NC}"
+    echo -e "  1. .env.local의 VERSION($VERSION)을 .env.jskn에 동기화"
+    echo -e "  2. .env.jskn 파일을 $SSH_HOST 서버로 업로드 (scp)"
+    echo -e "  3. $SSH_HOST 서버에서 소스 최신화 (git pull)"
+    echo -e "  4. $SSH_HOST 서버에서 기존 도커 컨테이너($SERVICE_NAME) 중지 및 제거"
+    echo -e "  5. $SSH_HOST 서버에서 새 도커 이미지 빌드 및 컨테이너 실행"
+    echo -e "  6. $SSH_HOST 서버에서 Nginx reload ($NGINX_CONTAINER)"
+    echo -e "  7. 접속 URL 확인 (http://jskn.iptime.org/kiwi8/)"
+    echo ""
+    read -p "배포를 진행하시겠습니까? [Y/n/Enter]: " confirm
+    if [[ "$confirm" =~ ^[Nn]$ ]]; then
+        info "배포를 중단합니다."
+        exit 0
+    fi
+}
+
 # ── 배포 ──────────────────────────────────────────────────────────────────
 main() {
     header "Kiwi8 배포 시작 → $SSH_HOST"
 
     check_ssh
+    sync_env
+    confirm_deploy
 
     info "jskn 서버에서 배포 실행 중..."
     echo ""

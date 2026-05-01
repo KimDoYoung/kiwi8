@@ -77,7 +77,7 @@ export default function RealtimeBalancePage() {
     { field: 'profitRate',    headerName: '수익률',   width: 95,  type: 'numericColumn', cellRenderer: RateCell },
     { field: 'weight',        headerName: '비중(%)',  width: 85,  type: 'numericColumn',
       valueFormatter: (p) => p.value.toFixed(1) + '%' },
-  ], [])
+  ] as ColDef<BalanceRow>[], [])
 
   const defaultColDef = useMemo<ColDef>(() => ({
     sortable: true,
