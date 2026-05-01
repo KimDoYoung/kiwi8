@@ -11,11 +11,12 @@
 """
 
 import hashlib
+import os
 import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Form, HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -32,6 +33,20 @@ router = APIRouter()
 async def health_check():
     """배포 상태 확인용 엔드포인트"""
     return {'status': 'ok', 'version': config.VERSION, 'mode': config.PROFILE_NAME}
+
+
+@router.get('/login', include_in_schema=False)
+async def login_page():
+    """로그인 페이지(UI) 서빙"""
+    dist_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'frontend', 'dist')
+    index_file = os.path.abspath(os.path.join(dist_path, 'index.html'))
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    # 빌드된 파일이 없는 경우 (로컬 개발 시)
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Frontend build files not found. Please run 'npm run build' or use the Vite dev server (port 5173)."}
+    )
 
 
 @router.get('/logout', response_class=JSONResponse)
