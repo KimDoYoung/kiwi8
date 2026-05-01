@@ -284,7 +284,7 @@ class CurrentPricer:
         Args:
             stk_cd: 종목코드
             market_div: "J" (KRX), "NX" (NXT), "UN" (통합)
-            use_cache: True이면 결과를 캐시에 저장
+            use_cache: True이면 결과를 캐시에 저장(메모리/DB), False이면 캐시 쓰기 금지
 
         Returns:
             현재가 (int). 실패 시 0.
@@ -319,9 +319,6 @@ class CurrentPricer:
 
             if use_cache and price > 0:
                 await self._save_to_cache(stk_cd, price)
-
-            # 메모리 캐시에도 저장
-            self._mem_cache[stk_cd] = price
 
             logger.debug(f"[CurrentPricer] KIS 조회 완료: {stk_cd} = {price:,}원")
             return price

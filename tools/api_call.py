@@ -133,6 +133,8 @@ def print_definition(broker: str, api_id: str, api_def: dict):
         req = ' ✓ ' if f.get('required') else '   '
         name = f.get('name', '')
         desc = f.get('description', '') or f.get('desc', '')
+        # \r을 공백으로 치환하여 터미널 출력 깨짐 방지
+        desc = desc.replace('\r', ' ').strip() if desc else ''
         label = f'{name}  {desc}'.strip() if desc else name
         print(f'  {f["key"]:<30} {req:^4}  {label}', file=sys.stderr)
     print(file=sys.stderr)

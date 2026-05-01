@@ -11,6 +11,7 @@ from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.infrahub.current_pricer import CurrentPricer
 from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
+from backend.domains.infrahub.stk_info_provider import StkInfoProvider
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import (
     KisApiHelper,
@@ -239,10 +240,13 @@ async def _insert_prev_costs_ls(stock_list: list, price_market: str):
     for stock in stock_list:
         stk_cd = stock.get('종목번호', '')
         # LS API는 NXT에서의 현재가를 가져오지 못한다. 그래서 NXT인 경우 현재가를 코넥스 종목코드로 다시 조회해서 넣어준다. 😡
-        if price_market == "NXT":  # 코넥스는 종목코드에 시장구분이 없으므로 'A' 제거
-           pricer = CurrentPricer.get() 
-           cost = await pricer.get_price1(stk_cd) or 0
-           stock['현재가'] = cost 
+        if price_market == "NXT" : 
+           is_nxt_enabled = await StkInfoProvider.get().get_nxt_yn(stk_cd)
+           if is_nxt_enabled == "Y":
+                pricer = CurrentPricer.get() 
+                cost = await pricer.get_price1(stk_cd) or 0
+                stock['현재가'] = cost 
+               
         cur_price = parse_price(stock.get('현재가', 0))
         avg_price = parse_price(stock.get('평균단가', 0))
             

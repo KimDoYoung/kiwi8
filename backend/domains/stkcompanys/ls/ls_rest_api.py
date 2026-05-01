@@ -3,6 +3,7 @@ LS증권 REST API 클라이언트
 """
 
 from datetime import datetime
+import json
 
 import aiohttp
 
@@ -142,6 +143,22 @@ class LsRestApi(StockApi):
     # HTTP 상태 코드 확인
     if response.status != 200:
       error_text = await response.text()
+      # 일부 LS 오류는 HTTP 비200 + JSON 본문(rsp_cd/rsp_msg) 형태로 내려온다.
+      # 이 경우 rsp_cd를 그대로 error_code로 전달해야 상위 재시도(IGW00121)가 동작한다.
+      try:
+        error_json = json.loads(error_text)
+        rsp_cd = str(error_json.get('rsp_cd', '')).strip()
+        rsp_msg = str(error_json.get('rsp_msg', '')).strip()
+        if rsp_cd:
+          return LsApiHelper.create_error_response(
+            error_code=rsp_cd,
+            error_message=rsp_msg or f'HTTP 오류: {error_text}',
+            api_info=api_info,
+            request_time=request_time,
+          )
+      except Exception:
+        pass
+
       return LsApiHelper.create_error_response(
         error_code=str(response.status),
         error_message=f'HTTP 오류: {error_text}',
