@@ -19,7 +19,11 @@ def create_kiwi8_db(db_path: str):
     Raises:
         DatabaseCreationError: 데이터베이스 생성 실패 시
     """
-    ddl_file_path = 'sqls/kiwi8_ddl.sql'
+    # DDL 파일 경로 설정 (현재 파일 위치 기준으로 절대 경로 계산)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(current_dir))
+    ddl_file_path = os.path.join(project_root, 'sqls', 'kiwi8_ddl.sql')
+    
     conn = None
     
     try:
