@@ -35,8 +35,14 @@ export const getMarketStatus = async (): Promise<MarketStatus> => {
 
 export interface MarketJisu {
   kospi: number
+  kospi_diff: number
+  kospi_rate: number
   kosdaq: number
+  kosdaq_diff: number
+  kosdaq_rate: number
   kospi200: number
+  kospi200_diff: number
+  kospi200_rate: number
   updated_at: string
 }
 
