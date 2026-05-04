@@ -54,6 +54,20 @@ CREATE TABLE IF NOT EXISTS kdemon_state (
   updated_at     TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS market_jisu (
+  id             INTEGER PRIMARY KEY CHECK (id = 1),
+  kospi          REAL NOT NULL,
+  kospi_diff     REAL,
+  kospi_rate     REAL,
+  kosdaq         REAL NOT NULL,
+  kosdaq_diff    REAL,
+  kosdaq_rate    REAL,
+  kospi200       REAL NOT NULL,
+  kospi200_diff  REAL,
+  kospi200_rate  REAL,
+  updated_at     TEXT NOT NULL -- 'YYYYMMDDHHMMSS'
+);
+
 -- ---------------------------------------------------------------
 -- tokens: 증권사 API 토큰 관리
 -- ---------------------------------------------------------------

@@ -10,6 +10,7 @@ import LsAccountPage from '@/pages/brokers/LsAccountPage'
 import StkDiaryList from '@/pages/diary/StkDiaryList'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import StockDetailPage from '@/pages/stock/StockDetailPage'
+import SchedulerPage from '@/pages/manage/SchedulerPage'
 
 // screen_no → React 컴포넌트 매핑
 // 향후 실제 페이지 구현 시 PlaceholderPage를 교체
@@ -45,7 +46,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '8101': StkDiaryList,
   // [8200 시스템 엔진]
   '8201': PlaceholderPage,
-  '8202': PlaceholderPage,
+  '8202': SchedulerPage,
   // [9100 시스템 설정]
   '9101': SettingsPage,
 }

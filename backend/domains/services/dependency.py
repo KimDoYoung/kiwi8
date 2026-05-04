@@ -17,6 +17,7 @@ from backend.domains.services.stk_diary_service import StkDiaryService
 from backend.domains.services.stk_info_service import StkInfoService
 from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
 from backend.domains.services.tokens_service import TokensService
+from backend.domains.market.market_service import MarketService
 
 _services = {}
 
@@ -49,6 +50,7 @@ def get_service(name: str):
         'menus': MenusService,
         'auth': AuthService,
         'layout_preset': LayoutPresetService,
+        'market': MarketService,
     }
     
     if name not in service_classes:

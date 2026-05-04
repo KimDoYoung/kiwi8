@@ -29,6 +29,33 @@ export const sendOrder = async (order: OrderRequest): Promise<OrderResponse> => 
 }
 
 export const getMarketStatus = async (): Promise<MarketStatus> => {
-  const response = await api.get('/api/v1/stock/market/status')
+  const response = await api.get('/api/v1/market/status')
   return response.data
+}
+
+export interface MarketJisu {
+  kospi: number
+  kosdaq: number
+  kospi200: number
+  updated_at: string
+}
+
+export const getMarketJisu = async (): Promise<MarketJisu> => {
+  const response = await api.get('/api/v1/market/jisu')
+  return response.data
+}
+
+export interface StockSearchItem {
+  stk_cd: string
+  stk_nm: string
+  market_name: string
+  up_name: string
+}
+
+export const findStock = async (keyword: string): Promise<StockSearchItem[]> => {
+  const response = await api.post('/api/v1/stock/find', {
+    api_id: 'stock_find',
+    payload: { keyword, limit: 10 }
+  })
+  return response.data.data.results
 }

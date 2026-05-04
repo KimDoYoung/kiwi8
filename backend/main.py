@@ -10,6 +10,7 @@ from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
 from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
+from backend.api.v1.endpoints.market_routes import router as market_router
 from backend.api.v1.endpoints.menus_routes import router as menus_router
 from backend.api.v1.endpoints.mystock_routes import router as mystock_router
 from backend.api.v1.endpoints.scheduler_routes import router as scheduler_router
@@ -31,7 +32,7 @@ schduler: KScheduler | None = None
 
 
 def create_app() -> FastAPI:
-    kiwi8_app = FastAPI(title='Kiwi8 - 주식매매(개인용)', version='0.0.1')
+    kiwi8_app = FastAPI(title='Kiwi8 - 주식관리', version='0.0.1')
     add_middlewares(kiwi8_app)
     add_routes(kiwi8_app)
     add_static_files(kiwi8_app)
@@ -90,6 +91,7 @@ def add_routes(app: FastAPI):
     app.include_router(stkcompany_account_router, prefix='/api/v1/stkcompany', tags=['stkcompany'])
     # 서비스 라우터
     app.include_router(kdemon_router, prefix='/api/v1/kdemon', tags=['kdemon'])
+    app.include_router(market_router, prefix='/api/v1/market', tags=['market'])
     app.include_router(stock_router, prefix='/api/v1/stock', tags=['stock'])
     app.include_router(mystock_router, prefix='/api/v1/mystock', tags=['mystock'])
     app.include_router(diary_router, prefix='/api/v1/diary', tags=['diary'])
@@ -122,6 +124,17 @@ async def startup_event():
     logger.info('scheduler 시작함...')
     global scheduler
     scheduler = KScheduler(db_path=db_path, poll_sec=1)
+    
+    # 지수 가져오기 작업 등록 (5분마다)
+    from backend.domains.kscheduler.k_scheduler import Job
+    scheduler.upsert_job(Job(
+        name="fetch_market_jisu",
+        func_name="fetch_market_jisu",
+        schedule_type="interval",
+        schedule_expr="seconds=300",
+        enabled=True
+    ))
+
     asyncio.create_task(scheduler.start(worker_count=4))
     logger.info('---------------------------------')
     logger.info('Startup 프로세스 종료')

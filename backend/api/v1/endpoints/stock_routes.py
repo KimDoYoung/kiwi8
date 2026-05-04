@@ -72,26 +72,6 @@ async def get_stock_info(stk_code: str):
         logger.error(f"Error occurred while fetching stock info: {e}")
         return KiwoomApiHelper.create_error_response(error_code="999", error_message= str(e))
 
-@router.get("/market/status")
-async def get_market_status():
-    """
-    현재 시장 상태(영업일 여부, 현재 운영 중인 시장)를 반환합니다.
-    """
-    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
-    checker = OpenTimeChecker.get()
-    
-    is_open = await checker.is_open_day()
-    trade_market = await checker.market_choice_for_trade()
-    price_market = await checker.market_choice_for_price()
-    
-    return {
-        "is_open": is_open,
-        "trade_market": trade_market, # "KRX", "NXT" or None
-        "price_market": price_market, # "KRX" or "NXT"
-        "is_krx_time": checker.isKrxTime(),
-        "is_nxt_time": checker.isNxtTime(),
-    }
-
 @router.post("/find", response_model=KiwoomResponse)
 async def find_stock(request: KiwoomRequest):
     """
@@ -122,10 +102,23 @@ async def find_stock(request: KiwoomRequest):
         # stk_info 서비스 가져오기
         stk_info_service = get_service("stk_info")
         
-        # 키워드로 종목 검색 (기존 search_by_name 메서드 사용)
-        search_results = await stk_info_service.search_by_name(keyword)
+        # 키워드로 종목 검색 (이름 또는 코드)
+        from backend.domains.models.stk_info_model import StkInfoFilter
+        filter_data = StkInfoFilter(stk_nm_like=keyword)
+        results_by_name = await stk_info_service.list_all(filter_data, limit=limit)
         
-        # limit 적용
+        filter_data_cd = StkInfoFilter(stk_cd_like=keyword)
+        results_by_code = await stk_info_service.list_all(filter_data_cd, limit=limit)
+        
+        # 결과 합치기 (중복 제거)
+        seen_cds = set()
+        search_results = []
+        for stock in results_by_name + results_by_code:
+            if stock.stk_cd not in seen_cds:
+                search_results.append(stock)
+                seen_cds.add(stock.stk_cd)
+        
+        # limit 재적용
         if limit > 0:
             search_results = search_results[:limit]
         
@@ -163,4 +156,3 @@ async def find_stock(request: KiwoomRequest):
             status_code=500,
             api_info={"api_id": "stock_find", "description": "종목 검색"}
         )
-    

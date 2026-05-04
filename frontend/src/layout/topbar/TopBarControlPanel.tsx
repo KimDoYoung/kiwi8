@@ -1,17 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   ChevronRight,
   X,
 } from 'lucide-react'
 import IndexBadge from '@/shared/components/IndexBadge'
-
-// ── Panel 1: Ticker 데이터 (더미) ──────────────────────────────────────────
-
-const INDICES = [
-  { name: 'KOSPI', value: 2580.45, change: -31.35, percentage: -1.20 },
-  { name: 'KOSDAQ', value: 850.12, change: 2.54, percentage: 0.30 },
-  { name: 'USD/KRW', value: 1380, change: 1.38, percentage: 0.10 },
-]
+import { useQuery } from '@tanstack/react-query'
+import { getMarketJisu } from '@/services/stockService'
 
 const NEWS = [
   { title: '삼성전자, 1분기 영업이익 전망치 상회', body: '삼성전자가 1분기 영업이익 6.5조원을 기록하며 시장 전망치를 크게 상회했다. 반도체 부문의 회복세가 주효했다는 분석이다.' },
@@ -74,11 +68,30 @@ function NewsDialog({ news, onClose }: { news: { title: string; body: string }; 
 function TickerPanel() {
   const [selectedNews, setSelectedNews] = useState<{ title: string; body: string } | null>(null)
 
+  const { data: jisuData } = useQuery({
+    queryKey: ['marketJisu'],
+    queryFn: getMarketJisu,
+    refetchInterval: 1000 * 60 * 5, // 5분마다 갱신
+  })
+
+  const indices = useMemo(() => {
+    if (!jisuData || !jisuData.updated_at) return [
+      { name: 'KOSPI', value: 0, change: 0, percentage: 0 },
+      { name: 'KOSDAQ', value: 0, change: 0, percentage: 0 },
+      { name: 'KOSPI200', value: 0, change: 0, percentage: 0 },
+    ]
+    return [
+      { name: 'KOSPI', value: jisuData.kospi, change: jisuData.kospi_diff, percentage: jisuData.kospi_rate },
+      { name: 'KOSDAQ', value: jisuData.kosdaq, change: jisuData.kosdaq_diff, percentage: jisuData.kosdaq_rate },
+      { name: 'KOSPI200', value: jisuData.kospi200, change: jisuData.kospi200_diff, percentage: jisuData.kospi200_rate },
+    ]
+  }, [jisuData])
+
   return (
     <div className="flex items-center gap-3 flex-1 overflow-hidden min-w-0">
       {/* 지수 */}
       <div className="flex items-center gap-3 shrink-0">
-        {INDICES.map((idx) => (
+        {indices.map((idx) => (
           <IndexBadge
             key={idx.name}
             name={idx.name}
