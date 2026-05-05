@@ -97,12 +97,12 @@ export default function TotalBalancePage() {
                 comparator: numComparator,
             },
             {
-                field: '현재가', headerName: '현재가', width: 90, type: 'numericColumn', simple: true,
+                field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn', simple: true,
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
             },
             {
-                field: '일주당', headerName: '1주당', width: 90, type: 'numericColumn',
+                field: '일주당', headerName: '1주당', width: 110, type: 'numericColumn',
                 cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
                 simple: true,
@@ -131,37 +131,14 @@ export default function TotalBalancePage() {
                 simple: true,
             },
             {
-                field: '손익율', headerName: '손익율(%)', width: 85, type: 'numericColumn',
+                field: '손익율', headerName: '손익율(%)', width: 100, type: 'numericColumn',
                 cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} value={p.value} />,
                 comparator: numComparator,
                 simple: true,
             },
             { 
-                field: '가격추세', headerName: '추세', width: 80, sortable: false,
+                field: '가격추세', headerName: '추세', width: 125, sortable: false,
                 cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세 as string} />,
-            },
-            {
-                headerName: '', width: 120, sortable: false, resizable: false,
-                cellRenderer: (p: any) => p.data?._isSummary ? null : (
-                    <ActionCell 
-                        onBuy={() => openOrderModal({
-                            stk_cd: p.data?.종목코드,
-                            stk_nm: p.data?.종목명,
-                            price: toNum(p.data?.현재가),
-                            qty: 1,
-                            broker: (p.data?.브로커 as string).toLowerCase() as any,
-                            order_type: 'buy'
-                        })}
-                        onSell={() => openOrderModal({
-                            stk_cd: p.data?.종목코드,
-                            stk_nm: p.data?.종목명,
-                            price: toNum(p.data?.현재가),
-                            qty: toNum(p.data?.수량),
-                            broker: (p.data?.브로커 as string).toLowerCase() as any,
-                            order_type: 'sell'
-                        })}
-                    />
-                ),
             },
         ]
 

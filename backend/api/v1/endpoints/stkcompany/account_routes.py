@@ -211,7 +211,7 @@ async def kiwoom_account_list():
 
         response = await kiwoom.send_request(req)
         # debug
-        logger.debug(f'[계좌현황] 키움 API 응답: {response.model_dump(mode="json")}')
+        # logger.debug(f'[계좌현황] 키움 API 응답: {response.model_dump(mode="json")}')
         if response.success:
             korea_data = KiwoomApiHelper.to_korea_data(response.data, 'kt00004')
             response.data = korea_data
