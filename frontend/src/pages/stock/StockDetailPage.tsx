@@ -7,7 +7,7 @@ import { toNum, fmt } from '@/pages/brokers/accountUtils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search } from 'lucide-react'
-import { findStock, StockSearchItem } from '@/services/stockService'
+import { findStock, type StockSearchItem } from '@/services/stockService'
 import { InputWithIcon } from '@/shared/components/InputWithIcon'
 
 async function fetchStockInfo(stk_cd: string | null) {
