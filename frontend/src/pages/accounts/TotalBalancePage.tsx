@@ -1,0 +1,240 @@
+import { useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { AgGridReact } from 'ag-grid-react'
+import type { ColDef } from 'ag-grid-community'
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import { useModalStore } from '@/store/modalStore'
+import { useStockDetailStore } from '@/store/stockDetailStore'
+import { useLayoutStore } from '@/store/layoutStore'
+import api from '@/lib/api'
+import {
+    toNum, fmt,
+    ProfitCell, RateCell, CodeCell, ActionCell,
+    numComparator, exportCsv, AccountHeader,
+} from '../brokers/accountUtils'
+import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import Loading from '@/shared/components/Loading'
+import LoadingFail from '@/shared/components/LoadingFail'
+import { TrendBadge } from '@/shared/components/TrendBadge'
+import { fetchMenuTree } from '@/services/menuService'
+import { Switch } from '@/shared/components/ui/switch'
+import { Label } from '@/shared/components/ui/label'
+
+ModuleRegistry.registerModules([AllCommunityModule])
+
+async function fetchTotalAccount() {
+    const res = await api.get('/api/v1/stkcompany/total/account/list')
+    return res.data
+}
+
+export default function TotalBalancePage() {
+    const gridRef = useRef<AgGridReact>(null)
+    const openOrderModal = useModalStore((s) => s.openOrderModal)
+    const setStock = useStockDetailStore((s) => s.setStock)
+    const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
+    const [isSimpleView, setIsSimpleView] = useState(false)
+    const [profitFilter, setProfitFilter] = useState('all')
+
+    const { data: menus } = useQuery({
+        queryKey: ['menus'],
+        queryFn: fetchMenuTree,
+        staleTime: 1000 * 60 * 10,
+    })
+
+    const { data, isLoading, error, refetch } = useQuery({
+        queryKey: ['stkcompany', 'total', 'account'],
+        queryFn: fetchTotalAccount,
+        staleTime: 1000 * 30,
+    })
+
+    const allStocks: Record<string, unknown>[] = data?.data?.totalAccountList ?? []
+
+    const filteredStocks = useMemo(() => {
+        if (profitFilter === 'minus') return allStocks.filter(s => toNum(s['손익금액']) < 0)
+        if (profitFilter === 'plus') return allStocks.filter(s => toNum(s['손익금액']) > 0)
+        return allStocks
+    }, [allStocks, profitFilter])
+
+    const totalMaeip = useMemo(() =>
+        allStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [allStocks])
+
+    const totalEval = useMemo(() =>
+        allStocks.reduce((sum, s) => sum + toNum(s['평가금액']), 0), [allStocks])
+
+    const totalProfit = useMemo(() =>
+        allStocks.reduce((sum, s) => sum + toNum(s['손익금액']), 0), [allStocks])
+
+    const sumMaeip = useMemo(() => filteredStocks.reduce((s, r) => s + toNum(r['매입금액']), 0), [filteredStocks])
+    const sumPyeong = useMemo(() => filteredStocks.reduce((s, r) => s + toNum(r['평가금액']), 0), [filteredStocks])
+    const sumSonik = useMemo(() => filteredStocks.reduce((s, r) => s + toNum(r['손익금액']), 0), [filteredStocks])
+
+    const gridData = useMemo(() => [
+        ...filteredStocks,
+        { 종목명: '합계', 매입금액: sumMaeip, 평가금액: sumPyeong, 손익금액: sumSonik, _isSummary: true },
+    ], [filteredStocks, sumMaeip, sumPyeong, sumSonik])
+
+    const colDefs = useMemo<ColDef[]>(() => {
+        const allCols: (ColDef & { simple?: boolean })[] = [
+            {
+                field: '브로커', headerName: '증권사', width: 80, pinned: 'left', simple: true,
+                cellRenderer: (p: any) => p.data?._isSummary ? '' : p.value,
+            },
+            {
+                headerName: '종목코드', field: '종목코드', width: 90, pinned: 'left', simple: true,
+                cellRenderer: (p: any) => p.data?._isSummary ? '' : <CodeCell {...p} value={p.data?.종목코드} />,
+                comparator: (a: string, b: string) => a.localeCompare(b),
+            },
+            { field: '종목명', headerName: '종목명', width: 140, pinned: 'left', simple: true },
+            {
+                field: '전일대비', headerName: '전일대비', width: 90, type: 'numericColumn',
+                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                comparator: numComparator,
+                simple: true,
+            },
+            {
+                field: '평단가', headerName: '매입평단', width: 90, type: 'numericColumn',
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(Math.round(toNum(value))), 
+                comparator: numComparator,
+            },
+            {
+                field: '현재가', headerName: '현재가', width: 90, type: 'numericColumn', simple: true,
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                field: '일주당', headerName: '1주당', width: 90, type: 'numericColumn',
+                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                comparator: numComparator,
+                simple: true,
+            },
+            {
+                field: '수량', headerName: '수량', width: 70, type: 'numericColumn',
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+                simple: true,
+            },
+            {
+                field: '매입금액', headerName: '매입금액', width: 110, type: 'numericColumn',
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                field: '평가금액', headerName: '평가금액', width: 110, type: 'numericColumn',
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+                simple: true,
+            },
+            {
+                field: '손익금액', headerName: '손익금액', width: 110, type: 'numericColumn',
+                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                comparator: numComparator,
+                simple: true,
+            },
+            {
+                field: '손익율', headerName: '손익율(%)', width: 85, type: 'numericColumn',
+                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} value={p.value} />,
+                comparator: numComparator,
+                simple: true,
+            },
+            { 
+                field: '가격추세', headerName: '추세', width: 80, sortable: false,
+                cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세 as string} />,
+            },
+            {
+                headerName: '', width: 120, sortable: false, resizable: false,
+                cellRenderer: (p: any) => p.data?._isSummary ? null : (
+                    <ActionCell 
+                        onBuy={() => openOrderModal({
+                            stk_cd: p.data?.종목코드,
+                            stk_nm: p.data?.종목명,
+                            price: toNum(p.data?.현재가),
+                            qty: 1,
+                            broker: (p.data?.브로커 as string).toLowerCase() as any,
+                            order_type: 'buy'
+                        })}
+                        onSell={() => openOrderModal({
+                            stk_cd: p.data?.종목코드,
+                            stk_nm: p.data?.종목명,
+                            price: toNum(p.data?.현재가),
+                            qty: toNum(p.data?.수량),
+                            broker: (p.data?.브로커 as string).toLowerCase() as any,
+                            order_type: 'sell'
+                        })}
+                    />
+                ),
+            },
+        ]
+
+        return isSimpleView ? allCols.filter(col => col.simple) : allCols
+    }, [totalMaeip, sumMaeip, openOrderModal, isSimpleView])
+
+    const defaultColDef = useMemo<ColDef>(() => ({
+        sortable: true, resizable: true,
+    }), [])
+
+    const onRowDoubleClicked = (p: any) => {
+        if (p.data?._isSummary) return
+        const code = p.data?.종목코드
+        const name = p.data?.종목명
+        setStock(code, name)
+        openByScreenNo('1201', menus || [])
+    }
+
+    if (isLoading) {
+        return <Loading message="통합 계좌 정보를 불러오는 중..." />
+    }
+
+    if (error || !data) {
+        return <LoadingFail message="통합 계좌 정보를 불러오는데 실패했습니다." />
+    }
+
+    return (
+        <div className="flex flex-col h-full text-base">
+            <AccountHeader
+                title="통합 실시간 잔고" screenNo="1102" count={filteredStocks.length}
+                예수금={0} 평가금액={totalEval} 손익={totalProfit}
+                onCsv={() => exportCsv(gridRef, '통합_실시간_잔고.csv')}
+                onRefresh={() => refetch()}
+            >
+                <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
+                    <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>
+                    <Switch
+                        id="simple-view"
+                        checked={isSimpleView}
+                        onCheckedChange={setIsSimpleView}
+                    />
+                </div>
+
+                <GroupRadioButton
+                    options={[
+                        { label: '-', value: 'minus', className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700' },
+                        { label: '全', value: 'all', className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800' },
+                        { label: '+', value: 'plus', className: 'data-[state=on]:bg-red-100 data-[state=on]:text-red-700' },
+                    ]}
+                    value={profitFilter}
+                    onValueChange={setProfitFilter}
+                    className="h-[26px] bg-white"
+                    itemClassName="h-[24px] text-xs px-3"
+                />
+            </AccountHeader>
+
+            <div className="flex-1 ag-theme-alpine overflow-hidden">
+                <AgGridReact
+                    ref={gridRef}
+                    rowData={gridData}
+                    columnDefs={colDefs}
+                    defaultColDef={defaultColDef}
+                    domLayout="normal"
+                    headerHeight={36}
+                    rowHeight={32}
+                    onRowDoubleClicked={onRowDoubleClicked}
+                    postSortRows={({ nodes }) => {
+                        const idx = nodes.findIndex(n => n.data?._isSummary)
+                        if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])
+                    }}
+                    getRowClass={(p) => p.data?._isSummary ? 'summary-row' : ''}
+                />
+            </div>
+        </div>
+    )
+}

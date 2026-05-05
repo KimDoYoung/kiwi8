@@ -1,7 +1,7 @@
 import React from 'react'
 import PlaceholderPage from '@/pages/common/PlaceholderPage'
 import AccountSummaryPage from '@/pages/accounts/AccountSummaryPage'
-import RealtimeBalancePage from '@/pages/accounts/RealtimeBalancePage'
+import TotalBalancePage from '@/pages/accounts/TotalBalancePage'
 import ProfitTrendPage from '@/pages/accounts/ProfitTrendPage'
 import ExecutionHistoryPage from '@/pages/accounts/ExecutionHistoryPage'
 import KiwoomAccountPage from '@/pages/brokers/KiwoomAccountPage'
@@ -19,7 +19,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   'HOME': PlaceholderPage,
   // [1100 자산 현황]
   '1101': AccountSummaryPage,
-  '1102': RealtimeBalancePage,
+  '1102': TotalBalancePage,
   '1103': ProfitTrendPage,
   '1104': ExecutionHistoryPage,
   // [1200 시장 분석]

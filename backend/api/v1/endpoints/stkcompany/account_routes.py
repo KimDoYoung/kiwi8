@@ -71,6 +71,122 @@ async def get_summary():
         return {'summary': {}, 'accounts': {}}
 
 
+# total/account/list 라우트는 3개 증권사(KIS, LS, 키움)의 계좌현황을 통합하여 리스트한다. 
+
+
+def _normalize_stock_code(code: str | int | None) -> str:
+    if code is None:
+        return ''
+    code_str = str(code).strip()
+    if code_str.startswith('A') and len(code_str) == 7:
+        return code_str[1:]
+    return code_str
+
+
+def _extract_account_entries(response, broker: str) -> list[dict]:
+    if not response or not getattr(response, 'success', False) or not getattr(response, 'data', None):
+        return []
+
+    data = response.data
+    if not isinstance(data, dict):
+        return []
+
+    if broker == 'Kiwoom':
+        return data.get('종목별계좌평가현황', []) or []
+    if broker == 'KIS':
+        return data.get('output1', []) or []
+    if broker == 'LS':
+        return data.get('t0424OutBlock1', []) or []
+    return []
+
+
+def _normalize_total_entry(row: dict, broker: str) -> dict:
+    # broker-specific keys mapping
+    if broker == 'Kiwoom':
+        avg_price = row.get('평균단가', 0)
+        qty = row.get('보유수량', 0)
+        eval_amt = row.get('평가금액', 0)
+        pl_amt = row.get('손익금액', 0)
+        pl_rt = row.get('손익율', 0)
+    elif broker == 'KIS':
+        avg_price = row.get('매입평균가격', 0)
+        qty = row.get('보유수량', 0)
+        eval_amt = row.get('평가금액', 0)
+        pl_amt = row.get('평가손익금액', 0)
+        pl_rt = row.get('평가손익율', 0)
+    elif broker == 'LS':
+        avg_price = row.get('평균단가', 0)
+        qty = row.get('잔고수량', 0)
+        eval_amt = row.get('평가금액', 0)
+        pl_amt = row.get('평가손익', 0)
+        pl_rt = row.get('수익률') or row.get('보유비중') or 0
+    else:
+        avg_price = 0
+        qty = 0
+        eval_amt = 0
+        pl_amt = 0
+        pl_rt = 0
+
+    return {
+        '브로커': broker,
+        '종목코드': _normalize_stock_code(row.get('종목코드') or row.get('상품번호') or row.get('종목번호')),
+        '종목명': row.get('종목명') or row.get('상품명') or row.get('한글명') or '',
+        '현재가': parse_price(row.get('현재가', 0)),
+        '평단가': parse_price(avg_price),
+        '수량': parse_price(qty),
+        '매입금액': parse_price(row.get('매입금액', 0)),
+        '평가금액': parse_price(eval_amt),
+        '손익금액': parse_price(pl_amt),
+        '손익율': float(pl_rt) if pl_rt else 0.0,
+        '전일대비': row.get('전일대비', 0),
+        '가격추세': row.get('가격추세', '-'),
+        '일주당': row.get('1주당', 0),
+    }
+
+
+@router.get('/total/account/list')
+async def total_account_list():
+    """3개 증권사의 계좌 보유종목을 통합 조회하고 종목으로 정렬한다."""
+    logger.info('[계좌현황] 통합 계좌현황 조회 요청')
+
+    try:
+        kiwoom_response = await kiwoom_account_list()
+        kis_response = await kis_account_list()
+        ls_response = await ls_account_list()
+
+        all_entries: list[dict] = []
+        for broker, response in (
+            ('Kiwoom', kiwoom_response),
+            ('KIS', kis_response),
+            ('LS', ls_response),
+        ):
+            entries = _extract_account_entries(response, broker)
+            for entry in entries:
+                if isinstance(entry, dict):
+                    all_entries.append(_normalize_total_entry(entry, broker))
+
+        all_entries.sort(
+            key=lambda item: (
+                item.get('종목코드', '') or item.get('종목명', ''),
+                item.get('브로커', ''),
+            )
+        )
+
+        return {
+            'success': True,
+            'data': {
+                'totalAccountList': all_entries,
+            },
+        }
+    except Exception as e:
+        logger.error(f'[계좌현황] 통합 조회 오류: {e}')
+        return {
+            'success': False,
+            'error': str(e),
+            'data': {'totalAccountList': []},
+        }
+
+
 @router.get('/kiwoom/account/list', response_model=KiwoomResponse)
 async def kiwoom_account_list():
     """키움 계좌현황 조회 (kt00004)"""
