@@ -2,7 +2,7 @@
 
 import asyncio
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal
 
 from backend.core.logger import get_logger
@@ -58,7 +58,7 @@ class PriceData:
         # 날짜 형식(YYYY-MM-DD / YYYYMMDD)이 섞여도 오래된 순으로 정렬
         sorted_data = sorted(
             zip(dates, prices),
-            key=lambda x: self._normalize_date_for_sort(x[0]),
+            key=lambda x: PrevPriceCache._normalize_date_for_sort(x[0]),
         )
         sorted_dates = [d for d, _ in sorted_data]
         sorted_prices = [p for _, p in sorted_data]
@@ -72,17 +72,6 @@ class PriceData:
             self.prices = sorted_prices
 
         self._update_trend()
-
-    @staticmethod
-    def _normalize_date_for_sort(date_str: str) -> str:
-        """날짜 문자열을 정렬용 키(YYYYMMDD)로 정규화.
-
-        - YYYY-MM-DD -> YYYYMMDD
-        - YYYYMMDD   -> YYYYMMDD
-        - 그 외 형식은 가능한 범위에서 '-' 제거 후 반환
-        """
-        normalized = str(date_str).strip().replace('-', '')
-        return normalized
 
     def _update_trend(self) -> None:
         """현재 가격 데이터로 추세 업데이트"""
@@ -153,6 +142,17 @@ class PrevPriceCache:
             cls._instance._cache = {}
             cls._instance._last_update = None
         return cls._instance
+
+    @staticmethod
+    def _normalize_date_for_sort(date_str: str) -> str:
+        """날짜 문자열을 정렬용 키(YYYYMMDD)로 정규화.
+
+        - YYYY-MM-DD -> YYYYMMDD
+        - YYYYMMDD   -> YYYYMMDD
+        - 그 외 형식은 가능한 범위에서 '-' 제거 후 반환
+        """
+        normalized = str(date_str).strip().replace('-', '')
+        return normalized
 
     async def get(self, stk_cd: str) -> PriceData | None:
         """종목의 10일치 가격 데이터 조회
@@ -311,12 +311,21 @@ class PrevPriceCache:
         Returns:
             어제 종가 (prices[-2]) 또는 None
         """
+        # 어제 날짜 계산 (YYYYMMDD 형식)
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        
         # 캐시에서 먼저 조회
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            return data.prices[-2]
+            # 캐시된 데이터의 마지막 날짜가 어제인지 확인
+            if data.dates and self._normalize_date_for_sort(data.dates[-1]) == yesterday:
+                return data.prices[-2]
+            else:
+                # 날짜가 맞지 않으면 캐시 무효화
+                await self.clear(stk_cd)
+                logger.debug(f"캐시 날짜 불일치로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}, 어제: {yesterday}")
 
-        # 캐시 미스: API 호출로 10일 데이터 로드 (최대 3회 재시도)
+        # 캐시 미스 또는 날짜 불일치: API 호출로 10일 데이터 로드 (최대 3회 재시도)
         for attempt in range(3):
             try:
                 prices, dates = await self._fetch_price_data(stk_cd)
@@ -339,12 +348,21 @@ class PrevPriceCache:
         Returns:
             추세 문자열 또는 None
         """
+        # 어제 날짜 계산 (YYYYMMDD 형식)
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        
         # 캐시에서 먼저 조회 (추세 판단을 위해 최소 2일 데이터 필요)
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            return data.trend
+            # 캐시된 데이터의 마지막 날짜가 어제인지 확인
+            if data.dates and self._normalize_date_for_sort(data.dates[-1]) == yesterday:
+                return data.trend
+            else:
+                # 날짜가 맞지 않으면 캐시 무효화
+                await self.clear(stk_cd)
+                logger.debug(f"캐시 날짜 불일치로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}, 어제: {yesterday}")
 
-        # 캐시 미스: API 호출로 10일 데이터 로드 (최대 3회 재시도)
+        # 캐시 미스 또는 날짜 불일치: API 호출로 10일 데이터 로드 (최대 3회 재시도)
         for attempt in range(3):
             try:
                 prices, dates = await self._fetch_price_data(stk_cd)

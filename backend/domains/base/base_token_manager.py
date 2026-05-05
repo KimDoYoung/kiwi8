@@ -2,6 +2,7 @@
 토큰 매니저 베이스 클래스
 증권사별 토큰 관리의 공통 기능을 제공합니다.
 """
+import asyncio
 from abc import ABC, abstractmethod
 
 from backend.core.logger import get_logger
@@ -26,6 +27,9 @@ class BaseTokenManager(ABC):
         self.token_type: str | None = None
         self.token: str | None = None
         self.expires_dt: str | None = None
+        
+        # 동시성 제어를 위한 락 (여러 요청이 동시에 토큰 만료를 감지했을 때 1번만 재발급받도록 보장)
+        self._refresh_lock = asyncio.Lock()
 
     @property
     @abstractmethod
@@ -49,23 +53,26 @@ class BaseTokenManager(ABC):
 
     async def refresh_token(self) -> bool:
         """토큰 갱신 (만료 임박 시 재발급)"""
-        try:
-            if not self.token or not self.expires_dt:
-                await self._load_token_from_db()
+        async with self._refresh_lock:
+            try:
+                # 1. DB에서 먼저 최신 토큰 정보를 가져옴 (다른 task가 이미 갱신했을 수 있음)
+                if not self.token or not self.expires_dt:
+                    await self._load_token_from_db()
 
-            if not self.token or not self.expires_dt:
-                logger.info(f'[{self.broker_name}] 저장된 토큰이 없어 새로 발급받습니다.')
-                await self.issue_access_token()
+                # 2. 여전히 토큰이 없거나 만료 임박했다면 실제 API 호출로 재발급
+                if not self.token or not self.expires_dt:
+                    logger.info(f'[{self.broker_name}] 저장된 토큰이 없어 새로 발급받습니다.')
+                    await self.issue_access_token()
+                    return True
+
+                if self._is_token_expire_soon():
+                    logger.info(f'[{self.broker_name}] 토큰 만료 임박, 재발급합니다.')
+                    await self.issue_access_token()
+
                 return True
-
-            if self._is_token_expire_soon():
-                logger.info(f'[{self.broker_name}] 토큰 만료 임박, 재발급합니다.')
-                await self.issue_access_token()
-
-            return True
-        except Exception as e:
-            logger.error(f'[{self.broker_name}] 토큰 갱신 오류: {e}')
-            raise self._create_auth_exception(f'토큰 갱신 실패: {e}')
+            except Exception as e:
+                logger.error(f'[{self.broker_name}] 토큰 갱신 오류: {e}')
+                raise self._create_auth_exception(f'토큰 갱신 실패: {e}')
 
     @abstractmethod
     async def issue_access_token(self) -> dict:

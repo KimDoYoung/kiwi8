@@ -17,6 +17,8 @@ import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
+import { Switch } from '@/shared/components/ui/switch'
+import { Label } from '@/shared/components/ui/label'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -44,6 +46,7 @@ export default function LsAccountPage() {
     })
 
     const [profitFilter, setProfitFilter] = useState('all')
+    const [isSimpleView, setIsSimpleView] = useState(false)
 
     const accountData = data?.data ?? {}
     const rawStocks: Record<string, unknown>[] =
@@ -87,96 +90,100 @@ export default function LsAccountPage() {
         { 종목명: '합계', 매입금액: sumMaeip, 평가금액: sumPyeong, 평가손익: sumSonik, _isSummary: true },
     ], [stocks, sumMaeip, sumPyeong, sumSonik])
 
-    const colDefs = useMemo<ColDef[]>(() => [
-        {
-            headerName: '종목코드', width: 100, pinned: 'left',
-            valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.종목번호 ?? p.data?.종목코드 ?? ''),
-            cellRenderer: CodeCell,
-            comparator: (a: string, b: string) => a.localeCompare(b),
-        },
-        { field: '종목명', headerName: '종목명', width: 150, pinned: 'left' },
-        {
-            field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn',
-            cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
-            comparator: numComparator,
-        },
-        {
-            field: '평균단가', headerName: '매입평단', width: 110, type: 'numericColumn',
-            valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
-            comparator: numComparator,
-        },
-        {
-            field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn',
-            valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
-            comparator: numComparator,
-        },
-        {
-            field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn',
-            cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
-            comparator: numComparator,
-        },
-        {
-            field: '잔고수량', headerName: '수량', width: 80, type: 'numericColumn',
-            valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
-            comparator: numComparator,
-        },
-        {
-            headerName: '비중(%)', width: 85, type: 'numericColumn',
-            valueGetter: (p) => {
-                if (p.data?._isSummary) return (sumMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0)
-                return totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0
+    const colDefs = useMemo<ColDef[]>(() => {
+        const allCols: (ColDef & { simple?: boolean })[] = [
+            {
+                headerName: '종목코드', width: 100, pinned: 'left', simple: true,
+                valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.종목번호 ?? p.data?.종목코드 ?? ''),
+                cellRenderer: CodeCell,
+                comparator: (a: string, b: string) => a.localeCompare(b),
             },
-            cellRenderer: (p: any) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
-            comparator: numComparator,
-        },
-        {
-            field: '매입금액', headerName: '매입금액', width: 120, type: 'numericColumn',
-            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
-            comparator: numComparator,
-        },
-        {
-            field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn',
-            valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
-            comparator: numComparator,
-        },
-        {
-            field: '평가손익', headerName: '손익금액', width: 120, type: 'numericColumn',
-            cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <ProfitCell {...params} />,
-            comparator: numComparator,
-        },
-        {
-            field: '수익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
-            cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <RateCell {...params} />,
-            comparator: numComparator,
-        },
-        { 
-            field: '가격추세', headerName: '추세', width: 106, sortable: false,
-            cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
-        },
-        {
-            headerName: '', width: 145, sortable: false, resizable: false,
-            cellRenderer: (p: any) => p.data?._isSummary ? null : (
-                <ActionCell 
-                    onBuy={() => openOrderModal({
-                        stk_cd: p.data?.종목번호 ?? p.data?.종목코드,
-                        stk_nm: p.data?.종목명,
-                        price: toNum(p.data?.현재가),
-                        qty: 1,
-                        broker: 'ls',
-                        order_type: 'buy'
-                    })}
-                    onSell={() => openOrderModal({
-                        stk_cd: p.data?.종목번호 ?? p.data?.종목코드,
-                        stk_nm: p.data?.종목명,
-                        price: toNum(p.data?.현재가),
-                        qty: toNum(p.data?.잔고수량),
-                        broker: 'ls',
-                        order_type: 'sell'
-                    })}
-                />
-            ),
-        },
-    ], [totalMaeip, sumMaeip, openOrderModal])
+            { field: '종목명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
+            {
+                field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn', simple: true,
+                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                comparator: numComparator,
+            },
+            {
+                field: '평균단가', headerName: '매입평단', width: 110, type: 'numericColumn',
+                valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn', simple: true,
+                valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn', simple: true,
+                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                comparator: numComparator,
+            },
+            {
+                field: '잔고수량', headerName: '수량', width: 80, type: 'numericColumn', simple: true,
+                valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                headerName: '비중(%)', width: 85, type: 'numericColumn', simple: false,
+                valueGetter: (p) => {
+                    if (p.data?._isSummary) return (sumMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0)
+                    return totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0
+                },
+                cellRenderer: (p: any) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
+                comparator: numComparator,
+            },
+            {
+                field: '매입금액', headerName: '매입금액', width: 120, type: 'numericColumn',
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn', simple: true,
+                valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
+                comparator: numComparator,
+            },
+            {
+                field: '평가손익', headerName: '손익금액', width: 120, type: 'numericColumn', simple: true,
+                cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <ProfitCell {...params} />,
+                comparator: numComparator,
+            },
+            {
+                field: '수익율', headerName: '손익율(%)', width: 95, type: 'numericColumn', simple: true,
+                cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <RateCell {...params} />,
+                comparator: numComparator,
+            },
+            { 
+                field: '가격추세', headerName: '추세', width: 106, sortable: false,
+                cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
+            },
+            {
+                headerName: '', width: 145, sortable: false, resizable: false, simple: false,
+                cellRenderer: (p: any) => p.data?._isSummary ? null : (
+                    <ActionCell 
+                        onBuy={() => openOrderModal({
+                            stk_cd: p.data?.종목번호 ?? p.data?.종목코드,
+                            stk_nm: p.data?.종목명,
+                            price: toNum(p.data?.현재가),
+                            qty: 1,
+                            broker: 'ls',
+                            order_type: 'buy'
+                        })}
+                        onSell={() => openOrderModal({
+                            stk_cd: p.data?.종목번호 ?? p.data?.종목코드,
+                            stk_nm: p.data?.종목명,
+                            price: toNum(p.data?.현재가),
+                            qty: toNum(p.data?.잔고수량),
+                            broker: 'ls',
+                            order_type: 'sell'
+                        })}
+                    />
+                ),
+            },
+        ]
+
+        return isSimpleView ? allCols.filter(col => col.simple) : allCols
+    }, [totalMaeip, sumMaeip, openOrderModal, isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({
         sortable: true, resizable: true,
@@ -208,6 +215,14 @@ export default function LsAccountPage() {
                 onCsv={() => exportCsv(gridRef, 'LS_계좌현황.csv')}
                 onRefresh={() => refetch()}
             >
+                <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
+                    <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>
+                    <Switch
+                        id="simple-view"
+                        checked={isSimpleView}
+                        onCheckedChange={setIsSimpleView}
+                    />
+                </div>
                 <GroupRadioButton
                     options={[
                         {

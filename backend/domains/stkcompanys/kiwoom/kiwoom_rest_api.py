@@ -70,16 +70,13 @@ class KiwoomRestApi(StockApi):
     async def send_request(self, data: KiwoomRequest) -> KiwoomResponse:
         """
         키움 API에 요청을 전송하고 응답을 처리합니다.
+        토큰 만료(8005) 시 자동으로 재발급 후 1회 재시도합니다.
         
         Args:
             data: 키움 API 요청 데이터
             
         Returns:
             KiwoomResponse: 표준화된 키움 API 응답 객체
-            
-        Raises:
-            KiwoomApiException: API 요청 실패 시
-            InvalidResponseException: 응답 파싱 실패 시
         """
         request_time = datetime.now()
         
@@ -97,33 +94,34 @@ class KiwoomRestApi(StockApi):
                     request_time=request_time
                 )
             
-            # 요청 파라미터 준비
-            method = request_info.get('method')
+            # [Step 1] 첫 번째 시도
             token = await self.token_manager.get_token()
-            headers = self.get_headers(data, token)
-            url = request_info.get('url')
-            title = request_info.get('title')
+            response = await self._do_request(data, token, request_info, request_time)
 
-            logger.info(f"{title} 요청 전송 - URL: {url}")
-            logger.debug(f"요청 데이터: {data.payload}")
+            # [Step 2] 토큰 만료 에러(8005) 감지 시 재시도 로직
+            # response.error_code가 '3'이고 return_msg에 8005가 포함된 경우 (키움 특이 케이스)
+            is_token_error = (
+                not response.success and 
+                (response.error_code == '3' or "8005" in str(response.error_message))
+            )
 
-            # HTTP 요청 전송
-            async with aiohttp.ClientSession() as session:
-                if method == 'POST':
-                    async with session.post(url, headers=headers, json=data.payload) as response:
-                        return await self._process_response(response, request_info, request_time)
-                        
-                elif method == 'GET':
-                    async with session.get(url, headers=headers, params=data.payload) as response:
-                        return await self._process_response(response, request_info, request_time)
+            if is_token_error:
+                logger.warning(f"[KIWOOM] API 호출 중 토큰 만료 감지(8005). 토큰 강제 재발급 후 재시도합니다. (API: {data.api_id})")
+                
+                # 토큰 강제 재발급 (DB 및 메모리 갱신)
+                await self.token_manager.issue_access_token()
+                
+                # 새로운 토큰으로 재시도
+                new_token = await self.token_manager.get_token()
+                logger.info(f"[KIWOOM] 새 토큰으로 재시도 중... (API: {data.api_id})")
+                response = await self._do_request(data, new_token, request_info, request_time)
+                
+                if response.success:
+                    logger.info(f"[KIWOOM] 재시도 성공 (API: {data.api_id})")
                 else:
-                    return KiwoomApiHelper.create_error_response(
-                        error_code="UNSUPPORTED_METHOD",
-                        error_message=f"지원하지 않는 HTTP 메서드: {method}",
-                        status_code=400,
-                        api_info=request_info,
-                        request_time=request_time
-                    )
+                    logger.error(f"[KIWOOM] 재시도 실패 (API: {data.api_id}): {response.error_message}")
+
+            return response
                     
         except aiohttp.ClientError as e:
             logger.error(f"HTTP 요청 오류: {e}")
@@ -141,6 +139,35 @@ class KiwoomRestApi(StockApi):
                 status_code=500,
                 request_time=request_time
             )
+
+    async def _do_request(
+        self, 
+        data: KiwoomRequest, 
+        token: str, 
+        request_info: dict, 
+        request_time: datetime
+    ) -> KiwoomResponse:
+        """실제 HTTP 요청을 수행하는 내부 헬퍼 메소드"""
+        method = request_info.get('method')
+        headers = self.get_headers(data, token)
+        url = request_info.get('url')
+        title = request_info.get('title')
+
+        async with aiohttp.ClientSession() as session:
+            if method == 'POST':
+                async with session.post(url, headers=headers, json=data.payload) as response:
+                    return await self._process_response(response, request_info, request_time)
+            elif method == 'GET':
+                async with session.get(url, headers=headers, params=data.payload) as response:
+                    return await self._process_response(response, request_info, request_time)
+            else:
+                return KiwoomApiHelper.create_error_response(
+                    error_code="UNSUPPORTED_METHOD",
+                    error_message=f"지원하지 않는 HTTP 메서드: {method}",
+                    status_code=400,
+                    api_info=request_info,
+                    request_time=request_time
+                )
     
     async def _process_response(
         self, 

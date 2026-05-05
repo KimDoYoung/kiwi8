@@ -128,3 +128,34 @@ async def fetch_market_jisu_job(_payload: dict):
     from backend.domains.services.dependency import get_service
     service = get_service("market")
     await service.fetch_and_store_jisu()
+
+
+@job_registry.register("proactive_token_refresh")
+async def proactive_token_refresh_job(_payload: dict):
+    """
+    증권사별 토큰 만료 여부를 확인하고 필요시 갱신하는 스케줄러 잡.
+    내부적으로 BaseTokenManager.refresh_token()이 만료 시간을 체크하므로,
+    여기서는 각 증권사별 API 인스턴스를 가져와 refresh_token을 호출하기만 함.
+    """
+    from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
+    from backend.domains.stkcompanys.kis.kis_service import get_kis_api
+    from backend.domains.stkcompanys.ls.ls_service import get_ls_api
+    
+    logger.info("[스케줄러] 증권사 토큰 갱신 확인 중...")
+    
+    # Kiwoom
+    kiwoom = await get_kiwoom_api()
+    if kiwoom:
+        await kiwoom.token_manager.refresh_token()
+        
+    # KIS
+    kis = await get_kis_api()
+    if kis:
+        await kis.token_manager.refresh_token()
+        
+    # LS
+    ls = await get_ls_api()
+    if ls:
+        await ls.token_manager.refresh_token()
+    
+    logger.info("[스케줄러] 증권사 토큰 갱신 확인 완료")

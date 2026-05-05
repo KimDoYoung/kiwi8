@@ -84,11 +84,14 @@ class KisRestApi(StockApi):
             raise KisApiException(f"해시키 생성 네트워크 오류: {e}")
 
     async def send_request(self, request: KisRequest) -> KisResponse:
-        """API 요청 전송"""
+        """
+        API 요청 전송 및 응답 처리.
+        토큰 만료 시 자동으로 재발급 후 1회 재시도합니다.
+        """
         request_time = datetime.now()
 
         try:
-            # API 정보 조회
+            # API 정보 조회 (검증을 위해 먼저 수행)
             api_info = KisApiHelper.get_request_info(request.api_id)
             if not api_info:
                 return KisApiHelper.create_error_response(
@@ -97,7 +100,7 @@ class KisRestApi(StockApi):
                     request_time=request_time
                 )
 
-            # 요청 검증
+            # 요청 데이터 유효성 검증
             if not KisApiHelper.validate_api_request(request):
                 validation_errors = request.validate_payload()
                 return KisApiHelper.create_error_response(
@@ -107,35 +110,34 @@ class KisRestApi(StockApi):
                     request_time=request_time
                 )
 
-            # 토큰 획득
+            # [Step 1] 첫 번째 시도
             token = await self.token_manager.get_token()
+            response = await self._do_request(request, token, api_info, request_time)
 
-            # TR ID (실전 환경)
-            tr_id = get_tr_id(request.api_id, is_virtual=False)
+            # [Step 2] 토큰 에러 감지 시 재시도
+            # EGW00123: Access Token expired, EGW00121: Invalid Access Token
+            is_token_error = (
+                not response.success and 
+                response.error_code in ['EGW00121', 'EGW00123']
+            )
 
-            # 해시키 생성 (주문 API인 경우)
-            hashkey = None
-            if is_hashkey_required(request.api_id):
-                hashkey = await self.get_hashkey(request.payload)
+            if is_token_error:
+                logger.warning(f"[KIS] API 호출 중 토큰 오류 감지({response.error_code}). 토큰 강제 재발급 후 재시도합니다. (API: {request.api_id})")
+                
+                # 토큰 강제 재발급
+                await self.token_manager.issue_access_token()
+                
+                # 새로운 토큰으로 재시도
+                new_token = await self.token_manager.get_token()
+                logger.info(f"[KIS] 새 토큰으로 재시도 중... (API: {request.api_id})")
+                response = await self._do_request(request, new_token, api_info, request_time)
+                
+                if response.success:
+                    logger.info(f"[KIS] 재시도 성공 (API: {request.api_id})")
+                else:
+                    logger.error(f"[KIS] 재시도 실패 (API: {request.api_id}): {response.error_message}")
 
-            # 헤더 생성
-            headers = self.get_headers(request, token, tr_id, hashkey)
-
-            # URL 구성
-            api_def = get_request_definition(request.api_id)
-            url = f"{self.base_url}{api_def['url']}"
-            method = api_def.get('method', 'GET')
-
-            logger.info(f"[KIS] {api_info['title']} 요청 - URL: {url}, TR_ID: {tr_id}")
-
-            # HTTP 요청
-            async with aiohttp.ClientSession() as session:
-                if method == 'POST':
-                    async with session.post(url, headers=headers, json=request.payload) as response:
-                        return await self._process_response(response, api_info, request_time)
-                else:  # GET
-                    async with session.get(url, headers=headers, params=request.payload) as response:
-                        return await self._process_response(response, api_info, request_time)
+            return response
 
         except aiohttp.ClientError as e:
             logger.error(f"[KIS] HTTP 요청 오류: {e}")
@@ -158,6 +160,41 @@ class KisRestApi(StockApi):
                 error_message=f"요청 처리 중 오류: {e!s}",
                 request_time=request_time
             )
+
+    async def _do_request(
+        self, 
+        request: KisRequest, 
+        token: str, 
+        api_info: dict, 
+        request_time: datetime
+    ) -> KisResponse:
+        """실제 HTTP 요청을 수행하는 내부 헬퍼 메소드"""
+        # TR ID (실전 환경)
+        tr_id = get_tr_id(request.api_id, is_virtual=False)
+
+        # 해시키 생성 (주문 API인 경우)
+        hashkey = None
+        if is_hashkey_required(request.api_id):
+            hashkey = await self.get_hashkey(request.payload)
+
+        # 헤더 생성
+        headers = self.get_headers(request, token, tr_id, hashkey)
+
+        # URL 구성
+        api_def = get_request_definition(request.api_id)
+        url = f"{self.base_url}{api_def['url']}"
+        method = api_def.get('method', 'GET')
+
+        logger.info(f"[KIS] {api_info['title']} 요청 - URL: {url}, TR_ID: {tr_id}")
+
+        # HTTP 요청
+        async with aiohttp.ClientSession() as session:
+            if method == 'POST':
+                async with session.post(url, headers=headers, json=request.payload) as response:
+                    return await self._process_response(response, api_info, request_time)
+            else:  # GET
+                async with session.get(url, headers=headers, params=request.payload) as response:
+                    return await self._process_response(response, api_info, request_time)
 
     async def _process_response(
         self,

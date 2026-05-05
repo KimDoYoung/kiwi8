@@ -172,6 +172,11 @@ CREATE TABLE IF NOT EXISTS kscheduler_job (
   updated_at    TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 초기 스케줄러 잡 등록
+INSERT OR IGNORE INTO kscheduler_job (name, func_name, schedule_type, schedule_expr, enabled) VALUES 
+('fetch_market_jisu', 'fetch_market_jisu', 'interval', 'seconds=300', 1),
+('proactive_token_refresh', 'proactive_token_refresh', 'interval', 'seconds=600', 1);
+
 -- ---------------------------------------------------------------
 -- kscheduler_run: 실행 이력
 -- ---------------------------------------------------------------
