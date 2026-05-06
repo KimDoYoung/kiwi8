@@ -1,130 +1,190 @@
-import ReactECharts from 'echarts-for-react'
-import type { EChartsOption } from 'echarts'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { AgGridReact } from 'ag-grid-react'
+import type { ColDef } from 'ag-grid-community'
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import api from '@/lib/api'
+import Loading from '@/shared/components/Loading'
+import LoadingFail from '@/shared/components/LoadingFail'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
+import { Search, Calendar as CalendarIcon } from 'lucide-react'
+import { fmt, toNum } from '../brokers/accountUtils'
+import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
-// 2026년 1~4월 일별 누적 수익률 (%) 더미 데이터
-const DATES = [
-  '01/02','01/06','01/08','01/10','01/14','01/16','01/20','01/22','01/24','01/28',
-  '02/03','02/05','02/07','02/11','02/13','02/17','02/19','02/21','02/25','02/27',
-  '03/03','03/05','03/07','03/11','03/13','03/17','03/19','03/21','03/25','03/27',
-  '04/01','04/03','04/07','04/09','04/11','04/14','04/16',
-]
+ModuleRegistry.registerModules([AllCommunityModule])
 
-const KIS    =  [0.1,0.5,0.3,0.9,0.6,1.2,0.8,1.5,1.1,1.9, 1.5,2.2,1.8,2.6,2.1,2.9,2.4,3.2,2.7,3.5, 3.0,3.8,3.3,4.1,3.6,4.4,3.9,4.7,4.2,5.0, 4.5,5.3,4.8,5.6,5.1,5.9,6.2]
-const LS     =  [0.5,1.1,0.8,1.6,1.3,2.0,1.6,2.4,2.0,2.8, 2.3,3.1,2.7,3.5,3.0,3.8,3.3,4.1,3.6,4.4, 3.9,4.7,4.2,3.8,4.6,4.0,4.8,5.4,4.9,5.7, 5.1,5.9,5.3,6.1,5.5,6.3,6.8]
-const KIWOOM =  [0.3,0.8,1.2,0.9,1.5,2.1,1.8,2.6,3.1,3.8, 3.5,4.2,4.8,4.1,5.0,5.8,6.2,5.7,6.9,7.4, 7.0,7.8,8.5,8.1,9.0,8.6,9.4,10.2,9.8,10.5, 10.1,11.0,11.8,12.3,11.9,12.7,13.1]
-const KOSPI  =  [0.2,0.6,0.4,0.8,0.5,1.1,0.7,1.3,0.9,1.5, 1.1,1.8,1.4,2.0,1.6,2.2,1.8,2.4,2.0,2.6, 2.2,2.8,2.4,2.0,2.7,2.3,2.9,3.4,3.0,3.6, 3.2,3.8,3.4,4.0,3.6,4.2,4.5]
-
-const lineOption: EChartsOption = {
-  backgroundColor: '#fff',
-  tooltip: {
-    trigger: 'axis',
-    formatter: (params: any) => {
-      const date = params[0].axisValue
-      const rows = params.map((p: any) =>
-        `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color};margin-right:5px"></span>${p.seriesName}: <b>${p.value > 0 ? '+' : ''}${p.value.toFixed(2)}%</b>`
-      ).join('<br/>')
-      return `<div style="font-size:12px">${date}<br/>${rows}</div>`
-    },
-  },
-  legend: {
-    top: 8,
-    data: ['한국투자증권', 'LS증권', '키움증권', 'KOSPI(기준)'],
-    textStyle: { fontSize: 12 },
-  },
-  grid: { top: 50, left: 55, right: 20, bottom: 50 },
-  xAxis: {
-    type: 'category',
-    data: DATES,
-    axisLabel: { fontSize: 11, rotate: 30 },
-    boundaryGap: false,
-  },
-  yAxis: {
-    type: 'value',
-    axisLabel: { formatter: (v: number) => `${v.toFixed(1)}%`, fontSize: 11 },
-    splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } },
-  },
-  series: [
-    { name: '한국투자증권', type: 'line', data: KIS,    smooth: true, lineStyle: { width: 2 }, symbol: 'none', color: '#80624c' },
-    { name: 'LS증권',       type: 'line', data: LS,     smooth: true, lineStyle: { width: 2 }, symbol: 'none', color: '#003378' },
-    { name: '키움증권',     type: 'line', data: KIWOOM, smooth: true, lineStyle: { width: 2 }, symbol: 'none', color: '#e4007f' },
-    { name: 'KOSPI(기준)',  type: 'line', data: KOSPI,  smooth: true, lineStyle: { width: 1.5, type: 'dashed' }, symbol: 'none', color: '#9ca3af' },
-  ],
-}
-
-// 월별 증권사별 수익률 바차트
-const BAR_MONTHS = ['1월', '2월', '3월', '4월']
-const barOption: EChartsOption = {
-  backgroundColor: '#fff',
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: { type: 'shadow' },
-    formatter: (params: any) =>
-      params[0].axisValue + '<br/>' +
-      params.map((p: any) =>
-        `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${p.color};margin-right:5px"></span>${p.seriesName}: <b>${p.value > 0 ? '+' : ''}${p.value.toFixed(2)}%</b>`
-      ).join('<br/>'),
-  },
-  legend: { top: 8, textStyle: { fontSize: 12 } },
-  grid: { top: 50, left: 55, right: 20, bottom: 36 },
-  xAxis: { type: 'category', data: BAR_MONTHS, axisLabel: { fontSize: 12 } },
-  yAxis: {
-    type: 'value',
-    axisLabel: { formatter: (v: number) => `${v.toFixed(1)}%`, fontSize: 11 },
-    splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } },
-  },
-  series: [
-    { name: '한국투자증권', type: 'bar', data: [1.9, 3.5, 5.0, 6.2],   barMaxWidth: 36, color: '#80624c',
-      label: { show: true, position: 'top', formatter: (p: any) => `${p.value.toFixed(1)}%`, fontSize: 11 } },
-    { name: 'LS증권',       type: 'bar', data: [2.8, 4.4, 5.7, 6.8],   barMaxWidth: 36, color: '#003378',
-      label: { show: true, position: 'top', formatter: (p: any) => `${p.value.toFixed(1)}%`, fontSize: 11 } },
-    { name: '키움증권',     type: 'bar', data: [3.8, 7.4, 10.5, 13.1], barMaxWidth: 36, color: '#e4007f',
-      label: { show: true, position: 'top', formatter: (p: any) => `${p.value.toFixed(1)}%`, fontSize: 11 } },
-  ],
+async function fetchProfitTrend(startDate: string, endDate: string) {
+  const res = await api.get(`/api/v1/trend/${startDate}/${endDate}/profit`)
+  return res.data
 }
 
 export default function ProfitTrendPage() {
-  const latest = { kiwoom: 13.1, kis: 6.2, ls: 6.8, kospi: 4.5 }
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - 1)
+    return d.toISOString().split('T')[0]
+  })
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['profitTrend', startDate, endDate],
+    queryFn: () => fetchProfitTrend(startDate, endDate),
+    enabled: false, // 처음에는 수동 조회
+  })
+
+  const handleSearch = () => {
+    refetch()
+  }
+
+  const kiwoomData = data?.data?.kiwoom?.['일자별실현손익'] || []
+  const kisData = data?.data?.kis?.['output1'] || []
+  const lsData = data?.data?.ls?.['FOCCQ33600OutBlock3'] || []
+
+  const defaultColDef = useMemo<ColDef>(() => ({
+    sortable: true,
+    resizable: true,
+    flex: 1,
+    minWidth: 100,
+  }), [])
+
+  const kiwoomCols = useMemo<ColDef[]>(() => [
+    { field: '일자', headerName: '일자', minWidth: 120 },
+    { field: '매수금액', headerName: '매수금액', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '매도금액', headerName: '매도금액', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '당일매도손익', headerName: '당일손익', type: 'numericColumn', cellStyle: (p) => ({ color: toNum(p.value) > 0 ? '#ef4444' : toNum(p.value) < 0 ? '#3b82f6' : 'inherit' }), valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '당일매매수수료', headerName: '수수료', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '당일매매세금', headerName: '세금', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+  ], [])
+
+  const kisCols = useMemo<ColDef[]>(() => [
+    { field: '주식일자', headerName: '일자', minWidth: 120 },
+    { field: '손익금액', headerName: '손익금액', type: 'numericColumn', cellStyle: (p) => ({ color: toNum(p.value) > 0 ? '#ef4444' : toNum(p.value) < 0 ? '#3b82f6' : 'inherit' }), valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '매도금액', headerName: '매도금액', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '매수금액', headerName: '매수금액', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '매매수수료', headerName: '수수료', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '매매세금', headerName: '세금', type: 'numericColumn', valueFormatter: (p) => fmt(toNum(p.value)) },
+  ], [])
+
+  const lsCols = useMemo<ColDef[]>(() => [
+    { field: '기준일', headerName: '일자', minWidth: 120 },
+    { field: '평가손익금액', headerName: '손익금액', type: 'numericColumn', cellStyle: (p) => ({ color: toNum(p.value) > 0 ? '#ef4444' : toNum(p.value) < 0 ? '#3b82f6' : 'inherit' }), valueFormatter: (p) => fmt(toNum(p.value)) },
+    { field: '기간수익률', headerName: '수익률(%)', type: 'numericColumn', valueFormatter: (p) => `${toNum(p.value).toFixed(2)}%` },
+  ], [])
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-gray-50">
-      {/* 헤더 */}
-      <div className="px-4 py-2.5 border-b border-gray-200 bg-white flex items-center gap-3 shrink-0">
-        <span className="text-sm font-bold text-gray-700">통합 수익률 추이</span>
-        <span className="text-xs text-gray-400 font-mono">[1103]</span>
-        <span className="ml-auto text-xs text-gray-400">2026.01.01 ~ 2026.04.17 (YTD)</span>
-      </div>
-
-      {/* KPI 카드 */}
-      <div className="grid grid-cols-4 gap-3 p-4 shrink-0">
-        {[
-          { label: '한국투자증권', value: latest.kis, color: 'text-[#80624c]', bg: 'bg-[#80624c]/5 border-[#80624c]/20' },
-          { label: 'LS증권', value: latest.ls, color: 'text-[#003378]', bg: 'bg-[#003378]/5 border-[#003378]/20' },
-          { label: '키움증권', value: latest.kiwoom, color: 'text-[#e4007f]', bg: 'bg-[#e4007f]/5 border-[#e4007f]/20' },
-          { label: 'KOSPI', value: latest.kospi, color: 'text-gray-600', bg: 'bg-gray-50 border-gray-200' },
-        ].map((card) => (
-          <div key={card.label} className={`rounded-xl border p-4 ${card.bg}`}>
-            <div className="text-xs text-gray-500 mb-1">{card.label} YTD</div>
-            <div className={`text-2xl font-bold ${card.color}`}>
-              +{card.value.toFixed(2)}%
+    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
+      {/* 헤더 및 조회 조건 */}
+      <div className="bg-white border-b border-slate-200 p-4 shrink-0 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg text-white shadow-blue-200 shadow-lg">
+              <CalendarIcon size={20} />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-800 leading-tight">기간별 실현손익</h1>
+              <p className="text-xs text-slate-500">[1103] 증권사별 실현손익 현황을 조회합니다.</p>
             </div>
           </div>
-        ))}
+
+          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <DateRangePicker
+              layout="row"
+              returnFormat="yyyy-MM-dd"
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(s, e) => { setStartDate(s); setEndDate(e) }}
+              className="bg-transparent border-none"
+            />
+            <Button 
+              onClick={handleSearch} 
+              disabled={isLoading}
+              className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-100"
+            >
+              {isLoading ? '조회중...' : (
+                <>
+                  <Search size={16} className="mr-1.5" />
+                  조회
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* 차트 2개 */}
-      <div className="grid grid-cols-2 gap-3 px-4 pb-4 flex-1 min-h-0">
-        <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-col">
-          <div className="text-xs font-semibold text-gray-600 mb-1">누적 수익률 추이 (일별)</div>
-          <div className="flex-1 min-h-0">
-            <ReactECharts option={lineOption} style={{ height: '100%', minHeight: 280 }} />
+      {/* 메인 콘텐츠 영역 */}
+      <div className="flex-1 overflow-auto p-4 space-y-6">
+        {isLoading && <Loading message="증권사별 데이터를 통합 조회 중입니다..." />}
+        {error && <LoadingFail message="데이터 조회 중 오류가 발생했습니다." />}
+        
+        {!data && !isLoading && (
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-white rounded-xl border border-dashed border-slate-300 py-20">
+            <Search size={48} className="mb-4 opacity-20" />
+            <p className="text-lg font-medium">조회 기간을 선택한 후 조회 버튼을 눌러주세요.</p>
+            <p className="text-sm">키움, 한국투자, LS증권의 데이터를 한 번에 가져옵니다.</p>
           </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-col">
-          <div className="text-xs font-semibold text-gray-600 mb-1">월별 수익률 비교</div>
-          <div className="flex-1 min-h-0">
-            <ReactECharts option={barOption} style={{ height: '100%', minHeight: 280 }} />
+        )}
+
+        {data && (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 min-h-0">
+            {/* 한국투자증권 */}
+            <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[500px]">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#80624c]" />
+                  <h2 className="font-semibold text-slate-700">한국투자증권</h2>
+                </div>
+                {kisData.length > 0 && <span className="text-xs text-slate-500 font-medium">{kisData.length}건</span>}
+              </div>
+              <div className="flex-1 ag-theme-alpine">
+                <AgGridReact
+                  rowData={kisData}
+                  columnDefs={kisCols}
+                  defaultColDef={defaultColDef}
+                  overlayNoRowsTemplate="조회된 데이터가 없습니다."
+                />
+              </div>
+            </div>
+
+            {/* LS증권 */}
+            <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[500px]">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#003378]" />
+                  <h2 className="font-semibold text-slate-700">LS증권</h2>
+                </div>
+                {lsData.length > 0 && <span className="text-xs text-slate-500 font-medium">{lsData.length}건</span>}
+              </div>
+              <div className="flex-1 ag-theme-alpine">
+                <AgGridReact
+                  rowData={lsData}
+                  columnDefs={lsCols}
+                  defaultColDef={defaultColDef}
+                  overlayNoRowsTemplate="조회된 데이터가 없습니다."
+                />
+              </div>
+            </div>
+
+            {/* 키움증권 */}
+            <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[500px]">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#e4007f]" />
+                  <h2 className="font-semibold text-slate-700">키움증권</h2>
+                </div>
+                {kiwoomData.length > 0 && <span className="text-xs text-slate-500 font-medium">{kiwoomData.length}건</span>}
+              </div>
+              <div className="flex-1 ag-theme-alpine">
+                <AgGridReact
+                  rowData={kiwoomData}
+                  columnDefs={kiwoomCols}
+                  defaultColDef={defaultColDef}
+                  overlayNoRowsTemplate="조회된 데이터가 없습니다."
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

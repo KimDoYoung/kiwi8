@@ -168,7 +168,7 @@ export default function TotalBalancePage() {
     return (
         <div className="flex flex-col h-full text-base">
             <AccountHeader
-                title="통합 실시간 잔고" screenNo="1102" count={filteredStocks.length}
+                title="통합 계좌 잔고" screenNo="1102" count={filteredStocks.length}
                 예수금={0} 평가금액={totalEval} 손익={totalProfit}
                 onCsv={() => exportCsv(gridRef, '통합_실시간_잔고.csv')}
                 onRefresh={() => refetch()}
