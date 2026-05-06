@@ -76,7 +76,7 @@ export default function ProfitTrendPage() {
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
       {/* 헤더 및 조회 조건 */}
       <div className="bg-white border-b border-slate-200 p-4 shrink-0 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-start gap-6">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg text-white shadow-blue-200 shadow-lg">
               <CalendarIcon size={20} />
@@ -126,9 +126,9 @@ export default function ProfitTrendPage() {
         )}
 
         {data && (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 min-h-0">
+          <div className="grid grid-cols-1 gap-6 min-h-0">
             {/* 한국투자증권 */}
-            <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[500px]">
+            <div className={`flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${kisData.length > 0 ? 'h-[400px]' : ''}`}>
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#80624c]" />
@@ -136,18 +136,23 @@ export default function ProfitTrendPage() {
                 </div>
                 {kisData.length > 0 && <span className="text-xs text-slate-500 font-medium">{kisData.length}건</span>}
               </div>
-              <div className="flex-1 ag-theme-alpine">
-                <AgGridReact
-                  rowData={kisData}
-                  columnDefs={kisCols}
-                  defaultColDef={defaultColDef}
-                  overlayNoRowsTemplate="조회된 데이터가 없습니다."
-                />
-              </div>
+              {kisData.length > 0 ? (
+                <div className="flex-1 ag-theme-alpine">
+                  <AgGridReact
+                    rowData={kisData}
+                    columnDefs={kisCols}
+                    defaultColDef={defaultColDef}
+                  />
+                </div>
+              ) : (
+                <div className="py-2 px-4 text-red-400 bg-slate-50/20 italic text-xs">
+                  해당 기간의 한국투자증권 실현손익 데이터가 없습니다.
+                </div>
+              )}
             </div>
 
             {/* LS증권 */}
-            <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[500px]">
+            <div className={`flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${lsData.length > 0 ? 'h-[400px]' : ''}`}>
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#003378]" />
@@ -155,18 +160,23 @@ export default function ProfitTrendPage() {
                 </div>
                 {lsData.length > 0 && <span className="text-xs text-slate-500 font-medium">{lsData.length}건</span>}
               </div>
-              <div className="flex-1 ag-theme-alpine">
-                <AgGridReact
-                  rowData={lsData}
-                  columnDefs={lsCols}
-                  defaultColDef={defaultColDef}
-                  overlayNoRowsTemplate="조회된 데이터가 없습니다."
-                />
-              </div>
+              {lsData.length > 0 ? (
+                <div className="flex-1 ag-theme-alpine">
+                  <AgGridReact
+                    rowData={lsData}
+                    columnDefs={lsCols}
+                    defaultColDef={defaultColDef}
+                  />
+                </div>
+              ) : (
+                <div className="py-2 px-4 text-red-400 bg-slate-50/20 italic text-xs">
+                  해당 기간의 LS증권 실현손익 데이터가 없습니다.
+                </div>
+              )}
             </div>
 
             {/* 키움증권 */}
-            <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[500px]">
+            <div className={`flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${kiwoomData.length > 0 ? 'h-[400px]' : ''}`}>
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#e4007f]" />
@@ -174,14 +184,19 @@ export default function ProfitTrendPage() {
                 </div>
                 {kiwoomData.length > 0 && <span className="text-xs text-slate-500 font-medium">{kiwoomData.length}건</span>}
               </div>
-              <div className="flex-1 ag-theme-alpine">
-                <AgGridReact
-                  rowData={kiwoomData}
-                  columnDefs={kiwoomCols}
-                  defaultColDef={defaultColDef}
-                  overlayNoRowsTemplate="조회된 데이터가 없습니다."
-                />
-              </div>
+              {kiwoomData.length > 0 ? (
+                <div className="flex-1 ag-theme-alpine">
+                  <AgGridReact
+                    rowData={kiwoomData}
+                    columnDefs={kiwoomCols}
+                    defaultColDef={defaultColDef}
+                  />
+                </div>
+              ) : (
+                <div className="py-2 px-4 text-slate-400 bg-slate-50/20 italic text-xs">
+                  해당 기간의 키움증권 실현손익 데이터가 없습니다.
+                </div>
+              )}
             </div>
           </div>
         )}

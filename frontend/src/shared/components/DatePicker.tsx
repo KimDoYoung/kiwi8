@@ -133,7 +133,6 @@ export function DatePicker({
           selected={selectedDate}
           onSelect={handleSelect}
           locale={ko}
-          captionLayout="dropdown"
           footer={
             <div className="flex justify-end px-3 pb-3">
               <Button size="sm" variant="action" onClick={handleToday}>
