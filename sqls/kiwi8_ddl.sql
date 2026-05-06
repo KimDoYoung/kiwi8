@@ -273,7 +273,7 @@ INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALU
 -- [1100 자산 현황] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
 (11, 3, '1101', '통합 계좌 요약', '/accounts/total', 1),
-(11, 3, '1102', '실시간 통합 잔고', '/accounts/balance', 2),
+(11, 3, '1102', '통합 잔고 내역', '/accounts/balance', 2),
 (11, 3, '1103', '기간별 실현손익', '/accounts/profit-loss', 3),
 (11, 3, '1104', '전 증권사 체결내역', '/accounts/fill', 4);
 
