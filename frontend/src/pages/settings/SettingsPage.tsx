@@ -46,7 +46,7 @@ export default function SettingsPage() {
         setIsTokenLoading(true)
         setTokenStatus(null)
         try {
-            const res = await api.get('/api/v1/kiwoom/issue-new-token')
+            const res = await api.get('/api/v1/stkcompany/kiwoom/issue-new-token')
             if (res.data && res.data.success) {
                 showStatus(setTokenStatus, '키움 토큰이 성공적으로 재발급되었습니다.', 'success')
             } else {
