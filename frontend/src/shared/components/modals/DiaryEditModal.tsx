@@ -93,7 +93,7 @@ export default function DiaryEditModal() {
         })
       } else {
         // 신규 저장
-        res = await api.post('/api/v1/diary', {
+        res = await api.post('/api/v1/diary/', {
           api_id: 'diary_create',
           payload
         })
