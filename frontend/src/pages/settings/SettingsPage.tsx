@@ -235,6 +235,7 @@ export default function SettingsPage() {
                             시스템 캐시
                         </CardTitle>
                         <CardDescription>임시 저장된 시세 및 계산 데이터를 모두 삭제합니다.</CardDescription>
+                        <CardDescription>전일 최종 시세 데이터도 함께 삭제됩니다.</CardDescription>
                     </CardHeader>
                     <CardContent className="mt-auto space-y-4">
                         <StatusDisplay status={cacheStatus} />
