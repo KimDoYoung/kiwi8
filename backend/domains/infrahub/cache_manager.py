@@ -12,7 +12,7 @@ import json
 from typing import Optional
 
 from backend.core.logger import get_logger
-from backend.domains.services.cache_keys import CacheKey
+from backend.domains.infrahub.cache_keys import CacheKey
 
 logger = get_logger(__name__)
 

@@ -7,6 +7,7 @@ from backend.domains.models.settings_model import SettingInfo
 from backend.domains.services.dependency import get_service
 from backend.domains.services.settings_keys import SettingsKey
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper
+from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 
 # APIRouter 인스턴스 생성
 router = APIRouter()
@@ -51,11 +52,16 @@ async def delete_all_cache():
     try:
         cache_mgr = get_service("cache_manager")
         success = await cache_mgr.clear_all()
+
+        prev_price_cache = get_prev_price_cache()
+        await prev_price_cache.clear()
+
         if success:
             logger.info("모든 캐시가 삭제되었습니다.")
             return KiwoomApiHelper.create_success_response(data={"message": "모든 캐시가 삭제되었습니다."})
         else:
-            return KiwoomApiHelper.create_error_response(error_code="CACHE_DELETE_ERROR", error_message="캐시 삭제에 실패했습니다.")
+            logger.warning("stk_cache 테이블 삭제에는 실패했지만 PrevPriceCache는 초기화되었습니다.")
+            return KiwoomApiHelper.create_error_response(error_code="CACHE_DELETE_ERROR", error_message="캐시 삭제에 실패했습니다. PrevPriceCache는 초기화되었습니다.")
     except Exception as e:
         logger.error(f"캐시 삭제 중 오류 발생: {e!s}", exc_info=True)
         return KiwoomApiHelper.create_error_response(

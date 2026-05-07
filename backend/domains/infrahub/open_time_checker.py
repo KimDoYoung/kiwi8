@@ -43,7 +43,7 @@ from zoneinfo import ZoneInfo
 import aiohttp
 
 from backend.core.config import config  # GODATA_API_KEY, TZ
-from backend.domains.services.cache_keys import CacheKey
+from backend.domains.infrahub.cache_keys import CacheKey
 
 Market = Literal["KRX", "NXT"]
 KST = ZoneInfo(getattr(config, "TIME_ZONE", "Asia/Seoul"))
@@ -108,7 +108,7 @@ class OpenTimeChecker:
         key = yyyymmdd(d)
         
         try:
-            from backend.domains.services.cache_manager import CacheManager
+            from backend.domains.infrahub.cache_manager import CacheManager
             cache_mgr = CacheManager.get_instance()
             
             # 1. cache_manager에서 먼저 확인

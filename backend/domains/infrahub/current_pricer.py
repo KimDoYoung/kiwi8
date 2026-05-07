@@ -41,7 +41,7 @@ from datetime import time
 
 from backend.core.logger import get_logger
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker, now_kst
-from backend.domains.services.cache_keys import CacheKey
+from backend.domains.infrahub.cache_keys import CacheKey
 
 logger = get_logger(__name__)
 
@@ -345,7 +345,7 @@ class CurrentPricer:
 
         # 2. CacheManager (DB 기반)
         try:
-            from backend.domains.services.cache_manager import CacheManager
+            from backend.domains.infrahub.cache_manager import CacheManager
             cache_mgr = CacheManager.get_instance()
             raw = await cache_mgr.get(stk_cd, CacheKey.CURRENT_PRICE)
             if raw is not None:
@@ -360,7 +360,7 @@ class CurrentPricer:
     async def _save_to_cache(self, stk_cd: str, price: int) -> None:
         """현재가를 CacheManager에 저장"""
         try:
-            from backend.domains.services.cache_manager import CacheManager
+            from backend.domains.infrahub.cache_manager import CacheManager
             cache_mgr = CacheManager.get_instance()
             await cache_mgr.put(stk_cd, CacheKey.CURRENT_PRICE, json.dumps(price))
             self._mem_cache[stk_cd] = price

@@ -14,6 +14,7 @@ export default function SettingsPage() {
     const [isStkLoading, setIsStkLoading] = useState(false)
     const [isTokenLoading, setIsTokenLoading] = useState(false)
     const [isCacheLoading, setIsCacheLoading] = useState(false)
+    const [selectedTokenBrokers, setSelectedTokenBrokers] = useState<string[]>(['kiwoom', 'kis', 'ls'])
     
     // 상태 메시지 관리를 위한 state
     const [tokenStatus, setTokenStatus] = useState<StatusMessage>(null)
@@ -43,14 +44,39 @@ export default function SettingsPage() {
     }
 
     const handleReissueToken = async () => {
+        if (selectedTokenBrokers.length === 0) {
+            showStatus(setTokenStatus, '재발급할 증권사를 하나 이상 선택해주세요.', 'error')
+            return
+        }
+
         setIsTokenLoading(true)
         setTokenStatus(null)
         try {
-            const res = await api.get('/api/v1/stkcompany/kiwoom/issue-new-token')
-            if (res.data && res.data.success) {
-                showStatus(setTokenStatus, '키움 토큰이 성공적으로 재발급되었습니다.', 'success')
+            const results = await Promise.all(selectedTokenBrokers.map(async (broker) => {
+                const res = await api.get(`/api/v1/stkcompany/${broker}/issue-new-token`)
+                return {
+                    broker,
+                    success: res.data?.success,
+                    error: res.data?.error_message,
+                }
+            }))
+
+            const successBrokers = results.filter(r => r.success).map(r => r.broker)
+            const failedResults = results.filter(r => !r.success)
+            const successLabels = successBrokers.map((broker) =>
+                broker === 'kiwoom' ? '키움증권' : broker === 'kis' ? '한국투자증권' : 'LS증권'
+            )
+            const failedLabels = failedResults.map((r) => {
+                const label = r.broker === 'kiwoom' ? '키움증권' : r.broker === 'kis' ? '한국투자증권' : 'LS증권'
+                return `${label}: ${r.error || '알 수 없는 오류'}`
+            })
+
+            if (failedResults.length === 0) {
+                showStatus(setTokenStatus, `${successLabels.join(', ')} 토큰이 모두 재발급되었습니다.`, 'success')
+            } else if (successBrokers.length === 0) {
+                showStatus(setTokenStatus, `토큰 재발급 실패: ${failedLabels.join('; ')}`, 'error')
             } else {
-                showStatus(setTokenStatus, '토큰 재발급 실패: ' + (res.data?.error_message || '알 수 없는 오류'), 'error')
+                showStatus(setTokenStatus, `${successLabels.join(', ')} 토큰 재발급 완료. 실패: ${failedLabels.join('; ')}`, 'error')
             }
         } catch (error: any) {
             showStatus(setTokenStatus, '토큰 재발급 중 오류 발생: ' + error.message, 'error')
@@ -133,13 +159,39 @@ export default function SettingsPage() {
                             <Key className="w-5 h-5 text-primary" />
                             인증 토큰
                         </CardTitle>
-                        <CardDescription>키움증권 API용 Access Token을 강제로 재발급합니다.</CardDescription>
+                        <CardDescription>선택된 증권사의 API Access Token을 강제로 재발급합니다.</CardDescription>
                     </CardHeader>
                     <CardContent className="mt-auto space-y-4">
+                        <div className="space-y-2">
+                            <div className="text-xs text-gray-500">토큰 재발급 대상 증권사</div>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { key: 'kiwoom', label: '키움증권' },
+                                    { key: 'kis', label: '한국투자증권' },
+                                    { key: 'ls', label: 'LS증권' },
+                                ].map((broker) => (
+                                    <label key={broker.key} className="inline-flex items-center gap-2 px-3 py-2 border rounded-md text-sm cursor-pointer select-none bg-white">
+                                        <input
+                                            type="checkbox"
+                                            className="h-4 w-4 accent-blue-600"
+                                            checked={selectedTokenBrokers.includes(broker.key)}
+                                            onChange={() => {
+                                                setSelectedTokenBrokers((prev) =>
+                                                    prev.includes(broker.key)
+                                                        ? prev.filter((item) => item !== broker.key)
+                                                        : [...prev, broker.key]
+                                                )
+                                            }}
+                                        />
+                                        <span>{broker.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                         <StatusDisplay status={tokenStatus} />
                         <Button 
                             onClick={handleReissueToken} 
-                            disabled={isTokenLoading}
+                            disabled={isTokenLoading || selectedTokenBrokers.length === 0}
                             className="w-full"
                         >
                             <RefreshCw className={`mr-2 h-4 w-4 ${isTokenLoading ? 'animate-spin' : ''}`} />
