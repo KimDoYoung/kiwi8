@@ -28,12 +28,28 @@ def extract_index_data(soup,area_selector):
     if not area:
         return None
     
-    nums = area.select_one(".num_quot").find_all("span", class_=["num", "num2", "num3"])
+    quot_el = area.select_one(".num_quot")
+    if not quot_el:
+        return None
+
+    nums = quot_el.find_all("span", class_=["num", "num2", "num3"])
     
     index_value = nums[0].get_text(strip=True)  # 지수
     diff = nums[1].get_text(strip=True)         # 전일대비
     change_rate = nums[2].get_text(strip=True).replace("퍼센트", "").replace("%", "")  # 등락률
     
+    # 클래스(up/dn)를 확인하여 부호 부여
+    if "dn" in quot_el.get("class", []):
+        if not diff.startswith("-"):
+            diff = "-" + diff
+        if not change_rate.startswith("-"):
+            change_rate = "-" + change_rate
+    elif "up" in quot_el.get("class", []):
+        if not diff.startswith("+"):
+            diff = "+" + diff
+        if not change_rate.startswith("+"):
+            change_rate = "+" + change_rate
+
     return {
         "index": index_value,
         "diff": diff,

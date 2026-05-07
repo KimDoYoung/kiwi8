@@ -1,6 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/shared/components/ui/button'
 
+/**
+ * StocksSelectBox
+ *
+ * 용도:
+ * - 사용자가 종목 목록에서 다중 선택 필터를 편리하게 조정하도록 돕는 팝업/드롭다운용 선택 박스입니다.
+ * - 주로 종목별 필터링, 관심 종목 선택, 또는 보고서/차트에 표시할 종목을 고르는 UI로 사용됩니다.
+ *
+ * 사용법:
+ * 1. `stocks`에 선택 가능한 종목 목록을 전달합니다.
+ * 2. `selectedCodes`에 초기 선택 상태(종목코드 배열)를 전달합니다.
+ * 3. 사용자가 확인 버튼을 누르면 `onConfirm` 콜백에 최종 선택된 코드 배열이 전달됩니다.
+ * 4. `onClose`가 제공되면 취소 버튼 또는 닫기 동작에 사용할 수 있습니다.
+ *
+ * 예시:
+ * <StocksSelectBox
+ *   stocks={[{ stk_cd: '005930', stk_nm: '삼성전자' }]}
+ *   selectedCodes={['005930']}
+ *   onConfirm={(codes) => setSelectedStocks(codes)}
+ *   onClose={() => setIsOpen(false)}
+ * />
+ */
 export interface StockOption {
   stk_cd: string
   stk_nm: string
@@ -20,6 +41,11 @@ export function StocksSelectBox({ stocks, selectedCodes, onConfirm, onClose }: S
     setTempSelected(selectedCodes)
   }, [selectedCodes])
 
+  const sortedStocks = useMemo(
+    () => [...stocks].sort((a, b) => a.stk_nm.localeCompare(b.stk_nm, 'ko-KR')),
+    [stocks],
+  )
+
   const toggleStock = (code: string) => {
     setTempSelected(prev =>
       prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
@@ -30,7 +56,7 @@ export function StocksSelectBox({ stocks, selectedCodes, onConfirm, onClose }: S
     if (tempSelected.length === stocks.length) {
       setTempSelected([])
     } else {
-      setTempSelected(stocks.map(s => s.stk_cd))
+      setTempSelected(sortedStocks.map(s => s.stk_cd))
     }
   }
 

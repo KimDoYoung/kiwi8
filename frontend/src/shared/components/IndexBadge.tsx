@@ -20,26 +20,23 @@ interface IndexBadgeProps {
 const IndexBadge: React.FC<IndexBadgeProps> = ({ name, value, change, percentage }) => {
   const isPositive = change > 0;
   const isNegative = change < 0;
-  
+  const numericPercentage = Number(String(percentage).replace(/[^(\d|\.|\-|\+)]/g, ''))
+
   // GEMINI.md 지침: 상승/수익(text-red-600), 하락/손실(text-blue-600)
   const colorClass = isPositive ? 'text-red-600' : isNegative ? 'text-blue-600' : 'text-gray-600';
   const bgColorClass = isPositive ? 'bg-red-50' : isNegative ? 'bg-blue-50' : 'bg-gray-50';
+  const percentagePrefix = numericPercentage > 0 ? '+' : numericPercentage < 0 ? '-' : '';
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 ${bgColorClass} shadow-sm font-sans text-[12px] h-8`}>
-      {/* 지수 이름: 좌측 정렬 및 강조 */}
       <span className="font-bold text-gray-700 border-r pr-2 border-gray-200">{name}</span>
-      
-      {/* 현재가: 천 단위 콤마 포맷팅 */}
       <span className="font-bold text-gray-900">
         {value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </span>
-      
-      {/* 변동 정보: 상승/하락에 따른 아이콘 및 색상 적용 */}
       <div className={`flex items-center gap-0.5 font-semibold ${colorClass}`}>
         <span>{isPositive ? '▲' : isNegative ? '▼' : '-'}</span>
         <span>{Math.abs(change).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        <span className="ml-0.5">({isPositive ? '+' : ''}{percentage.toFixed(2)}%)</span>
+        <span className="ml-0.5">({percentagePrefix}{Math.abs(numericPercentage).toFixed(2)}%)</span>
       </div>
     </div>
   );
