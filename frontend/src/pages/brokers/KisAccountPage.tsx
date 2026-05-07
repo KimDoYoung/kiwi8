@@ -19,6 +19,8 @@ import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { StocksSelectBox, type StockOption } from '@/shared/components/StocksSelectBox'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -33,6 +35,8 @@ export default function KisAccountPage() {
     const setStock = useStockDetailStore((s) => s.setStock)
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
     const [isSimpleView, setIsSimpleView] = useState(false)
+    const [filterCodes, setFilterCodes] = useState<string[]>([])
+    const [isSelectBoxOpen, setIsSelectBoxOpen] = useState(false)
 
     const { data: menus } = useQuery({
         queryKey: ['menus'],
@@ -46,19 +50,44 @@ export default function KisAccountPage() {
         staleTime: 1000 * 30,
     })
 
-    const stocks: Record<string, unknown>[] = data?.data?.output1 ?? []
+    const rawStocks: Record<string, unknown>[] = data?.data?.output1 ?? []
     const summary = data?.data?.output2?.[0] ?? {}
+
+    const uniqueStocks = useMemo<StockOption[]>(() => {
+        const seen = new Set<string>()
+        const list: StockOption[] = []
+        rawStocks.forEach((s: any) => {
+            const code = String(s['상품번호'] ?? '')
+            const cleanCode = code.startsWith('A') ? code.slice(1) : code
+            const name = String(s['상품명'] ?? '')
+            if (cleanCode && !seen.has(cleanCode)) {
+                seen.add(cleanCode)
+                list.push({ stk_cd: cleanCode, stk_nm: name })
+            }
+        })
+        return list.sort((a, b) => a.stk_nm.localeCompare(b.stk_nm))
+    }, [rawStocks])
 
     const [profitFilter, setProfitFilter] = useState('all')
 
     const filteredStocks = useMemo(() => {
-        if (profitFilter === 'minus') return stocks.filter(s => toNum(s['평가손익금액']) < 0)
-        if (profitFilter === 'plus') return stocks.filter(s => toNum(s['평가손익금액']) > 0)
-        return stocks
-    }, [stocks, profitFilter])
+        let list = rawStocks
+
+        if (filterCodes.length > 0) {
+            list = list.filter(s => {
+                const code = String(s['상품번호'] ?? '')
+                const cleanCode = code.startsWith('A') ? code.slice(1) : code
+                return filterCodes.includes(cleanCode)
+            })
+        }
+
+        if (profitFilter === 'minus') return list.filter(s => toNum(s['평가손익금액']) < 0)
+        if (profitFilter === 'plus') return list.filter(s => toNum(s['평가손익금액']) > 0)
+        return list
+    }, [rawStocks, profitFilter, filterCodes])
 
     const totalMaeip = useMemo(() =>
-        stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
+        rawStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [rawStocks])
 
     const 예수금 = toNum(summary['예수금총금액'])
     const 평가금액 = toNum(summary['총평가금액'])
@@ -70,7 +99,14 @@ export default function KisAccountPage() {
 
     const gridData = useMemo(() => [
         ...filteredStocks,
-        { 상품명: '합계', 매입금액: sumMaeip, 평가금액: sumPyeong, 평가손익금액: sumSonik, _isSummary: true },
+        { 
+            상품명: '합계', 
+            매입금액: sumMaeip, 
+            평가금액: sumPyeong, 
+            평가손익금액: sumSonik, 
+            평가손익율: sumMaeip !== 0 ? (sumSonik / sumMaeip) * 100 : 0,
+            _isSummary: true 
+        },
     ], [filteredStocks, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
@@ -175,7 +211,8 @@ export default function KisAccountPage() {
             },
         ]
 
-        return isSimpleView ? allCols.filter(col => col.simple) : allCols
+        const strip = (cols: (ColDef & { simple?: boolean })[]) => cols.map(({ simple: _, ...col }) => col)
+        return isSimpleView ? strip(allCols.filter(col => col.simple)) : strip(allCols)
     }, [totalMaeip, sumMaeip, openOrderModal, isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({
@@ -235,9 +272,26 @@ export default function KisAccountPage() {
                     ]}
                     value={profitFilter}
                     onValueChange={setProfitFilter}
-                    className="h-[26px] bg-white"
+                    className="h-[26px] bg-white mr-4"
                     itemClassName="h-[24px] text-xs px-3"
                 />
+
+                <Popover open={isSelectBoxOpen} onOpenChange={setIsSelectBoxOpen}>
+                    <PopoverTrigger className="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded border border-indigo-200 transition-colors mr-2">
+                        종목선택 {filterCodes.length > 0 && `(${filterCodes.length})`}
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-auto p-3">
+                        <StocksSelectBox 
+                            stocks={uniqueStocks} 
+                            selectedCodes={filterCodes} 
+                            onConfirm={(codes) => {
+                                setFilterCodes(codes)
+                                setIsSelectBoxOpen(false)
+                            }}
+                            onClose={() => setIsSelectBoxOpen(false)}
+                        />
+                    </PopoverContent>
+                </Popover>
             </AccountHeader>
 
             <div className="flex-1 ag-theme-alpine overflow-hidden">

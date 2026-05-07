@@ -99,6 +99,7 @@ export function AccountHeader({
   손익 = 0,
   onCsv,
   onRefresh,
+  isRefreshing = false,
   children,
 }: {
   title: string
@@ -111,6 +112,7 @@ export function AccountHeader({
   손익?: number
   onCsv: () => void
   onRefresh: () => void
+  isRefreshing?: boolean
   children?: React.ReactNode
 }) {
   return (
@@ -157,9 +159,14 @@ export function AccountHeader({
       <span className="mx-1" />
       <button
         onClick={onRefresh}
-        className="px-2.5 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 rounded border border-blue-200 transition-colors"
+        disabled={isRefreshing}
+        className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+          isRefreshing
+            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+            : 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
+        }`}
       >
-        새로고침
+        {isRefreshing ? '로딩중...' : '새로고침'}
       </button>
     </div>
   )

@@ -119,7 +119,8 @@ def _normalize_total_entry(row: dict, broker: str) -> dict:
         qty = row.get('잔고수량', 0)
         eval_amt = row.get('평가금액', 0)
         pl_amt = row.get('평가손익', 0)
-        pl_rt = row.get('수익률') or row.get('보유비중') or 0
+        # LS API 'sunikrt' field is mapped to '수익율'. Use it with fallback to '수익률'
+        pl_rt = row.get('수익율') or row.get('수익률') or 0
     else:
         avg_price = 0
         qty = 0
@@ -127,6 +128,13 @@ def _normalize_total_entry(row: dict, broker: str) -> dict:
         pl_amt = 0
         pl_rt = 0
 
+    # Calculate profit rate manually to ensure consistency across brokers
+    maeip_amt = parse_price(row.get('매입금액', 0))
+    if maeip_amt != 0:
+        pl_rt = (parse_price(pl_amt) / maeip_amt) * 100
+    else:
+        pl_rt = 0.0
+    
     return {
         '브로커': broker,
         '종목코드': _normalize_stock_code(row.get('종목코드') or row.get('상품번호') or row.get('종목번호')),
@@ -134,10 +142,10 @@ def _normalize_total_entry(row: dict, broker: str) -> dict:
         '현재가': parse_price(row.get('현재가', 0)),
         '평단가': parse_price(avg_price),
         '수량': parse_price(qty),
-        '매입금액': parse_price(row.get('매입금액', 0)),
+        '매입금액': maeip_amt,
         '평가금액': parse_price(eval_amt),
         '손익금액': parse_price(pl_amt),
-        '손익율': float(pl_rt) if pl_rt else 0.0,
+        '손익율': float(pl_rt),
         '전일대비': row.get('전일대비', 0),
         '가격추세': row.get('가격추세', '-'),
         '일주당': row.get('1주당', 0),

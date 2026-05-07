@@ -19,6 +19,8 @@ import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { StocksSelectBox, type StockOption } from '@/shared/components/StocksSelectBox'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -47,23 +49,45 @@ export default function KiwoomAccountPage() {
 
     const [profitFilter, setProfitFilter] = useState('all')
     const [isSimpleView, setIsSimpleView] = useState(false)
+    const [isRefreshing, setIsRefreshing] = useState(false)
+    const [filterCodes, setFilterCodes] = useState<string[]>([])
+    const [isSelectBoxOpen, setIsSelectBoxOpen] = useState(false)
 
     const rawStocks: Record<string, unknown>[] = data?.data?.종목별계좌평가현황 ?? []
 
+    const uniqueStocks = useMemo<StockOption[]>(() => {
+        const seen = new Set<string>()
+        const list: StockOption[] = []
+        rawStocks.forEach((s: any) => {
+            const code = String(s['종목코드'] ?? '')
+            const cleanCode = code.startsWith('A') ? code.slice(1) : code
+            const name = String(s['종목명'] ?? '')
+            if (cleanCode && !seen.has(cleanCode)) {
+                seen.add(cleanCode)
+                list.push({ stk_cd: cleanCode, stk_nm: name })
+            }
+        })
+        return list.sort((a, b) => a.stk_nm.localeCompare(b.stk_nm))
+    }, [rawStocks])
+
     // 필터링 및 종목코드 가공
     const stocks = useMemo(() => {
-        const list: Record<string, unknown>[] = rawStocks.map((s) => {
+        let list: Record<string, unknown>[] = rawStocks.map((s) => {
             const code = String(s['종목코드'] ?? '')
             return { ...s, 종목코드: code.startsWith('A') ? code.slice(1) : code }
         })
 
+        if (filterCodes.length > 0) {
+            list = list.filter(s => filterCodes.includes(String(s.종목코드)))
+        }
+
         if (profitFilter === 'minus') return list.filter(s => (toNum(s['평가금액']) - toNum(s['매입금액'])) < 0)
         if (profitFilter === 'plus') return list.filter(s => (toNum(s['평가금액']) - toNum(s['매입금액'])) > 0)
         return list
-    }, [rawStocks, profitFilter])
+    }, [rawStocks, profitFilter, filterCodes])
 
     const totalMaeip = useMemo(() =>
-        stocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [stocks])
+        rawStocks.reduce((sum, s) => sum + toNum((s as any)['매입금액']), 0), [rawStocks])
 
     const summary = data?.data ?? {}
     const 예수금 = toNum(summary['예수금'])
@@ -77,7 +101,14 @@ export default function KiwoomAccountPage() {
 
     const gridData = useMemo(() => [
         ...stocks,
-        { 종목명: '합계', 매입금액: sumMaeip, 평가금액: sumPyeong, 손익금액: sumSonik, _isSummary: true },
+        { 
+            종목명: '합계', 
+            매입금액: sumMaeip, 
+            평가금액: sumPyeong, 
+            손익금액: sumSonik, 
+            손익율: sumMaeip !== 0 ? (sumSonik / sumMaeip) * 100 : 0,
+            _isSummary: true 
+        },
     ], [stocks, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
@@ -172,7 +203,8 @@ export default function KiwoomAccountPage() {
             },
         ]
 
-        return isSimpleView ? allCols.filter(col => col.simple) : allCols
+        const strip = (cols: (ColDef & { simple?: boolean })[]) => cols.map(({ simple: _, ...col }) => col)
+        return isSimpleView ? strip(allCols.filter(col => col.simple)) : strip(allCols)
     }, [totalMaeip, sumMaeip, openOrderModal, isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({
@@ -201,7 +233,8 @@ export default function KiwoomAccountPage() {
                 title="키움 계좌현황" screenNo="4101" count={stocks.length}
                 예수금={예수금} 평가금액={평가금액} 손익={손익}
                 onCsv={() => exportCsv(gridRef, '키움_계좌현황.csv')}
-                onRefresh={() => refetch()}
+                onRefresh={async () => { setIsRefreshing(true); await refetch(); setIsRefreshing(false); }}
+                isRefreshing={isRefreshing}
             >
                 <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
                     <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>
@@ -231,9 +264,26 @@ export default function KiwoomAccountPage() {
                     ]}
                     value={profitFilter}
                     onValueChange={setProfitFilter}
-                    className="h-[26px] bg-white"
+                    className="h-[26px] bg-white mr-4"
                     itemClassName="h-[24px] text-xs px-3"
                 />
+
+                <Popover open={isSelectBoxOpen} onOpenChange={setIsSelectBoxOpen}>
+                    <PopoverTrigger className="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded border border-indigo-200 transition-colors mr-2">
+                        종목선택 {filterCodes.length > 0 && `(${filterCodes.length})`}
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-auto p-3">
+                        <StocksSelectBox 
+                            stocks={uniqueStocks} 
+                            selectedCodes={filterCodes} 
+                            onConfirm={(codes) => {
+                                setFilterCodes(codes)
+                                setIsSelectBoxOpen(false)
+                            }}
+                            onClose={() => setIsSelectBoxOpen(false)}
+                        />
+                    </PopoverContent>
+                </Popover>
             </AccountHeader>
 
             <div className="flex-1 ag-theme-alpine overflow-hidden">

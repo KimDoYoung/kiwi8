@@ -19,6 +19,8 @@ import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { StocksSelectBox, type StockOption } from '@/shared/components/StocksSelectBox'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -34,6 +36,9 @@ export default function TotalBalancePage() {
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
     const [isSimpleView, setIsSimpleView] = useState(false)
     const [profitFilter, setProfitFilter] = useState('all')
+    const [isRefreshing, setIsRefreshing] = useState(false)
+    const [filterCodes, setFilterCodes] = useState<string[]>([])
+    const [isSelectBoxOpen, setIsSelectBoxOpen] = useState(false)
 
     const { data: menus } = useQuery({
         queryKey: ['menus'],
@@ -49,11 +54,36 @@ export default function TotalBalancePage() {
 
     const allStocks: Record<string, unknown>[] = data?.data?.totalAccountList ?? []
 
+    const uniqueStocks = useMemo<StockOption[]>(() => {
+        const seen = new Set<string>()
+        const list: StockOption[] = []
+        allStocks.forEach((s: any) => {
+            const code = String(s['종목코드'] ?? '')
+            const cleanCode = code.startsWith('A') ? code.slice(1) : code
+            const name = String(s['종목명'] ?? '')
+            if (cleanCode && !seen.has(cleanCode)) {
+                seen.add(cleanCode)
+                list.push({ stk_cd: cleanCode, stk_nm: name })
+            }
+        })
+        return list.sort((a, b) => a.stk_nm.localeCompare(b.stk_nm))
+    }, [allStocks])
+
     const filteredStocks = useMemo(() => {
-        if (profitFilter === 'minus') return allStocks.filter(s => toNum(s['손익금액']) < 0)
-        if (profitFilter === 'plus') return allStocks.filter(s => toNum(s['손익금액']) > 0)
-        return allStocks
-    }, [allStocks, profitFilter])
+        let list = allStocks
+
+        if (filterCodes.length > 0) {
+            list = list.filter(s => {
+                const code = String(s['종목코드'] ?? '')
+                const cleanCode = code.startsWith('A') ? code.slice(1) : code
+                return filterCodes.includes(cleanCode)
+            })
+        }
+
+        if (profitFilter === 'minus') return list.filter(s => toNum(s['손익금액']) < 0)
+        if (profitFilter === 'plus') return list.filter(s => toNum(s['손익금액']) > 0)
+        return list
+    }, [allStocks, profitFilter, filterCodes])
 
     const totalMaeip = useMemo(() =>
         allStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [allStocks])
@@ -70,7 +100,14 @@ export default function TotalBalancePage() {
 
     const gridData = useMemo(() => [
         ...filteredStocks,
-        { 종목명: '합계', 매입금액: sumMaeip, 평가금액: sumPyeong, 손익금액: sumSonik, _isSummary: true },
+        { 
+            종목명: '합계', 
+            매입금액: sumMaeip, 
+            평가금액: sumPyeong, 
+            손익금액: sumSonik, 
+            손익율: sumMaeip !== 0 ? (sumSonik / sumMaeip) * 100 : 0,
+            _isSummary: true 
+        },
     ], [filteredStocks, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
@@ -171,7 +208,8 @@ export default function TotalBalancePage() {
                 title="통합 계좌 잔고" screenNo="1102" count={filteredStocks.length}
                 예수금={0} 평가금액={totalEval} 손익={totalProfit}
                 onCsv={() => exportCsv(gridRef, '통합_실시간_잔고.csv')}
-                onRefresh={() => refetch()}
+                onRefresh={async () => { setIsRefreshing(true); await refetch(); setIsRefreshing(false); }}
+                isRefreshing={isRefreshing}
             >
                 <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
                     <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>
@@ -190,9 +228,26 @@ export default function TotalBalancePage() {
                     ]}
                     value={profitFilter}
                     onValueChange={setProfitFilter}
-                    className="h-[26px] bg-white"
+                    className="h-[26px] bg-white mr-4"
                     itemClassName="h-[24px] text-xs px-3"
                 />
+
+                <Popover open={isSelectBoxOpen} onOpenChange={setIsSelectBoxOpen}>
+                    <PopoverTrigger className="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded border border-indigo-200 transition-colors mr-2">
+                        종목선택 {filterCodes.length > 0 && `(${filterCodes.length})`}
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-auto p-3">
+                        <StocksSelectBox 
+                            stocks={uniqueStocks} 
+                            selectedCodes={filterCodes} 
+                            onConfirm={(codes) => {
+                                setFilterCodes(codes)
+                                setIsSelectBoxOpen(false)
+                            }}
+                            onClose={() => setIsSelectBoxOpen(false)}
+                        />
+                    </PopoverContent>
+                </Popover>
             </AccountHeader>
 
             <div className="flex-1 ag-theme-alpine overflow-hidden">
