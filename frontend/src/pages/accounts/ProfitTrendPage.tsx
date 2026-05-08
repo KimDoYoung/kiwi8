@@ -8,7 +8,7 @@ import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { Button } from '@/shared/components/ui/button'
 import { Search, Calendar as CalendarIcon } from 'lucide-react'
-import { fmt, toNum } from '../brokers/accountUtils'
+import { fmt, toNum } from '@/lib/utils'
 import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
 ModuleRegistry.registerModules([AllCommunityModule])
