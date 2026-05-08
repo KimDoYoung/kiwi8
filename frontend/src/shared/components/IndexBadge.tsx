@@ -20,7 +20,7 @@ interface IndexBadgeProps {
 const IndexBadge: React.FC<IndexBadgeProps> = ({ name, value, change, percentage }) => {
   const isPositive = change > 0;
   const isNegative = change < 0;
-  const numericPercentage = Number(String(percentage).replace(/[^(\d|\.|\-|\+)]/g, ''))
+  const numericPercentage = Number(String(percentage).replace(/[^(\d|.|-|+)]/g, ''))
 
   // GEMINI.md 지침: 상승/수익(text-red-600), 하락/손실(text-blue-600)
   const colorClass = isPositive ? 'text-red-600' : isNegative ? 'text-blue-600' : 'text-gray-600';

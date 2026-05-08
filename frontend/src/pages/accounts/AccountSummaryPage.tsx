@@ -18,6 +18,14 @@ import { cn, formatCost } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 
+interface ChartFormatterParams {
+    name: string;
+    value: number | number[];
+    percent?: number;
+    axisValue?: string;
+    data?: unknown;
+}
+
 interface AccountData {
     id: string
     증권사: string
@@ -120,7 +128,7 @@ export default function AccountSummaryPage() {
                     value: acc.평가손익,
                     itemStyle: { color: '#cbd5e1' }
                 })),
-                label: { show: true, position: 'top', fontSize: 10, formatter: (p: any) => formatCost(p.value) }
+                label: { show: true, position: 'top', fontSize: 10, formatter: (p: unknown) => formatCost((p as ChartFormatterParams).value as number) }
             }
         ]
     }

@@ -78,15 +78,29 @@ DATA.forEach((d) => {
   const h = d.time.slice(0, 2) + '시'
   hourBuckets[h] = (hourBuckets[h] ?? 0) + d.amount / 1_000_000
 })
+interface ChartFormatterParams {
+  name: string;
+  value: number | number[];
+  percent?: number;
+  axisValue?: string;
+  data?: unknown;
+}
+
 const hourBarOption: EChartsOption = {
   backgroundColor: '#fff',
-  tooltip: { trigger: 'axis', formatter: (p: any) => `${p[0].axisValue}<br/>거래대금: <b>${p[0].value.toFixed(1)}백만원</b>` },
+  tooltip: { trigger: 'axis', formatter: (params: unknown) => {
+    const p = params as ChartFormatterParams[];
+    return `${p[0].axisValue}<br/>거래대금: <b>${(p[0].value as number).toFixed(1)}백만원</b>` 
+  }},
   grid: { top: 20, left: 52, right: 12, bottom: 36 },
   xAxis: { type: 'category', data: Object.keys(hourBuckets), axisLabel: { fontSize: 11 } },
   yAxis: { type: 'value', axisLabel: { formatter: (v: number) => `${v.toFixed(0)}M`, fontSize: 10 }, splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } } },
   series: [{ type: 'bar', data: Object.values(hourBuckets).map((v) => +v.toFixed(2)), barMaxWidth: 40,
     itemStyle: { color: '#6366f1' },
-    label: { show: true, position: 'top', formatter: (p: any) => `${p.value.toFixed(1)}`, fontSize: 10 },
+    label: { show: true, position: 'top', formatter: (params: unknown) => {
+      const p = params as ChartFormatterParams;
+      return `${(p.value as number).toFixed(1)}`;
+    }, fontSize: 10 },
   }],
 }
 
@@ -95,7 +109,10 @@ const buyAmt = DATA.filter((d) => d.side === '매수').reduce((s, d) => s + d.am
 const sellAmt = DATA.filter((d) => d.side === '매도').reduce((s, d) => s + d.amount, 0)
 const buySellOption: EChartsOption = {
   backgroundColor: '#fff',
-  tooltip: { trigger: 'item', formatter: (p: any) => `${p.name}: ${(p.value / 1_000_000).toFixed(1)}백만원 (${p.percent}%)` },
+  tooltip: { trigger: 'item', formatter: (params: unknown) => {
+    const p = params as ChartFormatterParams;
+    return `${p.name}: ${(p.value as number / 1_000_000).toFixed(1)}백만원 (${p.percent}%)`;
+  } },
   legend: { bottom: 8, textStyle: { fontSize: 11 } },
   series: [{
     type: 'pie', radius: ['48%', '72%'], center: ['50%', '45%'],

@@ -62,9 +62,9 @@ export default function DiaryEditModal() {
         setStkNm('')
         showMessage('종목 정보를 찾을 수 없습니다.', 'error')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setStkNm('')
-      showMessage('종목 검색 오류: ' + error.message, 'error')
+      showMessage('종목 검색 오류: ' + (error as Error).message, 'error')
     } finally {
       setSearching(false)
     }
@@ -107,9 +107,10 @@ export default function DiaryEditModal() {
         console.error('Save diary failed:', res.data)
         showMessage(res.data?.error_message || '저장 실패', 'error')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Save diary error:', error)
-      showMessage('저장 오류: ' + (error.response?.data?.error_message || error.message), 'error')
+      const err = error as { response?: { data?: { error_message?: string } }, message?: string };
+      showMessage('저장 오류: ' + (err.response?.data?.error_message || err.message || '알 수 없는 오류'), 'error')
     } finally {
       setLoading(false)
     }

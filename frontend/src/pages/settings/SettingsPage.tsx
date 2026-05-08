@@ -9,6 +9,11 @@ type StatusMessage = {
     type: 'success' | 'error'
 } | null
 
+interface SettingItem {
+    name: string
+    value: string
+}
+
 export default function SettingsPage() {
     const [lastStkFill, setLastStkFill] = useState<string>('정보 없음')
     const [isStkLoading, setIsStkLoading] = useState(false)
@@ -29,7 +34,7 @@ export default function SettingsPage() {
         try {
             const res = await api.get('/api/v1/settings')
             const settings = res.data
-            const lastFill = settings.find((s: any) => s.name === "마지막으로 stk_info를 채운 시각")
+            const lastFill = settings.find((s: SettingItem) => s.name === "마지막으로 stk_info를 채운 시각")
             if (lastFill) {
                 setLastStkFill(lastFill.value)
             }
@@ -78,8 +83,8 @@ export default function SettingsPage() {
             } else {
                 showStatus(setTokenStatus, `${successLabels.join(', ')} 토큰 재발급 완료. 실패: ${failedLabels.join('; ')}`, 'error')
             }
-        } catch (error: any) {
-            showStatus(setTokenStatus, '토큰 재발급 중 오류 발생: ' + error.message, 'error')
+        } catch (error: unknown) {
+            showStatus(setTokenStatus, '토큰 재발급 중 오류 발생: ' + (error as Error).message, 'error')
         } finally {
             setIsTokenLoading(false)
         }
@@ -98,8 +103,8 @@ export default function SettingsPage() {
             } else {
                 showStatus(setStkStatus, '종목 정보 업데이트 실패: ' + (res.data?.error_message || '알 수 없는 오류'), 'error')
             }
-        } catch (error: any) {
-            showStatus(setStkStatus, '종목 정보 업데이트 중 오류 발생: ' + error.message, 'error')
+        } catch (error: unknown) {
+            showStatus(setStkStatus, '종목 정보 업데이트 중 오류 발생: ' + (error as Error).message, 'error')
         } finally {
             setIsStkLoading(false)
         }
@@ -116,8 +121,8 @@ export default function SettingsPage() {
             } else {
                 showStatus(setCacheStatus, '캐시 삭제 실패: ' + (res.data?.error_message || '알 수 없는 오류'), 'error')
             }
-        } catch (error: any) {
-            showStatus(setCacheStatus, '캐시 삭제 중 오류 발생: ' + error.message, 'error')
+        } catch (error: unknown) {
+            showStatus(setCacheStatus, '캐시 삭제 중 오류 발생: ' + (error as Error).message, 'error')
         } finally {
             setIsCacheLoading(false)
         }

@@ -6,7 +6,7 @@ import api from '@/lib/api'
 import { toNum, fmt } from '@/pages/brokers/accountUtils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search } from 'lucide-react'
+import { LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search } from 'lucide-react'
 import { findStock, type StockSearchItem } from '@/services/stockService'
 import { InputWithIcon } from '@/shared/components/InputWithIcon'
 
@@ -113,7 +113,7 @@ function StatItem({ label, value, unit = '' }: { label: string; value: string | 
 }
 
 /** 섹션 카드 컴포넌트 */
-function SectionCard({ title, icon: Icon, children, className = '' }: { title: string; icon: any; children: React.ReactNode; className?: string }) {
+function SectionCard({ title, icon: Icon, children, className = '' }: { title: string; icon: LucideIcon; children: React.ReactNode; className?: string }) {
   return (
     <div className={`bg-white border border-gray-200 rounded shadow-sm overflow-hidden flex flex-col min-w-[320px] flex-1 ${className}`}>
       <div className="px-2.5 py-1.5 bg-gray-50 border-b border-gray-200 flex items-center gap-1.5 shrink-0">
@@ -136,7 +136,7 @@ function formatDate(dateStr: string) {
 }
 
 /** 부호 및 퍼센트 포맷팅 (중복 부호 방지) */
-function formatChange(value: any, rate: any) {
+function formatChange(value: string | number, rate: string | number) {
   const v = String(value || '')
   const r = String(rate || '')
   
@@ -163,14 +163,14 @@ export default function StockDetailPage() {
 
   const info = data?.data || {}
 
-  const priceClass = (v: any) => {
+  const priceClass = (v: string | number) => {
     const n = toNum(v)
     if (n > 0) return 'text-red-600'
     if (n < 0) return 'text-blue-600'
     return 'text-gray-600'
   }
 
-  const renderInfoRow = (label: string, value: any, options: { isPrice?: boolean; isNum?: boolean; unit?: string; className?: string } = {}) => (
+  const renderInfoRow = (label: string, value: string | number | undefined | null, options: { isPrice?: boolean; isNum?: boolean; unit?: string; className?: string } = {}) => (
     <div className="flex justify-between items-center py-0.5 border-b border-gray-100 last:border-0">
       <span className="text-gray-500 shrink-0 mr-2">{label}</span>
       <span className={`font-semibold text-right ${options.className || 'text-gray-800'}`}>

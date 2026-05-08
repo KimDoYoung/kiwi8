@@ -77,9 +77,10 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
       } else {
         setError('로그인 실패')
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.detail ?? '서버에 연결할 수 없습니다.'
-      setError(msg)
+    } catch (err: unknown) {
+      const errorResponse = err as { response?: { data?: { detail?: string } } };
+      const errorMsg = errorResponse.response?.data?.detail ?? '서버에 연결할 수 없습니다.'
+      setError(errorMsg)
       setPassword('')
       reshufflePad()
     } finally {

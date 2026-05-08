@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { AgGridReact } from 'ag-grid-react'
+import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
 import type { ColDef, GridReadyEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import {
- 
   Search, 
   Plus, 
   Edit2, 
@@ -18,7 +17,7 @@ import { format, subDays } from 'date-fns'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { useModalStore } from '@/store/modalStore'
+import { useModalStore, type DiaryInitialData } from '@/store/modalStore'
 import api from '@/lib/api'
 
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -89,12 +88,12 @@ export default function StkDiaryList() {
       } else {
         alert('삭제 실패: ' + (res.data?.error_message || '알 수 없는 오류'))
       }
-    } catch (error: any) {
-      alert('삭제 중 오류 발생: ' + error.message)
+    } catch (error: unknown) {
+      alert('삭제 중 오류 발생: ' + (error as Error).message)
     }
   }
 
-  const columnDefs: ColDef[] = [
+  const columnDefs: ColDef<DiaryEntry>[] = [
     { 
       headerName: '날짜', 
       field: 'ymd', 
@@ -130,13 +129,13 @@ export default function StkDiaryList() {
       headerName: '관리',
       width: 100,
       pinned: 'right',
-      cellRenderer: (params: any) => (
+      cellRenderer: (params: CustomCellRendererProps<DiaryEntry>) => (
         <div className="flex items-center gap-1 h-full">
           <Button 
             variant="ghost" 
             size="icon" 
             className="h-8 w-8 text-blue-600"
-            onClick={() => openDiaryEditModal(params.data)}
+            onClick={() => params.data && openDiaryEditModal(params.data as unknown as DiaryInitialData)}
           >
             <Edit2 className="h-4 w-4" />
           </Button>
@@ -144,7 +143,7 @@ export default function StkDiaryList() {
             variant="ghost" 
             size="icon" 
             className="h-8 w-8 text-destructive"
-            onClick={() => handleDelete(params.data.id)}
+            onClick={() => params.data && handleDelete(params.data.id)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

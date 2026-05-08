@@ -70,8 +70,8 @@ export default function StockFindModal() {
       } else {
         showMessage(res.data?.error_message || '검색 중 오류가 발생했습니다.', 'error')
       }
-    } catch (error: any) {
-      showMessage('검색 중 오류 발생: ' + error.message, 'error')
+    } catch (error: unknown) {
+      showMessage('검색 중 오류 발생: ' + (error as Error).message, 'error')
     } finally {
       setLoading(false)
     }
@@ -87,8 +87,8 @@ export default function StockFindModal() {
       } else {
         showMessage(res.data?.error_message || '추가 실패', 'error')
       }
-    } catch (error: any) {
-      showMessage('추가 중 오류 발생: ' + error.message, 'error')
+    } catch (error: unknown) {
+      showMessage('추가 중 오류 발생: ' + (error as Error).message, 'error')
     }
   }
 

@@ -39,6 +39,12 @@ export interface SchedulerStats {
   active_locks: number
 }
 
+export interface SchedulerActionResponse {
+  success: boolean
+  message?: string
+  error_message?: string
+}
+
 export const getSchedulerJobs = async (): Promise<SchedulerJob[]> => {
   const response = await api.get('/api/v1/scheduler/jobs')
   return response.data.data.jobs
@@ -54,17 +60,17 @@ export const getSchedulerStats = async (): Promise<SchedulerStats> => {
   return response.data.data
 }
 
-export const enableJob = async (jobId: number): Promise<any> => {
+export const enableJob = async (jobId: number): Promise<SchedulerActionResponse> => {
   const response = await api.post(`/api/v1/scheduler/jobs/${jobId}/enable`)
   return response.data
 }
 
-export const disableJob = async (jobId: number): Promise<any> => {
+export const disableJob = async (jobId: number): Promise<SchedulerActionResponse> => {
   const response = await api.post(`/api/v1/scheduler/jobs/${jobId}/disable`)
   return response.data
 }
 
-export const deleteJob = async (jobId: number): Promise<any> => {
+export const deleteJob = async (jobId: number): Promise<SchedulerActionResponse> => {
   const response = await api.delete(`/api/v1/scheduler/jobs/${jobId}`)
   return response.data
 }
