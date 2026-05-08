@@ -73,7 +73,7 @@ export function StocksSelectBox({ stocks, selectedCodes, onConfirm, onClose }: S
       </div>
 
       <div className="grid grid-cols-3 gap-y-1 gap-x-3 max-h-[300px] overflow-y-auto pr-1">
-        {stocks.map(stock => (
+        {sortedStocks.map(stock => (
           <div 
             key={stock.stk_cd} 
             className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer" 

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { AgGridReact } from 'ag-grid-react'
+import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useModalStore } from '@/store/modalStore'
@@ -19,8 +19,8 @@ import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { StocksSelectBox, type StockOption } from '@/shared/components/StocksSelectBox'
+import { StockFilterButton } from '@/shared/components/StockFilterButton'
+import { type StockOption } from '@/shared/components/StocksSelectBox'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -36,7 +36,6 @@ export default function KisAccountPage() {
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
     const [isSimpleView, setIsSimpleView] = useState(false)
     const [filterCodes, setFilterCodes] = useState<string[]>([])
-    const [isSelectBoxOpen, setIsSelectBoxOpen] = useState(false)
 
     const { data: menus } = useQuery({
         queryKey: ['menus'],
@@ -50,13 +49,13 @@ export default function KisAccountPage() {
         staleTime: 1000 * 30,
     })
 
-    const rawStocks: Record<string, unknown>[] = data?.data?.output1 ?? []
+    const rawStocks = useMemo<Record<string, unknown>[]>(() => data?.data?.output1 ?? [], [data])
     const summary = data?.data?.output2?.[0] ?? {}
 
     const uniqueStocks = useMemo<StockOption[]>(() => {
         const seen = new Set<string>()
         const list: StockOption[] = []
-        rawStocks.forEach((s: any) => {
+        rawStocks.forEach((s: KisStockItem) => {
             const code = String(s['상품번호'] ?? '')
             const cleanCode = code.startsWith('A') ? code.slice(1) : code
             const name = String(s['상품명'] ?? '')
@@ -124,7 +123,7 @@ export default function KisAccountPage() {
             { field: '상품명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
             {
                 field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn',
-                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
                 simple: true,
             },
@@ -140,7 +139,7 @@ export default function KisAccountPage() {
             },
             {
                 field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn',
-                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
                 simple: true,
             },
@@ -156,7 +155,7 @@ export default function KisAccountPage() {
                     if (p.data?._isSummary) return (sumMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0)
                     return totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0
                 },
-                cellRenderer: (p: any) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
                 comparator: numComparator,
             },
             {
@@ -172,23 +171,23 @@ export default function KisAccountPage() {
             },
             {
                 field: '평가손익금액', headerName: '손익금액', width: 120, type: 'numericColumn',
-                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
                 simple: true,
             },
             {
                 field: '평가손익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
-                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} />,
                 comparator: numComparator,
                 simple: true,
             },
             { 
                 field: '가격추세', headerName: '추세', width: 106, sortable: false,
-                cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
+                cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
             },
             {
                 headerName: '', width: 145, sortable: false, resizable: false,
-                cellRenderer: (p: any) => p.data?._isSummary ? null : (
+                cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? null : (
                     <ActionCell 
                         onBuy={() => openOrderModal({
                             stk_cd: String(p.data?.상품번호 ?? '').replace(/^A/, ''),
@@ -219,7 +218,7 @@ export default function KisAccountPage() {
         sortable: true, resizable: true,
     }), [])
 
-    const onRowDoubleClicked = (p: any) => {
+    const onRowDoubleClicked = (p: CustomCellRendererProps) => {
         if (p.data?._isSummary) return
         const code = String(p.data?.상품번호 ?? '').replace(/^A/, '')
         const name = p.data?.상품명
@@ -276,22 +275,11 @@ export default function KisAccountPage() {
                     itemClassName="h-[24px] text-xs px-3"
                 />
 
-                <Popover open={isSelectBoxOpen} onOpenChange={setIsSelectBoxOpen}>
-                    <PopoverTrigger className="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded border border-indigo-200 transition-colors mr-2">
-                        종목선택 {filterCodes.length > 0 && `(${filterCodes.length})`}
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-auto p-3">
-                        <StocksSelectBox 
-                            stocks={uniqueStocks} 
-                            selectedCodes={filterCodes} 
-                            onConfirm={(codes) => {
-                                setFilterCodes(codes)
-                                setIsSelectBoxOpen(false)
-                            }}
-                            onClose={() => setIsSelectBoxOpen(false)}
-                        />
-                    </PopoverContent>
-                </Popover>
+                <StockFilterButton 
+                    uniqueStocks={uniqueStocks} 
+                    filterCodes={filterCodes} 
+                    onFilterChange={setFilterCodes} 
+                />
             </AccountHeader>
 
             <div className="flex-1 ag-theme-alpine overflow-hidden">

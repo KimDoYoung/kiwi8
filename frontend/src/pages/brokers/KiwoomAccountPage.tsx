@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { AgGridReact } from 'ag-grid-react'
+import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useModalStore } from '@/store/modalStore'
@@ -19,8 +19,8 @@ import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { StocksSelectBox, type StockOption } from '@/shared/components/StocksSelectBox'
+import { StockFilterButton } from '@/shared/components/StockFilterButton'
+import { type StockOption } from '@/shared/components/StocksSelectBox'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -51,14 +51,13 @@ export default function KiwoomAccountPage() {
     const [isSimpleView, setIsSimpleView] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [filterCodes, setFilterCodes] = useState<string[]>([])
-    const [isSelectBoxOpen, setIsSelectBoxOpen] = useState(false)
 
-    const rawStocks: Record<string, unknown>[] = data?.data?.종목별계좌평가현황 ?? []
+    const rawStocks = useMemo<Record<string, unknown>[]>(() => data?.data?.종목별계좌평가현황 ?? [], [data])
 
     const uniqueStocks = useMemo<StockOption[]>(() => {
         const seen = new Set<string>()
         const list: StockOption[] = []
-        rawStocks.forEach((s: any) => {
+        rawStocks.forEach((s: Record<string, unknown>) => {
             const code = String(s['종목코드'] ?? '')
             const cleanCode = code.startsWith('A') ? code.slice(1) : code
             const name = String(s['종목명'] ?? '')
@@ -87,7 +86,7 @@ export default function KiwoomAccountPage() {
     }, [rawStocks, profitFilter, filterCodes])
 
     const totalMaeip = useMemo(() =>
-        rawStocks.reduce((sum, s) => sum + toNum((s as any)['매입금액']), 0), [rawStocks])
+        rawStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [rawStocks])
 
     const summary = data?.data ?? {}
     const 예수금 = toNum(summary['예수금'])
@@ -122,7 +121,7 @@ export default function KiwoomAccountPage() {
             { field: '종목명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
             {
                 field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn', simple: true,
-                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
             },
             {
@@ -137,7 +136,7 @@ export default function KiwoomAccountPage() {
             },
             {
                 field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn', simple: true,
-                cellRenderer: (p: any) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
             },
             {
@@ -151,7 +150,7 @@ export default function KiwoomAccountPage() {
                     if (p.data?._isSummary) return (sumMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0)
                     return totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0
                 },
-                cellRenderer: (p: any) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
                 comparator: numComparator,
             },
             {
@@ -166,21 +165,21 @@ export default function KiwoomAccountPage() {
             },
             {
                 field: '손익금액', headerName: '손익금액', width: 120, type: 'numericColumn', simple: true,
-                cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <ProfitCell {...params} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
             },
             {
                 field: '손익율', headerName: '손익율(%)', width: 95, type: 'numericColumn', simple: true,
-                cellRenderer: (params: any) => (params.data?._isSummary && toNum(params.value) === 0) ? '' : <RateCell {...params} />,
+                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} />,
                 comparator: numComparator,
             },
             { 
                 field: '가격추세', headerName: '추세', width: 106, sortable: false,
-                cellRenderer: (p: any) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
+                cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
             },
             {
                 headerName: '', width: 145, sortable: false, resizable: false, simple: false,
-                cellRenderer: (p: any) => p.data?._isSummary ? null : (
+                cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? null : (
                     <ActionCell 
                         onBuy={() => openOrderModal({
                             stk_cd: p.data?.종목코드,
@@ -211,7 +210,7 @@ export default function KiwoomAccountPage() {
         sortable: true, resizable: true,
     }), [])
 
-    const onRowDoubleClicked = (p: any) => {
+    const onRowDoubleClicked = (p: CustomCellRendererProps) => {
         if (p.data?._isSummary) return
         const code = p.data?.종목코드
         const name = p.data?.종목명
@@ -268,22 +267,11 @@ export default function KiwoomAccountPage() {
                     itemClassName="h-[24px] text-xs px-3"
                 />
 
-                <Popover open={isSelectBoxOpen} onOpenChange={setIsSelectBoxOpen}>
-                    <PopoverTrigger className="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded border border-indigo-200 transition-colors mr-2">
-                        종목선택 {filterCodes.length > 0 && `(${filterCodes.length})`}
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-auto p-3">
-                        <StocksSelectBox 
-                            stocks={uniqueStocks} 
-                            selectedCodes={filterCodes} 
-                            onConfirm={(codes) => {
-                                setFilterCodes(codes)
-                                setIsSelectBoxOpen(false)
-                            }}
-                            onClose={() => setIsSelectBoxOpen(false)}
-                        />
-                    </PopoverContent>
-                </Popover>
+                <StockFilterButton 
+                    uniqueStocks={uniqueStocks} 
+                    filterCodes={filterCodes} 
+                    onFilterChange={setFilterCodes} 
+                />
             </AccountHeader>
 
             <div className="flex-1 ag-theme-alpine overflow-hidden">
