@@ -6,11 +6,10 @@ import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import api from '@/lib/api'
+import { toNum, fmt, numComparator, exportCsv } from '@/lib/utils'
 import {
-    toNum, fmt,
-    ProfitCell, RateCell, CodeCell,
-    numComparator, exportCsv, AccountHeader,
-} from '../brokers/accountUtils'
+    ProfitCell, RateCell, CodeCell, AccountHeader,
+} from '@/pages/brokers/AccountGridComponents'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'

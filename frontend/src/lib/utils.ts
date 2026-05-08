@@ -2,6 +2,8 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format, parse, parseISO, isToday, isValid } from "date-fns";
 import { ko, enUS } from "date-fns/locale";
+import React, { type RefObject } from "react";
+import type { AgGridReact } from "ag-grid-react";
 
 /**
  * Tailwind CSS 클래스 합치기 유틸리티
@@ -160,5 +162,36 @@ export function formatRelativeDateTime(dateInput: string | null | undefined): st
         return format(date, 'HH:mm')
     }
 
-    return format(date, 'yyyy. MM. dd.', { locale: ko })
+    return format(date, 'yyyy-MM-dd', { locale: ko })
+}
+
+/**
+ * 숫자로 변환합니다 (콤마 제거 포함)
+ */
+export const toNum = (v: unknown): number => {
+    if (v === undefined || v === null || v === '') return 0
+    return Number(String(v).replace(/,/g, ''))
+}
+
+/**
+ * 천단위 콤마 포맷팅
+ */
+export const fmt = (v: number) => v.toLocaleString('ko-KR')
+
+/**
+ * 수익률/금액에 따른 색상 스타일
+ */
+export const colorStyle = (v: number): React.CSSProperties =>
+    v > 0 ? { color: '#ef4444', fontWeight: 600 } : v < 0 ? { color: '#3b82f6', fontWeight: 600 } : {}
+
+/** 
+ * 숫자 comparator (정렬용) 
+ */
+export const numComparator = (a: unknown, b: unknown) => toNum(a) - toNum(b)
+
+/** 
+ * CSV 내보내기 
+ */
+export function exportCsv(gridRef: RefObject<AgGridReact | null>, fileName: string) {
+    gridRef.current?.api?.exportDataAsCsv({ fileName })
 }

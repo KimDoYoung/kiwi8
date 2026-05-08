@@ -2,7 +2,7 @@
  * 계좌현황 페이지 공통 유틸리티
  */
 import React from 'react'
-import { toNum, fmt, colorStyle } from './accountUtils'
+import { toNum, fmt, colorStyle } from '@/lib/utils'
 
 /** 손익금액 셀 */
 export function ProfitCell({ value }: { value: number }) {

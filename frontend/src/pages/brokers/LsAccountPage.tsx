@@ -7,11 +7,10 @@ import { useModalStore } from '@/store/modalStore'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import api from '@/lib/api'
+import { toNum, fmt, numComparator, exportCsv } from '@/lib/utils'
 import {
-    toNum, fmt,
-    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell,
-    numComparator, exportCsv, AccountHeader,
-} from './accountUtils'
+    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader,
+} from './AccountGridComponents'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
