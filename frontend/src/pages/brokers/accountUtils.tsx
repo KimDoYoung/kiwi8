@@ -48,12 +48,10 @@ export function CodeCell({ value }: { value: string }) {
 /** 매수/매도/상세 버튼 */
 export function ActionCell({ 
   onBuy, 
-  onSell, 
-  onDetail 
+  onSell
 }: { 
   onBuy?: () => void, 
-  onSell?: () => void, 
-  onDetail?: () => void 
+  onSell?: () => void
 }) {
   return (
     <div className="flex gap-1 items-center h-full">
@@ -68,12 +66,6 @@ export function ActionCell({
         className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
       >
         매도
-      </button>
-      <button 
-        onClick={(e) => { e.stopPropagation(); onDetail?.(); }}
-        className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
-      >
-        상세
       </button>
     </div>
   )
