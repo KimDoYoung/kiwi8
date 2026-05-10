@@ -176,7 +176,10 @@ export const toNum = (v: unknown): number => {
 /**
  * 천단위 콤마 포맷팅
  */
-export const fmt = (v: number) => v.toLocaleString('ko-KR')
+export const fmt = (v: number | null | undefined) => {
+    if (v === undefined || v === null) return ''
+    return v.toLocaleString('ko-KR')
+}
 
 /**
  * 수익률/금액에 따른 색상 스타일

@@ -79,7 +79,11 @@ export default function StockFindModal() {
 
   const handleAddToMyStock = async (item: StockResult) => {
     try {
-      const res = await api.put(`/api/v1/mystock/${item.stk_cd}`)
+      const res = await api.post('/api/v1/mystock/', {
+        stk_cd: item.stk_cd,
+        stk_nm: item.stk_nm,
+        is_watch: 1
+      })
       if (res.data && res.data.success) {
         showMessage(`'${item.stk_nm}' 종목이 My Stock에 추가되었습니다.`, 'success')
         // 전역 이벤트 발생 (My Stock 리스트 갱신용)

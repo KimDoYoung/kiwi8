@@ -250,11 +250,11 @@ export default function MyStockPage() {
           rowData={data ?? []}
           columnDefs={columnDefs}
           defaultColDef={{
-            sortable: true,
-            filter: true,
+            sortable: false,
+            filter: false,
             resizable: true,
           }}
-          rowSelection="multiple"
+          rowSelection={{ mode: 'multiRow' }}
           animateRows={true}
           getRowId={(params) => params.data.stk_cd}
         />
