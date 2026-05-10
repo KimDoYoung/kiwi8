@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS tokens (
 -- ---------------------------------------------------------------
 -- my_stock
 -- ---------------------------------------------------------------
+DROP TABLE IF EXISTS my_stock;
 CREATE TABLE IF NOT EXISTS my_stock (
   stk_cd     TEXT    NOT NULL,                               -- 종목코드 (PK)
   stk_nm     TEXT    NOT NULL,                               -- 종목명
@@ -89,6 +90,12 @@ CREATE TABLE IF NOT EXISTS my_stock (
              CHECK (is_hold IN (0,1)),
   is_watch   INTEGER NOT NULL DEFAULT 0                      -- 관심여부 (0/1)
              CHECK (is_watch IN (0,1)),
+  base_price  INTEGER NULL,                                   -- 기준가(증가시 update)
+  sell_rate    REAL    NULL,                                   -- 매도가격 결정을 위한 비율
+  sell_price   INTEGER NULL,                                   -- 매도목표가
+  buy_rate     REAL    NULL,                                   -- 매수가격 결정을 위한 비율
+  buy_price    INTEGER NULL,                                   -- 매수목표가           
+  spec       TEXT    NULL,                                   -- 여러가지 정보 JSON 직렬화 (예: {"매수목표가": "100000", "손절가": "90000"})
   note       TEXT,                                           -- 메모
   created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime')),
   updated_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime')),

@@ -11,3 +11,4 @@ iframe*.html
 .python_cache/
 .git/
 node_modules/
+.aider*

@@ -17,6 +17,12 @@ class MyStock:
     sector: str | None = None             # 분야/섹터 (예: 반도체, 바이오 등)
     is_hold: int = 0                         # 보유여부 (0: 미보유, 1: 보유)
     is_watch: int = 0                        # 관심여부 (0: 비관심, 1: 관심)
+    base_price: int | None = None         # 기준가(증가시 update)
+    sell_rate: float | None = None        # 매도가격 결정을 위한 비율
+    sell_price: int | None = None         # 매도목표가
+    buy_rate: float | None = None         # 매수가격 결정을 위한 비율
+    buy_price: int | None = None          # 매수목표가
+    spec: str | None = None               # 여러가지 정보 JSON 직렬화
     note: str | None = None               # 메모 (투자 이유, 분석 내용 등)
     created_at: str | None = None         # 생성 시각 (DB에서 자동 설정)
     updated_at: str | None = None         # 수정 시각 (DB에서 자동 설정)
@@ -33,6 +39,12 @@ class MyStockCreate(BaseModel):
     sector: str | None = Field(None, description="분야/섹터", example="반도체")
     is_hold: int = Field(0, description="보유여부 (0: 미보유, 1: 보유)", ge=0, le=1)
     is_watch: int = Field(0, description="관심여부 (0: 비관심, 1: 관심)", ge=0, le=1)
+    base_price: int | None = Field(None, description="기준가")
+    sell_rate: float | None = Field(None, description="매도비율")
+    sell_price: int | None = Field(None, description="매도목표가")
+    buy_rate: float | None = Field(None, description="매수비율")
+    buy_price: int | None = Field(None, description="매수목표가")
+    spec: str | None = Field(None, description="상세정보(JSON)")
     note: str | None = Field(None, description="메모", example="실적 개선 기대")
 
 class MyStockUpdate(BaseModel):
@@ -46,6 +58,12 @@ class MyStockUpdate(BaseModel):
     sector: str | None = Field(None, description="분야/섹터")
     is_hold: int | None = Field(None, description="보유여부 (0: 미보유, 1: 보유)", ge=0, le=1)
     is_watch: int | None = Field(None, description="관심여부 (0: 비관심, 1: 관심)", ge=0, le=1)
+    base_price: int | None = Field(None, description="기준가")
+    sell_rate: float | None = Field(None, description="매도비율")
+    sell_price: int | None = Field(None, description="매도목표가")
+    buy_rate: float | None = Field(None, description="매수비율")
+    buy_price: int | None = Field(None, description="매수목표가")
+    spec: str | None = Field(None, description="상세정보(JSON)")
     note: str | None = Field(None, description="메모")
 
 class MyStockResponse(BaseModel):
@@ -60,6 +78,13 @@ class MyStockResponse(BaseModel):
     sector: str | None = Field(None, description="분야/섹터", example="반도체")
     is_hold: int = Field(..., description="보유여부 (0: 미보유, 1: 보유)")
     is_watch: int = Field(..., description="관심여부 (0: 비관심, 1: 관심)")
+    base_price: int | None = Field(None, description="기준가")
+    sell_rate: float | None = Field(None, description="매도비율")
+    sell_price: int | None = Field(None, description="매도목표가")
+    buy_rate: float | None = Field(None, description="매수비율")
+    buy_price: int | None = Field(None, description="매수목표가")
+    spec: str | None = Field(None, description="상세정보(JSON)")
+    spec_data: dict | None = Field(None, description="파싱된 상세정보")
     note: str | None = Field(None, description="메모")
     created_at: str = Field(..., description="생성 시각", example="2024-08-22 14:30:00")
     updated_at: str = Field(..., description="수정 시각", example="2024-08-22 14:30:00")
