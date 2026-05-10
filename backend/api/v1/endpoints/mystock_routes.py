@@ -33,7 +33,7 @@ async def get_my_stocks(
             stk_nm_like=stk_nm_like
         )
         stocks = await service.get_list(filter_data)
-        return KiwoomApiHelper.create_success_response(data={"list": stocks})
+        return KiwoomApiHelper.create_success_response(data={"list": [s.model_dump() for s in stocks]})
     except Exception as e:
         logger.error(f"MyStock 조회 실패: {e}")
         return KiwoomApiHelper.create_error_response(error_code="MYSTOCK_GET_ERROR", error_message=str(e))
@@ -46,7 +46,7 @@ async def get_my_stock(stk_cd: str):
         stock = await service.get_by_cd(stk_cd)
         if not stock:
             return KiwoomApiHelper.create_error_response(error_code="NOT_FOUND", error_message="종목을 찾을 수 없습니다.")
-        return KiwoomApiHelper.create_success_response(data=stock)
+        return KiwoomApiHelper.create_success_response(data=stock.model_dump())
     except Exception as e:
         logger.error(f"MyStock 상세 조회 실패: {e}")
         return KiwoomApiHelper.create_error_response(error_code="MYSTOCK_DETAIL_ERROR", error_message=str(e))
@@ -57,7 +57,7 @@ async def create_my_stock(data: MyStockCreate):
     try:
         service = get_service("my_stock")
         stock = await service.create(data)
-        return KiwoomApiHelper.create_success_response(data=stock)
+        return KiwoomApiHelper.create_success_response(data=stock.model_dump())
     except Exception as e:
         logger.error(f"MyStock 생성 실패: {e}")
         return KiwoomApiHelper.create_error_response(error_code="MYSTOCK_CREATE_ERROR", error_message=str(e))
@@ -70,7 +70,7 @@ async def update_my_stock(stk_cd: str, data: MyStockUpdate):
         stock = await service.update(stk_cd, data)
         if not stock:
             return KiwoomApiHelper.create_error_response(error_code="NOT_FOUND", error_message="종목을 찾을 수 없습니다.")
-        return KiwoomApiHelper.create_success_response(data=stock)
+        return KiwoomApiHelper.create_success_response(data=stock.model_dump())
     except Exception as e:
         logger.error(f"MyStock 수정 실패: {e}")
         return KiwoomApiHelper.create_error_response(error_code="MYSTOCK_UPDATE_ERROR", error_message=str(e))
@@ -96,6 +96,21 @@ async def fill_stock_spec(stk_cd: str):
     except Exception as e:
         logger.error(f"MyStock Spec 갱신 실패: {e}")
         return KiwoomApiHelper.create_error_response(error_code="MYSTOCK_SPEC_ERROR", error_message=str(e))
+
+@router.post("/fill-all-spec", response_model=KiwoomResponse)
+async def fill_all_spec():
+    """모든 종목의 spec 정보 일괄 갱신"""
+    try:
+        service = get_service("my_stock")
+        stocks = await service.get_list()
+        count = 0
+        for s in stocks:
+            if await service.fill_spec(s.stk_cd):
+                count += 1
+        return KiwoomApiHelper.create_success_response(data={"count": count})
+    except Exception as e:
+        logger.error(f"Spec 일괄 갱신 실패: {e}")
+        return KiwoomApiHelper.create_error_response(error_code="FILL_ALL_SPEC_ERROR", error_message=str(e))
 
 @router.post("/sync-holdings", response_model=KiwoomResponse)
 async def sync_holdings_manually():

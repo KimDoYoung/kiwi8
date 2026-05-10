@@ -380,21 +380,11 @@ logger = get_logger(__name__)
 @job_registry.register("sync_my_stock")
 async def sync_my_stock(_payload: dict):
     """
-    보유 종목 동기화, spec 채우기, base_price 갱신
+    보유 종목 동기화, spec 채우기, base_price 갱신 (통합 로직)
     """
     service = get_my_stock_service()
-    
-    # 1. 보유 종목 동기화
-    holdings = await get_all_holdings()
-    await service.sync_holdings(holdings)
-    
-    # 2. spec 채우기 (전체 종목 대상)
-    await service.sync_all_specs()
-    
-    # 3. base_price 갱신
-    await service.update_base_prices()
-    
-    logger.info("sync_my_stock job completed")
+    await service.scheduler_sync_and_update()
+
 
 @job_registry.register("nightly_board_scrape")
 async def nightly_board_scrape(_payload: dict):

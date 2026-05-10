@@ -31,6 +31,7 @@ async def get_all_holdings() -> List[Dict[str, str]]:
                 items = kdata.get('종목별계좌평가현황', [])
                 for item in items:
                     cd = item.get('종목코드', '').strip()
+                    if cd.startswith('A'): cd = cd[1:]
                     if cd and cd not in seen_cds:
                         all_holdings.append({'stk_cd': cd, 'stk_nm': item.get('종목명', '')})
                         seen_cds.add(cd)

@@ -1,19 +1,17 @@
 import json
 import aiosqlite
-from datetime import datetime
 from typing import List, Optional
 
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.models.my_stock_model import (
-    MyStock,
     MyStockCreate,
     MyStockFilter,
     MyStockResponse,
     MyStockUpdate,
 )
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomRequest
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomRequest, KiwoomApiHelper
 
 logger = get_logger(__name__)
 
@@ -25,7 +23,7 @@ class MyStockService:
         return aiosqlite.connect(self.db_path)
 
     async def get_list(self, filter: Optional[MyStockFilter] = None) -> List[MyStockResponse]:
-        """관심 종목 목록 조회 (spec 파싱 포함)"""
+        """나의 관심/보유 종목 리스트 조회 (spec 파싱 포함)"""
         query = "SELECT * FROM my_stock WHERE 1=1"
         params = []
 
@@ -43,7 +41,7 @@ class MyStockService:
                 query += " AND stk_nm LIKE ?"
                 params.append(f"%{filter.stk_nm_like}%")
 
-        query += " ORDER BY updated_at DESC"
+        query += " ORDER BY is_hold DESC, updated_at DESC"
 
         async with self._get_conn() as db:
             db.row_factory = aiosqlite.Row
@@ -53,8 +51,8 @@ class MyStockService:
                 result = []
                 for row in rows:
                     item = dict(row)
-                    # spec JSON 파싱
-                    spec_data = None
+                    # spec JSON 파싱하여 spec_data에 담기
+                    spec_data = {}
                     if item.get("spec"):
                         try:
                             spec_data = json.loads(item["spec"])
@@ -63,6 +61,7 @@ class MyStockService:
                     
                     item["spec_data"] = spec_data
                     result.append(MyStockResponse(**item))
+                    
                 return result
 
     async def get_by_cd(self, stk_cd: str) -> Optional[MyStockResponse]:
@@ -75,7 +74,7 @@ class MyStockService:
                     return None
                 
                 item = dict(row)
-                spec_data = None
+                spec_data = {}
                 if item.get("spec"):
                     try:
                         spec_data = json.loads(item["spec"])
@@ -86,147 +85,185 @@ class MyStockService:
                 return MyStockResponse(**item)
 
     async def create(self, data: MyStockCreate) -> MyStockResponse:
-        """새로운 관심 종목 추가"""
-        # 가격/비율 자동 계산
+        """새로운 관심/보유 종목 추가"""
         final_data = data.model_dump()
+        
+        # 가격/비율 자동 계산
         self._calculate_prices_and_rates(final_data)
 
         async with self._get_conn() as db:
-            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             columns = ", ".join(final_data.keys())
             placeholders = ", ".join(["?" for _ in final_data])
-            
-            # created_at, updated_at은 DB 기본값이지만 명시적으로 넣어줄 수도 있음
-            # 여기서는 DDL의 DEFAULT 값을 따르도록 함
-            
             query = f"INSERT INTO my_stock ({columns}) VALUES ({placeholders})"
             await db.execute(query, list(final_data.values()))
             await db.commit()
             
+        # 생성이 완료되면 spec 정보를 채운다
+        await self.fill_spec(data.stk_cd)
+        
         return await self.get_by_cd(data.stk_cd)
 
     async def update(self, stk_cd: str, data: MyStockUpdate) -> Optional[MyStockResponse]:
-        """관심 종목 정보 수정"""
-        current = await self.get_by_cd(stk_cd)
-        if not current:
+        """종목 정보 수정 및 가격/비율 자동 계산"""
+        current_resp = await self.get_by_cd(stk_cd)
+        if not current_resp:
             return None
 
-        update_data = data.model_dump(exclude_unset=True)
-        if not update_data:
-            return current
+        update_dict = data.model_dump(exclude_unset=True)
+        if not update_dict:
+            return current_resp
 
-        # 기존 값과 병합하여 가격/비율 재계산
-        merged = current.model_dump()
-        merged.update(update_data)
+        # 현재 데이터를 딕셔너리로 변환 (계산을 위해)
+        merged = current_resp.model_dump()
         
-        # 어떤 필드가 업데이트 되었는지 확인하여 계산 방향 결정
-        if "sell_rate" in update_data:
+        # base_price가 변경되었는지 확인
+        base_price_changed = "base_price" in update_dict
+        
+        # 각 필드 업데이트 시 상호 계산 로직
+        # 1. sell_rate 가 들어오면 sell_price 계산
+        if "sell_rate" in update_dict:
+            merged["sell_rate"] = update_dict["sell_rate"]
             self._calculate_sell_price(merged)
-        elif "sell_price" in update_data:
+            update_dict["sell_price"] = merged["sell_price"]
+        # 2. sell_price 가 들어오면 sell_rate 계산 (sell_rate가 명시적으로 들어오지 않았을 때만)
+        elif "sell_price" in update_dict:
+            merged["sell_price"] = update_dict["sell_price"]
             self._calculate_sell_rate(merged)
-            
-        if "buy_rate" in update_data:
+            update_dict["sell_rate"] = merged["sell_rate"]
+
+        # 3. buy_rate 가 들어오면 buy_price 계산
+        if "buy_rate" in update_dict:
+            merged["buy_rate"] = update_dict["buy_rate"]
             self._calculate_buy_price(merged)
-        elif "buy_price" in update_data:
+            update_dict["buy_price"] = merged["buy_price"]
+        # 4. buy_price 가 들어오면 buy_rate 계산
+        elif "buy_price" in update_dict:
+            merged["buy_price"] = update_dict["buy_price"]
             self._calculate_buy_rate(merged)
+            update_dict["buy_rate"] = merged["buy_rate"]
 
-        # base_price가 바뀌면 price들을 다시 계산 (rate 유지)
-        if "base_price" in update_data:
-            self._calculate_sell_price(merged)
-            self._calculate_buy_price(merged)
+        # 5. base_price만 변경된 경우, 기존 rate를 바탕으로 price들을 재계산
+        if base_price_changed:
+            merged["base_price"] = update_dict["base_price"]
+            # sell_rate가 있으면 sell_price 재계산
+            if merged.get("sell_rate") is not None:
+                self._calculate_sell_price(merged)
+                update_dict["sell_price"] = merged["sell_price"]
+            else:
+                update_dict["sell_price"] = None
+                
+            # buy_rate가 있으면 buy_price 재계산
+            if merged.get("buy_rate") is not None:
+                self._calculate_buy_price(merged)
+                update_dict["buy_price"] = merged["buy_price"]
+            else:
+                update_dict["buy_price"] = None
 
-        # DB 업데이트할 필드들 정리
-        update_fields = {k: merged[k] for k in update_data.keys() or []}
-        # 계산된 필드들도 포함
-        if "sell_rate" in update_data or "base_price" in update_data: update_fields["sell_price"] = merged["sell_price"]
-        if "sell_price" in update_data: update_fields["sell_rate"] = merged["sell_rate"]
-        if "buy_rate" in update_data or "base_price" in update_data: update_fields["buy_price"] = merged["buy_price"]
-        if "buy_price" in update_data: update_fields["buy_rate"] = merged["buy_rate"]
-
-        if not update_fields:
-            return current
-
-        set_clause = ", ".join([f"{k} = ?" for k in update_fields.keys()])
-        params = list(update_fields.values())
+        # DB 업데이트
+        set_clause = ", ".join([f"{k} = ?" for k in update_dict.keys()])
+        params = list(update_dict.values())
         params.append(stk_cd)
 
         async with self._get_conn() as db:
-            await db.execute(f"UPDATE my_stock SET {set_clause}, updated_at = datetime('now','localtime') WHERE stk_cd = ?", params)
+            await db.execute(
+                f"UPDATE my_stock SET {set_clause}, updated_at = datetime('now','localtime') WHERE stk_cd = ?",
+                params
+            )
             await db.commit()
 
         return await self.get_by_cd(stk_cd)
 
-    async def delete(self, stk_cd: str) -> bool:
-        """관심 종목 삭제"""
-        async with self._get_conn() as db:
-            cursor = await db.execute("DELETE FROM my_stock WHERE stk_cd = ?", (stk_cd,))
-            await db.commit()
-            return cursor.rowcount > 0
-
     def _calculate_prices_and_rates(self, data: dict):
-        """초기 생성 시 가격/비율 계산"""
+        """초기 생성 시 또는 대량 업데이트 시 가격/비율 계산"""
         if data.get("base_price"):
-            if data.get("sell_rate") and not data.get("sell_price"):
+            # Sell
+            if data.get("sell_rate") is not None:
                 self._calculate_sell_price(data)
-            elif data.get("sell_price") and not data.get("sell_rate"):
+            elif data.get("sell_price") is not None:
                 self._calculate_sell_rate(data)
-                
-            if data.get("buy_rate") and not data.get("buy_price"):
+            # Buy
+            if data.get("buy_rate") is not None:
                 self._calculate_buy_price(data)
-            elif data.get("buy_price") and not data.get("buy_rate"):
+            elif data.get("buy_price") is not None:
                 self._calculate_buy_rate(data)
 
     def _calculate_sell_price(self, data: dict):
-        if data.get("base_price") and data.get("sell_rate") is not None:
-            data["sell_price"] = int(data["base_price"] * (1 + data["sell_rate"] / 100))
+        base = data.get("base_price")
+        rate = data.get("sell_rate")
+        if base and rate is not None:
+            data["sell_price"] = int(base * (1 + rate / 100))
 
     def _calculate_sell_rate(self, data: dict):
-        if data.get("base_price") and data.get("sell_price") is not None:
-            data["sell_rate"] = round((data["sell_price"] / data["base_price"] - 1) * 100, 2)
+        base = data.get("base_price")
+        price = data.get("sell_price")
+        if base and price:
+            data["sell_rate"] = round(((price / base) - 1) * 100, 2)
 
     def _calculate_buy_price(self, data: dict):
-        if data.get("base_price") and data.get("buy_rate") is not None:
-            data["buy_price"] = int(data["base_price"] * (1 + data["buy_rate"] / 100))
+        base = data.get("base_price")
+        rate = data.get("buy_rate")
+        if base and rate is not None:
+            data["buy_price"] = int(base * (1 + rate / 100))
 
     def _calculate_buy_rate(self, data: dict):
-        if data.get("base_price") and data.get("buy_price") is not None:
-            data["buy_rate"] = round((data["buy_price"] / data["base_price"] - 1) * 100, 2)
+        base = data.get("base_price")
+        price = data.get("buy_price")
+        if base and price:
+            data["buy_rate"] = round(((price / base) - 1) * 100, 2)
+
+    async def delete(self, stk_cd: str) -> bool:
+        """종목 삭제"""
+        logger.info(f"Deleting MyStock: {stk_cd}")
+        async with self._get_conn() as db:
+            cursor = await db.execute("DELETE FROM my_stock WHERE stk_cd = ?", (stk_cd,))
+            await db.commit()
+            deleted_count = cursor.rowcount
+            logger.info(f"Deleted {deleted_count} record(s) for stk_cd: {stk_cd}")
+            return deleted_count > 0
 
     async def fill_spec(self, stk_cd: str) -> bool:
-        """키움 API를 사용하여 spec 정보 채우기"""
+        """키움 API(ka10001, ka10100)를 사용하여 spec(JSON) 정보 채우기"""
         try:
+            logger.info(f"Filling spec for {stk_cd}...")
             kiwoom = await get_kiwoom_api()
             
-            # ka10001: 주식기본정보
+            # 주식기본정보 (ka10001)
             resp1 = await kiwoom.send_request(KiwoomRequest(api_id="ka10001", payload={"stk_cd": stk_cd}))
-            if not resp1 or "output" not in resp1.data:
-                logger.error(f"Failed to get ka10001 for {stk_cd}")
+            if not resp1 or not resp1.success:
+                logger.error(f"ka10001 failed for {stk_cd}: {resp1.error_message if resp1 else 'No response'}")
                 return False
             
-            out1 = resp1.data["output"]
+            # 한글 필드명으로 변환
+            out1 = KiwoomApiHelper.to_korea_data(resp1.data, "ka10001")
+            logger.debug(f"ka10001 processed output (Korean) for {stk_cd}: {out1}")
             
-            # ka10100: 종목정보조회
+            # 종목정보조회 (ka10100)
             resp2 = await kiwoom.send_request(KiwoomRequest(api_id="ka10100", payload={"stk_cd": stk_cd}))
-            out2 = resp2.data.get("output", {}) if resp2 else {}
+            if resp2 and resp2.success:
+                out2 = KiwoomApiHelper.to_korea_data(resp2.data, "ka10100")
+            else:
+                out2 = {}
+            logger.debug(f"ka10100 processed output (Korean) for {stk_cd}: {out2}")
 
             spec = {
-                "상태": out2.get("auditInfo", ""),
-                "상장일": out2.get("regDay", ""),
-                "회사크기분류": out2.get("upSizeName", ""),
-                "업종명": out2.get("upName", ""),
-                "NTX": out2.get("nxtEnable", ""),
-                "시가총액": out1.get("mac", ""),
-                "PER": out1.get("per", ""),
-                "PBR": out1.get("pbr", ""),
-                "매출액": out1.get("sale_amt", ""),
-                "영업이익": out1.get("bus_pro", ""),
-                "상장주식수": out1.get("flo_stk", ""),
-                "외인소진율": out1.get("for_exh_rt", ""),
-                "유통비율": out1.get("dstr_rt", ""),
-                "상한가": out1.get("upl_pric", ""),
-                "하한가": out1.get("lst_pric", ""),
-                "기준가": out1.get("base_pric", "")
+                "상태": out2.get("감리구분", ""),
+                "상장일": out2.get("상장일", ""),
+                "회사크기분류": out2.get("회사크기분류", ""),
+                "업종명": out2.get("업종명", ""),
+                "NTX": out2.get("NXT가능여부", ""),
+                "시가총액": out1.get("시가총액", ""),
+                "PER": out1.get("PER", ""),
+                "PBR": out1.get("PBR", ""),
+                "매출액": out1.get("매출액", ""),
+                "영업이익": out1.get("영업이익", ""),
+                "상장주식수": out1.get("상장주식", ""),
+                "외인소진율": out1.get("외인소진률", ""),
+                "유통비율": out1.get("유통비율", ""),
+                "상한가": out1.get("상한가", ""),
+                "하한가": out1.get("하한가", ""),
+                "기준가": out1.get("기준가", "")
             }
+            logger.info(f"Final spec object for {stk_cd}: {spec}")
 
             async with self._get_conn() as db:
                 await db.execute(
@@ -234,79 +271,106 @@ class MyStockService:
                     (json.dumps(spec, ensure_ascii=False), stk_cd)
                 )
                 await db.commit()
-            
             return True
         except Exception as e:
-            logger.error(f"Error in fill_spec for {stk_cd}: {e}")
+            logger.error(f"fill_spec error for {stk_cd}: {e}")
             return False
 
-    async def sync_all_specs(self):
-        """모든 종목의 spec 갱신"""
-        stocks = await self.get_list()
-        for stock in stocks:
-            await self.fill_spec(stock.stk_cd)
+    async def scheduler_sync_and_update(self):
+        """스케줄러에 의한 통합 동작
+        1. 보유 종목 동기화 (3개 증권사)
+        2. 모든 레코드 spec 갱신
+        3. 보유 종목 base_price 갱신 및 목표가 재계산
+        """
+        logger.info("Starting MyStock scheduler task...")
+        
+        # 1. 보유 종목 리스트 구하기 (유틸리티 사용)
+        from backend.utils.holdings_utils import get_all_holdings
+        hold_stocks = await get_all_holdings()
+        
+        # 2. hold_stocks 동기화
+        async with self._get_conn() as db:
+            # 먼저 모든 종목의 is_hold를 0으로 초기화 (현재 보유 중인 것만 1로 만들기 위해)
+            # 단, 이 방식은 실시간 동기화 시 주의 필요. 여기서는 요구사항에 맞춰 진행.
+            await db.execute("UPDATE my_stock SET is_hold = 0")
+            
+            for h in hold_stocks:
+                cd = h["stk_cd"]
+                nm = h["stk_nm"]
+                
+                async with db.execute("SELECT 1 FROM my_stock WHERE stk_cd = ?", (cd,)) as cursor:
+                    if await cursor.fetchone():
+                        await db.execute("UPDATE my_stock SET is_hold = 1, stk_nm = ? WHERE stk_cd = ?", (nm, cd))
+                    else:
+                        await db.execute("INSERT INTO my_stock (stk_cd, stk_nm, is_hold) VALUES (?, ?, 1)", (cd, nm))
+            await db.commit()
+            
+        # 3. 모든 레코드 spec 갱신
+        all_stocks = await self.get_list()
+        for s in all_stocks:
+            await self.fill_spec(s.stk_cd)
+            
+        # 4. 보유 종목 base_price 갱신
+        kiwoom = await get_kiwoom_api()
+        for s in all_stocks:
+            if s.is_hold != 1:
+                continue
+                
+            # ka10001로 전일 종가(기준가) 조회
+            resp = await kiwoom.send_request(KiwoomRequest(api_id="ka10001", payload={"stk_cd": s.stk_cd}))
+            if resp and resp.success:
+                try:
+                    out = resp.data.get("output", {})
+                    prev_close = abs(int(out.get("base_pric", "0")))
+                    
+                    current_base = s.base_price
+                    should_update = False
+                    
+                    if current_base is None:
+                        # base_price가 없으면 전날 종가로 설정, default rate 15%
+                        should_update = True
+                        new_base = prev_close
+                        new_sell_rate = s.sell_rate if s.sell_rate is not None else 15.0
+                        new_buy_rate = s.buy_rate
+                    elif prev_close > current_base:
+                        # 전날 종가가 더 크면 업데이트
+                        should_update = True
+                        new_base = prev_close
+                        new_sell_rate = s.sell_rate
+                        new_buy_rate = s.buy_rate
+                    
+                    if should_update:
+                        await self.update(s.stk_cd, MyStockUpdate(
+                            base_price=new_base,
+                            sell_rate=new_sell_rate,
+                            buy_rate=new_buy_rate
+                        ))
+                except Exception as e:
+                    logger.error(f"Failed to update base_price for {s.stk_cd}: {e}")
+                    
+        logger.info("MyStock scheduler task completed.")
 
     async def sync_holdings(self, holdings: List[dict]):
-        """보유 종목 리스트와 동기화
-        holdings: [{"stk_cd": "...", "stk_nm": "...", "sector": "..."}]
-        """
+        """수동 보유 종목 동기화 (holdings_utils 결과물을 인자로 받음)"""
         async with self._get_conn() as db:
+            # 기존 보유 상태 초기화 (옵션)
+            await db.execute("UPDATE my_stock SET is_hold = 0")
             for h in holdings:
-                stk_cd = h["stk_cd"]
-                stk_nm = h["stk_nm"]
-                
-                # 존재 여부 확인
-                async with db.execute("SELECT 1 FROM my_stock WHERE stk_cd = ?", (stk_cd,)) as cursor:
-                    exists = await cursor.fetchone()
-                
-                if exists:
-                    await db.execute(
-                        "UPDATE my_stock SET is_hold = 1, updated_at = datetime('now','localtime') WHERE stk_cd = ?",
-                        (stk_cd,)
-                    )
-                else:
-                    await db.execute(
-                        "INSERT INTO my_stock (stk_cd, stk_nm, is_hold) VALUES (?, ?, 1)",
-                        (stk_cd, stk_nm)
-                    )
+                cd = h["stk_cd"]
+                nm = h["stk_nm"]
+                async with db.execute("SELECT 1 FROM my_stock WHERE stk_cd = ?", (cd,)) as cursor:
+                    if await cursor.fetchone():
+                        await db.execute("UPDATE my_stock SET is_hold = 1 WHERE stk_cd = ?", (cd,))
+                    else:
+                        await db.execute("INSERT INTO my_stock (stk_cd, stk_nm, is_hold) VALUES (?, ?, 1)", (cd, nm))
             await db.commit()
-
-    async def update_base_prices(self):
-        """보유 종목의 base_price 갱신
-        - 전날 종가가 더 크면 갱신
-        - base_price 갱신 시 sell/buy price도 갱신 (rate 유지)
-        """
-        stocks = await self.get_list(MyStockFilter(is_hold=1))
-        kiwoom = await get_kiwoom_api()
-        
-        for s in stocks:
-            # 키움 ka10001 로 전일 종가 확인 (기준가)
-            resp = await kiwoom.send_request(KiwoomRequest(api_id="ka10001", payload={"stk_cd": s.stk_cd}))
-            if not resp or "output" not in resp.data:
-                continue
-            
-            # ka10001에서 base_pric가 기준가(전일종가) 임
-            try:
-                base_pric_str = resp.data["output"].get("base_pric", "0")
-                base_pric = abs(int(base_pric_str)) # 가끔 -가 붙어 나오는 경우 있음 (하락)
-                
-                current_base = s.base_price or 0
-                if base_pric > current_base:
-                    # 갱신
-                    new_update = MyStockUpdate(base_price=base_pric)
-                    # rate가 없으면 기본 15% (매도)
-                    if s.sell_rate is None:
-                        new_update.sell_rate = 15.0
-                    
-                    await self.update(s.stk_cd, new_update)
-            except Exception as e:
-                logger.error(f"Failed to update base price for {s.stk_cd}: {e}")
+        return True
 
 # 싱글톤 인스턴스
-instance_my_stock_service = None
+_instance = None
 
 def get_my_stock_service() -> MyStockService:
-    global instance_my_stock_service
-    if instance_my_stock_service is None:
-        instance_my_stock_service = MyStockService()
-    return instance_my_stock_service
+    global _instance
+    if _instance is None:
+        _instance = MyStockService()
+    return _instance

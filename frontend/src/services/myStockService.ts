@@ -79,3 +79,8 @@ export const syncHoldings = async (): Promise<number> => {
   const response = await api.post('/api/v1/mystock/sync-holdings')
   return response.data.data.count
 }
+
+export const fillAllSpec = async (): Promise<number> => {
+  const response = await api.post('/api/v1/mystock/fill-all-spec')
+  return response.data.data.count
+}

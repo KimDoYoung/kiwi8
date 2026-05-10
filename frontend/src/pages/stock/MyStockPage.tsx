@@ -5,13 +5,14 @@ import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { 
-  getMyStocks, 
-  updateMyStock, 
-  deleteMyStock, 
-  fillSpec, 
+  getMyStocks,
+  updateMyStock,
+  deleteMyStock,
+  fillSpec,
   syncHoldings,
+  fillAllSpec,
   createMyStock,
-  type MyStock 
+  type MyStock
 } from '@/services/myStockService'
 import { findStock, type StockSearchItem } from '@/services/stockService'
 import { toNum, fmt } from '@/lib/utils'
@@ -63,6 +64,15 @@ export default function MyStockPage() {
     }
   })
 
+  const fillAllSpecMutation = useMutation({
+    mutationFn: fillAllSpec,
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['myStocks'] })
+      setStatusMessage(`${count}개 종목 Spec이 갱신되었습니다.`, 'success')
+    },
+    onError: (err: any) => setStatusMessage(`Spec 갱신 실패: ${err.message}`, 'error')
+  })
+
   const fillSpecMutation = useMutation({
     mutationFn: (stk_cd: string) => fillSpec(stk_cd),
     onSuccess: () => {
@@ -97,6 +107,10 @@ export default function MyStockPage() {
     }
   }
 
+  const { mutate: updateMutate } = updateMutation
+  const { mutate: deleteMutate } = deleteMutation
+  const { mutate: fillSpecMutate } = fillSpecMutation
+
   const columnDefs = useMemo<ColDef[]>(() => [
     { 
       field: 'stk_cd', 
@@ -122,7 +136,7 @@ export default function MyStockPage() {
           variant="ghost" 
           size="sm" 
           className="h-6 w-6 p-0"
-          onClick={() => updateMutation.mutate({ stk_cd: params.data.stk_cd, data: { is_watch: params.value ? 0 : 1 }})}
+          onClick={() => updateMutate({ stk_cd: params.data.stk_cd, data: { is_watch: params.value ? 0 : 1 }})}
         >
           {params.value ? <Check className="w-4 h-4 text-blue-600" /> : <X className="w-4 h-4 text-gray-300" />}
         </Button>
@@ -135,7 +149,7 @@ export default function MyStockPage() {
       width: 110, 
       editable: true,
       valueFormatter: (p) => fmt(p.value),
-      onCellValueChanged: (p) => updateMutation.mutate({ stk_cd: p.data.stk_cd, data: { base_price: toNum(p.newValue) }})
+      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { base_price: toNum(p.newValue) }})
     },
     { 
       field: 'sell_rate', 
@@ -143,7 +157,7 @@ export default function MyStockPage() {
       width: 90, 
       editable: true,
       valueFormatter: (p) => p.value ? `${p.value}%` : '',
-      onCellValueChanged: (p) => updateMutation.mutate({ stk_cd: p.data.stk_cd, data: { sell_rate: parseFloat(p.newValue) }})
+      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { sell_rate: parseFloat(p.newValue) }})
     },
     { 
       field: 'sell_price', 
@@ -151,7 +165,7 @@ export default function MyStockPage() {
       width: 110, 
       editable: true,
       valueFormatter: (p) => fmt(p.value),
-      onCellValueChanged: (p) => updateMutation.mutate({ stk_cd: p.data.stk_cd, data: { sell_price: toNum(p.newValue) }})
+      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { sell_price: toNum(p.newValue) }})
     },
     { 
       field: 'buy_rate', 
@@ -159,7 +173,7 @@ export default function MyStockPage() {
       width: 90, 
       editable: true,
       valueFormatter: (p) => p.value ? `${p.value}%` : '',
-      onCellValueChanged: (p) => updateMutation.mutate({ stk_cd: p.data.stk_cd, data: { buy_rate: parseFloat(p.newValue) }})
+      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { buy_rate: parseFloat(p.newValue) }})
     },
     { 
       field: 'buy_price', 
@@ -167,25 +181,68 @@ export default function MyStockPage() {
       width: 110, 
       editable: true,
       valueFormatter: (p) => fmt(p.value),
-      onCellValueChanged: (p) => updateMutation.mutate({ stk_cd: p.data.stk_cd, data: { buy_price: toNum(p.newValue) }})
+      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { buy_price: toNum(p.newValue) }})
     },
-    { field: 'sector', headerName: '섹터', width: 120, editable: true, onCellValueChanged: (p) => updateMutation.mutate({ stk_cd: p.data.stk_cd, data: { sector: p.newValue }}) },
+    { 
+      headerName: '업종', 
+      width: 120, 
+      valueGetter: (p) => p.data.spec_data?.['업종명'] 
+    },
+    { 
+      headerName: '시총(억)', 
+      width: 110, 
+      valueGetter: (p) => p.data.spec_data?.['시가총액'],
+      valueFormatter: (p) => p.value ? fmt(Math.floor(toNum(p.value))) : ''
+    },
+    { 
+      headerName: 'PER', 
+      width: 80, 
+      valueGetter: (p) => p.data.spec_data?.['PER'] 
+    },
+    { 
+      headerName: 'PBR', 
+      width: 80, 
+      valueGetter: (p) => p.data.spec_data?.['PBR'] 
+    },
+    { 
+      headerName: '외인%', 
+      width: 80, 
+      valueGetter: (p) => p.data.spec_data?.['외인소진율'] 
+    },
+    { 
+      headerName: '상장일', 
+      width: 100, 
+      valueGetter: (p) => p.data.spec_data?.['상장일'] 
+    },
+    { 
+      headerName: '매출액', 
+      width: 100, 
+      valueGetter: (p) => p.data.spec_data?.['매출액'],
+      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : ''
+    },
+    { 
+      headerName: '영업이익', 
+      width: 100, 
+      valueGetter: (p) => p.data.spec_data?.['영업이익'],
+      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : ''
+    },
+    { field: 'sector', headerName: '분류', width: 100, editable: true, onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { sector: p.newValue }}) },
     { 
       headerName: '액션', 
       width: 120, 
       pinned: 'right',
       cellRenderer: (params: any) => (
         <div className="flex gap-1 items-center h-full">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="상세정보 갱신" onClick={() => fillSpecMutation.mutate(params.data.stk_cd)}>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="상세정보 갱신" onClick={() => fillSpecMutate(params.data.stk_cd)}>
             <Info className="w-4 h-4 text-blue-500" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="삭제" onClick={() => { if(confirm('삭제하시겠습니까?')) deleteMutation.mutate(params.data.stk_cd) }}>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="삭제" onClick={() => { if(confirm('삭제하시겠습니까?')) deleteMutate(params.data.stk_cd) }}>
             <Trash2 className="w-4 h-4 text-red-500" />
           </Button>
         </div>
       )
     }
-  ], [updateMutation, deleteMutation, fillSpecMutation, setStockDetail])
+  ], [updateMutate, deleteMutate, fillSpecMutate, setStockDetail])
 
   if (isLoading) return <Loading />
   if (error) return <LoadingFail error={error} refetch={refetch} />
@@ -233,6 +290,10 @@ export default function MyStockPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => fillAllSpecMutation.mutate()} disabled={fillAllSpecMutation.isPending}>
+            <Info className={`w-4 h-4 mr-2 ${fillAllSpecMutation.isPending ? 'animate-pulse' : ''}`} />
+            전체 Spec 갱신
+          </Button>
           <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
             <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
             보유 종목 동기화
