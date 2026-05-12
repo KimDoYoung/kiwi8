@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils";
  */
 
 interface GroupOption {
-  label: string;
+  label: ReactNode;
   value: string;
   className?: string; // 개별 스타일 추가
 }

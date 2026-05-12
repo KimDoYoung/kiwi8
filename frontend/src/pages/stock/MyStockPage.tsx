@@ -1,26 +1,27 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
+import { useModalStore } from '@/store/modalStore'
 import {
   getMyStocks,
   updateMyStock,
   getCurrentPrices,
   syncHoldings,
   fillAllSpec,
-  createMyStock,
 } from '@/services/myStockService'
-import { findStock, type StockSearchItem } from '@/services/stockService'
 import { fetchMenuTree } from '@/services/menuService'
 import { toNum, fmt } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
+import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import { StockFilterButton } from '@/shared/components/StockFilterButton'
+import type { StockOption } from '@/shared/components/StocksSelectBox'
 import { RefreshCw, Search, Info, Check, Heart } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
-import { Input } from '@/shared/components/ui/input'
 import { setStatusMessage } from '@/store/statusStore'
 
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -30,6 +31,7 @@ export default function MyStockPage() {
   const queryClient = useQueryClient()
   const setStockDetail = useStockDetailStore((s) => s.setStock)
   const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
+  const openStockFindModal = useModalStore((s) => s.openStockFindModal)
 
   const { data: menus } = useQuery({
     queryKey: ['menus'],
@@ -37,9 +39,8 @@ export default function MyStockPage() {
     staleTime: 1000 * 60 * 10,
   })
 
-  const [keyword, setKeyword] = useState('')
-  const [searchResults, setSearchResults] = useState<StockSearchItem[]>([])
-  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [stockFilter, setStockFilter] = useState<'hold' | 'all' | 'watch'>('all')
+  const [filterCodes, setFilterCodes] = useState<string[]>([])
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['myStocks'],
@@ -90,31 +91,26 @@ export default function MyStockPage() {
     onError: (err: any) => setStatusMessage(`Spec 갱신 실패: ${err.message}`, 'error')
   })
 
-  const addMutation = useMutation({
-    mutationFn: (item: StockSearchItem) => createMyStock({
-      stk_cd: item.stk_cd,
-      stk_nm: item.stk_nm,
-      is_watch: 1
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myStocks'] })
-      setStatusMessage('추가되었습니다.', 'success')
-      setKeyword('')
-      setShowSearchResults(false)
-    },
-    onError: (err: any) => setStatusMessage(`추가 실패: ${err.message}`, 'error')
-  })
+  // StockFindModal에서 종목 추가 시 쿼리 갱신
+  useEffect(() => {
+    const handler = () => queryClient.invalidateQueries({ queryKey: ['myStocks'] })
+    window.addEventListener('mystock-updated', handler)
+    return () => window.removeEventListener('mystock-updated', handler)
+  }, [queryClient])
 
-  const handleSearch = async () => {
-    if (!keyword.trim()) return
-    try {
-      const results = await findStock(keyword)
-      setSearchResults(results)
-      setShowSearchResults(true)
-    } catch (err) {
-      console.error(err)
-    }
-  }
+  const uniqueStocks = useMemo<StockOption[]>(() =>
+    (data ?? []).map(s => ({ stk_cd: s.stk_cd, stk_nm: s.stk_nm }))
+      .sort((a, b) => a.stk_nm.localeCompare(b.stk_nm)),
+    [data]
+  )
+
+  const filteredData = useMemo(() => {
+    let list = data ?? []
+    if (stockFilter === 'hold') list = list.filter(s => s.is_hold === 1)
+    else if (stockFilter === 'watch') list = list.filter(s => s.is_watch === 1)
+    if (filterCodes.length > 0) list = list.filter(s => filterCodes.includes(s.stk_cd))
+    return list
+  }, [data, stockFilter, filterCodes])
 
   const columnDefs = useMemo<ColDef[]>(() => [
     {
@@ -273,45 +269,40 @@ export default function MyStockPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-gray-800">나의 종목 관리 (1203)</h1>
-          <div className="relative">
-            <div className="flex gap-1">
-              <Input 
-                placeholder="종목명 또는 코드" 
-                className="w-48 h-9 text-sm" 
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <Button size="sm" variant="outline" className="h-9 px-2" onClick={handleSearch}>
-                <Search className="w-4 h-4" />
-              </Button>
-            </div>
-            {showSearchResults && searchResults.length > 0 && (
-              <div className="absolute z-50 w-64 mt-1 bg-white border rounded shadow-lg max-h-60 overflow-auto">
-                {searchResults.map(s => (
-                  <div 
-                    key={s.stk_cd} 
-                    className="p-2 hover:bg-gray-100 cursor-pointer flex justify-between items-center border-b last:border-0"
-                    onClick={() => addMutation.mutate(s)}
-                  >
-                    <div>
-                      <div className="text-sm font-bold">{s.stk_nm}</div>
-                      <div className="text-[10px] text-gray-500">{s.market_name} | {s.up_name}</div>
-                    </div>
-                    <span className="text-xs text-blue-600 font-mono">{s.stk_cd}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {showSearchResults && searchResults.length === 0 && (
-              <div className="absolute z-50 w-64 mt-1 bg-white border p-4 text-center text-sm text-gray-500 rounded shadow-lg">
-                검색 결과가 없습니다.
-              </div>
-            )}
-          </div>
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-800">나의 종목 관리</h1>
+          <Button size="sm" variant="outline" className="h-[26px] px-2" onClick={openStockFindModal}>
+            <Search className="w-4 h-4" />
+          </Button>
+          <GroupRadioButton
+            options={[
+              {
+                label: <Check style={{ width: 13, height: 13 }} />,
+                value: 'hold',
+                className: 'data-[state=on]:bg-green-100 data-[state=on]:text-green-700 data-[state=on]:border-green-300',
+              },
+              {
+                label: '全',
+                value: 'all',
+                className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-400',
+              },
+              {
+                label: <Heart style={{ width: 13, height: 13 }} />,
+                value: 'watch',
+                className: 'data-[state=on]:bg-red-100 data-[state=on]:text-red-600 data-[state=on]:border-red-300',
+              },
+            ]}
+            value={stockFilter}
+            onValueChange={(v) => setStockFilter(v as typeof stockFilter)}
+            className="h-[26px] bg-white"
+            itemClassName="h-[24px] text-xs px-3"
+          />
+          <StockFilterButton
+            uniqueStocks={uniqueStocks}
+            filterCodes={filterCodes}
+            onFilterChange={setFilterCodes}
+          />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => fillAllSpecMutation.mutate()} disabled={fillAllSpecMutation.isPending}>
@@ -332,7 +323,7 @@ export default function MyStockPage() {
       <div className="flex-1 bg-white rounded-lg shadow-sm border overflow-hidden ag-theme-alpine">
         <AgGridReact
           ref={gridRef}
-          rowData={data ?? []}
+          rowData={filteredData}
           columnDefs={columnDefs}
           defaultColDef={{
             sortable: true,
