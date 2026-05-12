@@ -84,3 +84,8 @@ export const fillAllSpec = async (): Promise<number> => {
   const response = await api.post('/api/v1/mystock/fill-all-spec')
   return response.data.data.count
 }
+
+export const getCurrentPrices = async (): Promise<Record<string, number>> => {
+  const response = await api.get('/api/v1/mystock/current-prices')
+  return response.data.data.prices
+}

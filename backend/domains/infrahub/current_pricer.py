@@ -131,14 +131,17 @@ class CurrentPricer:
             return await self._get_krx_prices(stk_cds)
 
         # NXT 시간대 (Pre market 또는 After market)
-        if _is_after_market_active(t_now):
-            # After market (15:40~20:00): 장이 열리는 날이므로 KIS에서 반드시 조회
-            logger.debug(f"[CurrentPricer] NXT After market 모드 (t={t_now})")
-            return await self._get_from_kis_multi(stk_cds, market_div="NX", use_cache=False)
-        else:
-            # Pre market (08:00~08:50)
-            logger.debug(f"[CurrentPricer] NXT Pre market 모드 (t={t_now})")
-            return await self._get_from_kis_multi(stk_cds, market_div="NX", use_cache=False)
+        mode = "NXT After market" if _is_after_market_active(t_now) else "NXT Pre market"
+        logger.debug(f"[CurrentPricer] {mode} 모드 (t={t_now})")
+        prices = await self._get_from_kis_multi(stk_cds, market_div="NX", use_cache=False)
+
+        # NXT 불가 종목(가격=0)은 KRX(J)로 단일 재시도
+        failed = [cd for cd, p in prices.items() if p == 0]
+        if failed:
+            logger.info(f"[CurrentPricer] NXT 불가 종목 KRX(J) 단일 재시도: {failed}")
+            retry = await self._get_from_kis_multi(failed, market_div="J", use_cache=True)
+            prices.update({cd: p for cd, p in retry.items() if p > 0})
+        return prices
 
     # ------------------------------------------------------------------
     # 내부 조회 메서드
@@ -194,6 +197,13 @@ class CurrentPricer:
             # 캐시 미스 종목은 KIS로 조회
             fetched = await self._get_from_kis_multi(miss_codes, market_div=market_div, use_cache=True)
             result.update(fetched)
+            # NXT 불가 종목(가격=0) KRX(J) 단일 재시도
+            if market_div == "NX":
+                failed = [cd for cd, p in fetched.items() if p == 0]
+                if failed:
+                    logger.info(f"[CurrentPricer] 캐시미스 NXT 불가 종목 KRX(J) 재시도: {failed}")
+                    retry = await self._get_from_kis_multi(failed, market_div="J", use_cache=True)
+                    result.update({cd: p for cd, p in retry.items() if p > 0})
 
         for code in stk_cds:
             result.setdefault(code, 0)

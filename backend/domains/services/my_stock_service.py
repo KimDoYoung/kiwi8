@@ -89,10 +89,37 @@ class MyStockService:
                 item["spec_data"] = spec_data
                 return MyStockResponse(**item)
 
+    async def _get_initial_prices(self, stk_cd: str, is_hold: int) -> dict:
+        """현재가 기준 기준가/매도비율 또는 매수비율 초기값 반환
+        - is_hold=1: 매도비율 -15% (기준가의 15% 아래를 매도 목표가로)
+        - is_hold=0(관심): 매수비율 -20% (기준가의 20% 아래를 매수 목표가로)
+        """
+        try:
+            from backend.domains.infrahub.current_pricer import CurrentPricer
+            current_price = await CurrentPricer.get().get_price1(stk_cd)
+        except Exception as e:
+            logger.warning(f"현재가 조회 실패 ({stk_cd}): {e}")
+            current_price = 0
+
+        if not current_price:
+            return {}
+
+        result = {'base_price': current_price}
+        if is_hold:
+            result['sell_rate'] = -15.0   # 기준가 -15% = 매도 목표가
+        else:
+            result['buy_rate'] = -20.0    # 기준가 -20% = 매수 목표가
+        return result
+
     async def create(self, data: MyStockCreate) -> MyStockResponse:
         """새로운 관심/보유 종목 추가"""
         final_data = data.model_dump()
-        
+
+        # base_price가 없으면 현재가 기준으로 기준가/목표가 초기화
+        if not final_data.get('base_price'):
+            price_fields = await self._get_initial_prices(data.stk_cd, final_data.get('is_hold', 0))
+            final_data.update(price_fields)
+
         # 가격/비율 자동 계산
         self._calculate_prices_and_rates(final_data)
 
@@ -358,20 +385,47 @@ class MyStockService:
     async def sync_holdings(self, holdings: List[dict]):
         """수동 보유 종목 동기화 (holdings_utils 결과물을 인자로 받음)
         - DB에 있고 실제 보유 아닌 종목: is_watch=false면 삭제, true면 is_hold=0 유지
-        - 실제 보유하나 DB에 없는 종목: 추가
+        - 실제 보유하나 DB에 없는 종목: 추가 (현재가 기준 기준가/매도가 초기화)
         """
+        # 1. 기존 DB 종목 코드 파악
         async with self._get_conn() as db:
-            # 기존 보유 상태 초기화
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT stk_cd FROM my_stock") as cursor:
+                rows = await cursor.fetchall()
+            existing_cds = {row['stk_cd'] for row in rows}
+
+        # 2. 신규 종목 현재가 일괄 조회
+        new_cds = [h['stk_cd'] for h in holdings if h['stk_cd'] not in existing_cds]
+        current_prices: dict = {}
+        if new_cds:
+            try:
+                from backend.domains.infrahub.current_pricer import CurrentPricer
+                current_prices = await CurrentPricer.get().get_price_multi(new_cds)
+                logger.info(f"신규 종목 현재가 조회: {len(current_prices)}개")
+            except Exception as e:
+                logger.warning(f"현재가 일괄 조회 실패: {e}")
+
+        # 3. DB 동기화
+        async with self._get_conn() as db:
             await db.execute("UPDATE my_stock SET is_hold = 0")
             for h in holdings:
                 cd = h["stk_cd"]
                 nm = h["stk_nm"]
-                async with db.execute("SELECT 1 FROM my_stock WHERE stk_cd = ?", (cd,)) as cursor:
-                    if await cursor.fetchone():
-                        await db.execute("UPDATE my_stock SET is_hold = 1 WHERE stk_cd = ?", (cd,))
+                if cd in existing_cds:
+                    await db.execute("UPDATE my_stock SET is_hold = 1 WHERE stk_cd = ?", (cd,))
+                else:
+                    price = current_prices.get(cd, 0)
+                    if price:
+                        sell_price = int(price * (1 + (-15.0) / 100))
+                        await db.execute(
+                            "INSERT INTO my_stock (stk_cd, stk_nm, is_hold, base_price, sell_rate, sell_price) VALUES (?, ?, 1, ?, ?, ?)",
+                            (cd, nm, price, -15.0, sell_price)
+                        )
                     else:
-                        await db.execute("INSERT INTO my_stock (stk_cd, stk_nm, is_hold) VALUES (?, ?, 1)", (cd, nm))
-            # is_hold=0, is_watch=0인 종목 삭제 (관심 종목은 유지)
+                        await db.execute(
+                            "INSERT INTO my_stock (stk_cd, stk_nm, is_hold) VALUES (?, ?, 1)",
+                            (cd, nm)
+                        )
             await db.execute("DELETE FROM my_stock WHERE is_hold = 0 AND is_watch = 0")
             await db.commit()
         return True

@@ -38,6 +38,20 @@ async def get_my_stocks(
         logger.error(f"MyStock 조회 실패: {e}")
         return KiwoomApiHelper.create_error_response(error_code="MYSTOCK_GET_ERROR", error_message=str(e))
 
+@router.get("/current-prices", response_model=KiwoomResponse)
+async def get_current_prices():
+    """관심/보유 종목 전체 현재가 조회"""
+    try:
+        from backend.domains.infrahub.current_pricer import CurrentPricer
+        service = get_service("my_stock")
+        stocks = await service.get_list()
+        stk_cds = [s.stk_cd for s in stocks]
+        prices = await CurrentPricer.get().get_price_multi(stk_cds) if stk_cds else {}
+        return KiwoomApiHelper.create_success_response(data={"prices": prices})
+    except Exception as e:
+        logger.error(f"현재가 조회 실패: {e}")
+        return KiwoomApiHelper.create_error_response(error_code="CURRENT_PRICE_ERROR", error_message=str(e))
+
 @router.get("/{stk_cd}", response_model=KiwoomResponse)
 async def get_my_stock(stk_cd: str):
     """특정 종목 상세 조회"""
@@ -100,6 +114,7 @@ async def fill_stock_spec(stk_cd: str):
 @router.post("/fill-all-spec", response_model=KiwoomResponse)
 async def fill_all_spec():
     """모든 종목의 spec 정보 일괄 갱신"""
+    import asyncio
     try:
         service = get_service("my_stock")
         stocks = await service.get_list()
@@ -107,6 +122,7 @@ async def fill_all_spec():
         for s in stocks:
             if await service.fill_spec(s.stk_cd):
                 count += 1
+            await asyncio.sleep(0.5)  # 키움 API 호출 한도 초과 방지 (종목당 2회 호출)
         return KiwoomApiHelper.create_success_response(data={"count": count})
     except Exception as e:
         logger.error(f"Spec 일괄 갱신 실패: {e}")

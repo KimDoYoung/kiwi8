@@ -8,6 +8,7 @@ import { useLayoutStore } from '@/store/layoutStore'
 import {
   getMyStocks,
   updateMyStock,
+  getCurrentPrices,
   syncHoldings,
   fillAllSpec,
   createMyStock,
@@ -45,12 +46,29 @@ export default function MyStockPage() {
     queryFn: () => getMyStocks(),
   })
 
+  const { data: currentPrices, refetch: refetchPrices } = useQuery({
+    queryKey: ['myStockPrices'],
+    queryFn: getCurrentPrices,
+    staleTime: 30000,
+    enabled: !!data && data.length > 0,
+  })
+
   const toggleWatchMutation = useMutation({
     mutationFn: ({ stk_cd, is_watch }: { stk_cd: string; is_watch: number }) =>
       updateMyStock(stk_cd, { is_watch }),
     onMutate: ({ stk_cd, is_watch }) => {
-      queryClient.setQueryData<ReturnType<typeof getMyStocks> extends Promise<infer T> ? T : never>(['myStocks'], (old: any) =>
+      queryClient.setQueryData(['myStocks'], (old: any) =>
         old?.map((item: any) => item.stk_cd === stk_cd ? { ...item, is_watch } : item) ?? old
+      )
+    },
+  })
+
+  const toggleAllWatchMutation = useMutation({
+    mutationFn: (is_watch: number) =>
+      Promise.all((data ?? []).map(s => updateMyStock(s.stk_cd, { is_watch }))),
+    onMutate: (is_watch) => {
+      queryClient.setQueryData(['myStocks'], (old: any) =>
+        old?.map((item: any) => ({ ...item, is_watch })) ?? old
       )
     },
   })
@@ -125,7 +143,7 @@ export default function MyStockPage() {
     },
     {
       headerName: '',
-      width: 52,
+      width: 70,
       sortable: false,
       cellRenderer: (params: any) => (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -136,12 +154,31 @@ export default function MyStockPage() {
           />
         </div>
       ),
-      headerComponent: () => (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <Check style={{ width: 18, height: 18, color: '#16a34a' }} />
-          <Heart style={{ width: 18, height: 18, color: '#ef4444', fill: '#ef4444' }} />
-        </div>
-      ),
+      headerComponent: () => {
+        const allWatched = (data ?? []).length > 0 && (data ?? []).every(s => s.is_watch === 1)
+        return (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <Check style={{ width: 22, height: 22, color: '#16a34a' }} />
+            <Heart
+              style={{ width: 22, height: 22, color: allWatched ? '#ef4444' : '#e5e7eb', fill: allWatched ? '#ef4444' : 'none', cursor: 'pointer' }}
+              onClick={() => toggleAllWatchMutation.mutate(allWatched ? 0 : 1)}
+            />
+          </div>
+        )
+      },
+    },
+    {
+      headerName: '현재가',
+      width: 100,
+      cellClass: 'text-right',
+      valueGetter: (p) => currentPrices?.[p.data.stk_cd] ?? 0,
+      valueFormatter: (p) => p.value ? fmt(p.value) : '',
+      cellStyle: (p) => {
+        const cur = p.value
+        const base = p.data?.base_price
+        if (!cur || !base) return {}
+        return { color: cur > base ? '#ef4444' : cur < base ? '#2563eb' : undefined }
+      },
     },
     {
       headerName: '기준가 (매도|매수)',
@@ -175,44 +212,61 @@ export default function MyStockPage() {
     },
     {
       headerName: '시총(억)',
-      width: 100,
+      width: 110,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['시가총액'],
       valueFormatter: (p) => p.value ? fmt(Math.floor(toNum(p.value))) : '',
     },
     {
       headerName: 'PER',
-      width: 70,
+      width: 80,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['PER'],
     },
     {
       headerName: 'PBR',
-      width: 70,
+      width: 80,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['PBR'],
     },
     {
       headerName: '외인(%)',
-      width: 80,
+      width: 90,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['외인소진율'],
     },
     {
       headerName: '매출액',
-      width: 100,
+      width: 110,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['매출액'],
       valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
     },
     {
       headerName: '영업이익',
-      width: 100,
+      width: 110,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['영업이익'],
       valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
     },
-  ], [setStockDetail, openByScreenNo, menus, toggleWatchMutation])
+    {
+      headerName: 'NXT',
+      width: 60,
+      cellClass: 'text-center',
+      valueGetter: (p) => p.data.spec_data?.['NTX'],
+      cellRenderer: (p: any) => {
+        const v = p.value
+        if (!v) return null
+        return (
+          <span style={{ fontSize: 10, padding: '1px 4px', borderRadius: 3,
+            background: v === 'Y' ? '#dcfce7' : '#fee2e2',
+            color: v === 'Y' ? '#16a34a' : '#dc2626' }}>
+            {v}
+          </span>
+        )
+      },
+    },
+  ], [setStockDetail, openByScreenNo, menus, toggleWatchMutation, toggleAllWatchMutation, data, currentPrices])
 
   if (isLoading) return <Loading />
   if (error) return <LoadingFail error={error} refetch={refetch} />
@@ -268,7 +322,7 @@ export default function MyStockPage() {
             <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
             보유 종목 동기화
           </Button>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          <Button variant="outline" size="sm" onClick={() => { refetch(); refetchPrices() }} disabled={isFetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             {isFetching ? '로딩중...' : '새로고침'}
           </Button>
@@ -286,7 +340,7 @@ export default function MyStockPage() {
             resizable: true,
           }}
           rowHeight={30}
-          headerHeight={32}
+          headerHeight={36}
           animateRows={true}
           getRowId={(params) => params.data.stk_cd}
         />
