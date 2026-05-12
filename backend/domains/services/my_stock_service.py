@@ -24,6 +24,11 @@ class MyStockService:
 
     async def get_list(self, filter: Optional[MyStockFilter] = None) -> List[MyStockResponse]:
         """나의 관심/보유 종목 리스트 조회 (spec 파싱 포함)"""
+        # is_hold, is_watch 모두 false인 레코드 먼저 삭제
+        async with self._get_conn() as db:
+            await db.execute("DELETE FROM my_stock WHERE is_hold = 0 AND is_watch = 0")
+            await db.commit()
+
         query = "SELECT * FROM my_stock WHERE 1=1"
         params = []
 
@@ -351,9 +356,12 @@ class MyStockService:
         logger.info("MyStock scheduler task completed.")
 
     async def sync_holdings(self, holdings: List[dict]):
-        """수동 보유 종목 동기화 (holdings_utils 결과물을 인자로 받음)"""
+        """수동 보유 종목 동기화 (holdings_utils 결과물을 인자로 받음)
+        - DB에 있고 실제 보유 아닌 종목: is_watch=false면 삭제, true면 is_hold=0 유지
+        - 실제 보유하나 DB에 없는 종목: 추가
+        """
         async with self._get_conn() as db:
-            # 기존 보유 상태 초기화 (옵션)
+            # 기존 보유 상태 초기화
             await db.execute("UPDATE my_stock SET is_hold = 0")
             for h in holdings:
                 cd = h["stk_cd"]
@@ -363,6 +371,8 @@ class MyStockService:
                         await db.execute("UPDATE my_stock SET is_hold = 1 WHERE stk_cd = ?", (cd,))
                     else:
                         await db.execute("INSERT INTO my_stock (stk_cd, stk_nm, is_hold) VALUES (?, ?, 1)", (cd, nm))
+            # is_hold=0, is_watch=0인 종목 삭제 (관심 종목은 유지)
+            await db.execute("DELETE FROM my_stock WHERE is_hold = 0 AND is_watch = 0")
             await db.commit()
         return True
 

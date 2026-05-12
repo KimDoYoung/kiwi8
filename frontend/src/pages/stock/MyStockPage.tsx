@@ -4,21 +4,20 @@ import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useStockDetailStore } from '@/store/stockDetailStore'
-import { 
+import { useLayoutStore } from '@/store/layoutStore'
+import {
   getMyStocks,
   updateMyStock,
-  deleteMyStock,
-  fillSpec,
   syncHoldings,
   fillAllSpec,
   createMyStock,
-  type MyStock
 } from '@/services/myStockService'
 import { findStock, type StockSearchItem } from '@/services/stockService'
+import { fetchMenuTree } from '@/services/menuService'
 import { toNum, fmt } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { RefreshCw, Search, Trash2, Info, Check, X, Plus } from 'lucide-react'
+import { RefreshCw, Search, Info, Check, Heart } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { setStatusMessage } from '@/store/statusStore'
@@ -29,31 +28,31 @@ export default function MyStockPage() {
   const gridRef = useRef<AgGridReact>(null)
   const queryClient = useQueryClient()
   const setStockDetail = useStockDetailStore((s) => s.setStock)
-  
+  const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
+
+  const { data: menus } = useQuery({
+    queryKey: ['menus'],
+    queryFn: fetchMenuTree,
+    staleTime: 1000 * 60 * 10,
+  })
+
   const [keyword, setKeyword] = useState('')
   const [searchResults, setSearchResults] = useState<StockSearchItem[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['myStocks'],
     queryFn: () => getMyStocks(),
   })
 
-  const updateMutation = useMutation({
-    mutationFn: ({ stk_cd, data }: { stk_cd: string; data: any }) => updateMyStock(stk_cd, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myStocks'] })
-      setStatusMessage('수정되었습니다.', 'success')
+  const toggleWatchMutation = useMutation({
+    mutationFn: ({ stk_cd, is_watch }: { stk_cd: string; is_watch: number }) =>
+      updateMyStock(stk_cd, { is_watch }),
+    onMutate: ({ stk_cd, is_watch }) => {
+      queryClient.setQueryData<ReturnType<typeof getMyStocks> extends Promise<infer T> ? T : never>(['myStocks'], (old: any) =>
+        old?.map((item: any) => item.stk_cd === stk_cd ? { ...item, is_watch } : item) ?? old
+      )
     },
-    onError: (err: any) => setStatusMessage(`수정 실패: ${err.message}`, 'error')
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (stk_cd: string) => deleteMyStock(stk_cd),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myStocks'] })
-      setStatusMessage('삭제되었습니다.', 'success')
-    }
   })
 
   const syncMutation = useMutation({
@@ -71,14 +70,6 @@ export default function MyStockPage() {
       setStatusMessage(`${count}개 종목 Spec이 갱신되었습니다.`, 'success')
     },
     onError: (err: any) => setStatusMessage(`Spec 갱신 실패: ${err.message}`, 'error')
-  })
-
-  const fillSpecMutation = useMutation({
-    mutationFn: (stk_cd: string) => fillSpec(stk_cd),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myStocks'] })
-      setStatusMessage('상세 정보가 갱신되었습니다.', 'success')
-    }
   })
 
   const addMutation = useMutation({
@@ -107,142 +98,121 @@ export default function MyStockPage() {
     }
   }
 
-  const { mutate: updateMutate } = updateMutation
-  const { mutate: deleteMutate } = deleteMutation
-  const { mutate: fillSpecMutate } = fillSpecMutation
-
   const columnDefs = useMemo<ColDef[]>(() => [
-    { 
-      field: 'stk_cd', 
-      headerName: '코드', 
-      width: 100, 
-      cellClass: 'font-mono text-blue-600 font-bold',
-      onCellClicked: (params) => setStockDetail(params.data.stk_cd, params.data.stk_nm)
-    },
-    { field: 'stk_nm', headerName: '종목명', width: 150, pinned: 'left' },
-    { 
-      field: 'is_hold', 
-      headerName: '보유', 
-      width: 80,
-      cellRenderer: (params: any) => params.value ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-gray-300" />,
-      cellClass: 'flex items-center justify-center'
-    },
-    { 
-      field: 'is_watch', 
-      headerName: '관심', 
-      width: 80,
+    {
+      headerName: '종목명(종목코드)',
+      width: 160,
+      pinned: 'left',
       cellRenderer: (params: any) => (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-6 w-6 p-0"
-          onClick={() => updateMutate({ stk_cd: params.data.stk_cd, data: { is_watch: params.value ? 0 : 1 }})}
-        >
-          {params.value ? <Check className="w-4 h-4 text-blue-600" /> : <X className="w-4 h-4 text-gray-300" />}
-        </Button>
-      ),
-      cellClass: 'flex items-center justify-center'
-    },
-    { 
-      field: 'base_price', 
-      headerName: '기준가', 
-      width: 110, 
-      editable: true,
-      valueFormatter: (p) => fmt(p.value),
-      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { base_price: toNum(p.newValue) }})
-    },
-    { 
-      field: 'sell_rate', 
-      headerName: '매도%', 
-      width: 90, 
-      editable: true,
-      valueFormatter: (p) => p.value ? `${p.value}%` : '',
-      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { sell_rate: parseFloat(p.newValue) }})
-    },
-    { 
-      field: 'sell_price', 
-      headerName: '매도목표가', 
-      width: 110, 
-      editable: true,
-      valueFormatter: (p) => fmt(p.value),
-      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { sell_price: toNum(p.newValue) }})
-    },
-    { 
-      field: 'buy_rate', 
-      headerName: '매수%', 
-      width: 90, 
-      editable: true,
-      valueFormatter: (p) => p.value ? `${p.value}%` : '',
-      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { buy_rate: parseFloat(p.newValue) }})
-    },
-    { 
-      field: 'buy_price', 
-      headerName: '매수목표가', 
-      width: 110, 
-      editable: true,
-      valueFormatter: (p) => fmt(p.value),
-      onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { buy_price: toNum(p.newValue) }})
-    },
-    { 
-      headerName: '업종', 
-      width: 120, 
-      valueGetter: (p) => p.data.spec_data?.['업종명'] 
-    },
-    { 
-      headerName: '시총(억)', 
-      width: 110, 
-      valueGetter: (p) => p.data.spec_data?.['시가총액'],
-      valueFormatter: (p) => p.value ? fmt(Math.floor(toNum(p.value))) : ''
-    },
-    { 
-      headerName: 'PER', 
-      width: 80, 
-      valueGetter: (p) => p.data.spec_data?.['PER'] 
-    },
-    { 
-      headerName: 'PBR', 
-      width: 80, 
-      valueGetter: (p) => p.data.spec_data?.['PBR'] 
-    },
-    { 
-      headerName: '외인%', 
-      width: 80, 
-      valueGetter: (p) => p.data.spec_data?.['외인소진율'] 
-    },
-    { 
-      headerName: '상장일', 
-      width: 100, 
-      valueGetter: (p) => p.data.spec_data?.['상장일'] 
-    },
-    { 
-      headerName: '매출액', 
-      width: 100, 
-      valueGetter: (p) => p.data.spec_data?.['매출액'],
-      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : ''
-    },
-    { 
-      headerName: '영업이익', 
-      width: 100, 
-      valueGetter: (p) => p.data.spec_data?.['영업이익'],
-      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : ''
-    },
-    { field: 'sector', headerName: '분류', width: 100, editable: true, onCellValueChanged: (p) => updateMutate({ stk_cd: p.data.stk_cd, data: { sector: p.newValue }}) },
-    { 
-      headerName: '액션', 
-      width: 120, 
-      pinned: 'right',
-      cellRenderer: (params: any) => (
-        <div className="flex gap-1 items-center h-full">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="상세정보 갱신" onClick={() => fillSpecMutate(params.data.stk_cd)}>
-            <Info className="w-4 h-4 text-blue-500" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="삭제" onClick={() => { if(confirm('삭제하시겠습니까?')) deleteMutate(params.data.stk_cd) }}>
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </Button>
+        <div className="flex items-center gap-1 h-full">
+          <span
+            className="text-sm font-medium cursor-pointer hover:text-blue-600"
+            onClick={() => {
+              setStockDetail(params.data.stk_cd, params.data.stk_nm)
+              openByScreenNo('1201', menus || [])
+            }}
+          >
+            {params.data.stk_nm}
+          </span>
+          <span
+            className="text-[10px] text-blue-500 font-mono cursor-pointer hover:underline"
+            onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${params.data.stk_cd}`, '_blank')}
+          >
+            ({params.data.stk_cd})
+          </span>
         </div>
-      )
-    }
-  ], [updateMutate, deleteMutate, fillSpecMutate, setStockDetail])
+      ),
+    },
+    {
+      headerName: '',
+      width: 52,
+      sortable: false,
+      cellRenderer: (params: any) => (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Check style={{ width: 18, height: 18, color: params.data.is_hold ? '#16a34a' : '#e5e7eb', flexShrink: 0 }} />
+          <Heart
+            style={{ width: 18, height: 18, color: params.data.is_watch ? '#ef4444' : '#e5e7eb', fill: params.data.is_watch ? '#ef4444' : 'none', flexShrink: 0, cursor: 'pointer' }}
+            onClick={() => toggleWatchMutation.mutate({ stk_cd: params.data.stk_cd, is_watch: params.data.is_watch ? 0 : 1 })}
+          />
+        </div>
+      ),
+      headerComponent: () => (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <Check style={{ width: 18, height: 18, color: '#16a34a' }} />
+          <Heart style={{ width: 18, height: 18, color: '#ef4444', fill: '#ef4444' }} />
+        </div>
+      ),
+    },
+    {
+      headerName: '기준가 (매도|매수)',
+      width: 170,
+      cellRenderer: (params: any) => {
+        const base = params.data.base_price
+        const sell = params.data.sell_price
+        const buy = params.data.buy_price
+        if (!base && !sell && !buy) return null
+        return (
+          <div className="flex items-center justify-end gap-1 h-full text-xs">
+            {base && <span className="text-gray-700">{fmt(base)}</span>}
+            {(sell || buy) && <span className="text-gray-400">|</span>}
+            {sell && <span className="text-blue-600">{fmt(sell)}</span>}
+            {sell && buy && <span className="text-gray-300">/</span>}
+            {buy && <span className="text-red-500">{fmt(buy)}</span>}
+          </div>
+        )
+      },
+    },
+    {
+      headerName: '상장일',
+      width: 90,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['상장일'],
+      valueFormatter: (p) => {
+        if (!p.value) return ''
+        const v = String(p.value).replace(/[^0-9]/g, '')
+        return v.length >= 6 ? `${v.slice(0, 4)}-${v.slice(4, 6)}` : p.value
+      },
+    },
+    {
+      headerName: '시총(억)',
+      width: 100,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['시가총액'],
+      valueFormatter: (p) => p.value ? fmt(Math.floor(toNum(p.value))) : '',
+    },
+    {
+      headerName: 'PER',
+      width: 70,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['PER'],
+    },
+    {
+      headerName: 'PBR',
+      width: 70,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['PBR'],
+    },
+    {
+      headerName: '외인(%)',
+      width: 80,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['외인소진율'],
+    },
+    {
+      headerName: '매출액',
+      width: 100,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['매출액'],
+      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
+    },
+    {
+      headerName: '영업이익',
+      width: 100,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['영업이익'],
+      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
+    },
+  ], [setStockDetail, openByScreenNo, menus, toggleWatchMutation])
 
   if (isLoading) return <Loading />
   if (error) return <LoadingFail error={error} refetch={refetch} />
@@ -298,9 +268,9 @@ export default function MyStockPage() {
             <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
             보유 종목 동기화
           </Button>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            새로고침
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? '로딩중...' : '새로고침'}
           </Button>
         </div>
       </div>
@@ -311,22 +281,17 @@ export default function MyStockPage() {
           rowData={data ?? []}
           columnDefs={columnDefs}
           defaultColDef={{
-            sortable: false,
+            sortable: true,
             filter: false,
             resizable: true,
           }}
-          rowSelection={{ mode: 'multiRow' }}
+          rowHeight={30}
+          headerHeight={32}
           animateRows={true}
           getRowId={(params) => params.data.stk_cd}
         />
       </div>
       
-      {/* Spec 정보 요약 (선택된 행이 있을 때 표시하거나, AG Grid의 Detail 셀 활용 가능) */}
-      <div className="mt-4 text-[11px] text-gray-500 flex gap-4">
-        <span>* 기준가 수정 시 목표가가 자동 계산됩니다 (비율 유지).</span>
-        <span>* 비율 수정 시 목표가가 자동 계산됩니다.</span>
-        <span>* 목표가 수정 시 비율이 자동 계산됩니다.</span>
-      </div>
     </div>
   )
 }
