@@ -34,6 +34,7 @@ export default function KisAccountPage() {
     const setStock = useStockDetailStore((s) => s.setStock)
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
     const [isSimpleView, setIsSimpleView] = useState(false)
+    const [isRefreshing, setIsRefreshing] = useState(false)
     const [filterCodes, setFilterCodes] = useState<string[]>([])
 
     const { data: menus } = useQuery({
@@ -239,7 +240,8 @@ export default function KisAccountPage() {
                 title="KIS 계좌현황" screenNo="2101" count={filteredStocks.length}
                 예수금={예수금} 평가금액={평가금액} 손익={손익}
                 onCsv={() => exportCsv(gridRef, 'KIS_계좌현황.csv')}
-                onRefresh={() => refetch()}
+                onRefresh={async () => { setIsRefreshing(true); await refetch(); setIsRefreshing(false); }}
+                isRefreshing={isRefreshing}
             >
                 <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
                     <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>
