@@ -14,7 +14,7 @@ import {
   fillAllSpec,
 } from '@/services/myStockService'
 import { fetchMenuTree } from '@/services/menuService'
-import { toNum, fmt } from '@/lib/utils'
+import { toNum, fmt, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
@@ -42,6 +42,8 @@ export default function MyStockPage() {
   })
 
   const [stockFilter, setStockFilter] = useState<'hold' | 'all' | 'watch'>('all')
+  const [marketFilter, setMarketFilter] = useState<'ALL' | 'KOSPI' | 'KOSDAQ'>('ALL')
+  const [sizeFilter, setSizeFilter] = useState<'ALL' | 'LARGE' | 'MEDIUM' | 'SMALL'>('ALL')
   const [filterCodes, setFilterCodes] = useState<string[]>([])
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
@@ -110,13 +112,22 @@ export default function MyStockPage() {
     let list = data ?? []
     if (stockFilter === 'hold') list = list.filter(s => s.is_hold === 1)
     else if (stockFilter === 'watch') list = list.filter(s => s.is_watch === 1)
+    
+    if (marketFilter === 'KOSPI') list = list.filter(s => s.spec_data?.['시장명'] === '코스피')
+    else if (marketFilter === 'KOSDAQ') list = list.filter(s => s.spec_data?.['시장명'] === '코스닥')
+
+    if (sizeFilter === 'LARGE') list = list.filter(s => s.spec_data?.['회사크기분류'] === '대형주')
+    else if (sizeFilter === 'MEDIUM') list = list.filter(s => s.spec_data?.['회사크기분류'] === '중형주')
+    else if (sizeFilter === 'SMALL') list = list.filter(s => s.spec_data?.['회사크기분류'] === '소형주')
+
     if (filterCodes.length > 0) list = list.filter(s => filterCodes.includes(s.stk_cd))
     return list
-  }, [data, stockFilter, filterCodes])
+  }, [data, stockFilter, marketFilter, sizeFilter, filterCodes])
 
   const columnDefs = useMemo<ColDef[]>(() => [
     {
       headerName: '종목명(종목코드)',
+      field: 'stk_nm',
       width: 160,
       pinned: 'left',
       cellRenderer: (params: any) => {
@@ -175,6 +186,7 @@ export default function MyStockPage() {
     {
       headerName: '구분',
       width: 140,
+      sortable: false,
       cellClass: 'text-center',
       cellRenderer: (p: any) => {
         const spec = p.data.spec_data
@@ -206,6 +218,7 @@ export default function MyStockPage() {
     {
       headerName: '기준가 (매도|매수)',
       width: 170,
+      sortable: false,
       cellRenderer: (params: any) => {
         const base = params.data.base_price
         const sell = params.data.sell_price
@@ -225,6 +238,7 @@ export default function MyStockPage() {
     {
       headerName: '250일 범위',
       width: 200,
+      sortable: false,
       cellRenderer: (p: any) => (
         <PricePositionBar
           high={Math.abs(toNum(p.data.spec_data?.['250최고']))}
@@ -250,30 +264,35 @@ export default function MyStockPage() {
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['시가총액'],
       valueFormatter: (p) => p.value ? fmt(Math.floor(toNum(p.value))) : '',
+      comparator: numComparator,
     },
     {
       headerName: 'PER',
       width: 80,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['PER'],
+      comparator: numComparator,
     },
     {
       headerName: 'PBR',
       width: 80,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['PBR'],
+      comparator: numComparator,
     },
     {
       headerName: '외인(%)',
       width: 90,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['외인소진율'],
+      comparator: numComparator,
     },
     {
       headerName: '유통(%)',
       width: 85,
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['유통비율'],
+      comparator: numComparator,
     },
     {
       headerName: '유통주식',
@@ -281,6 +300,7 @@ export default function MyStockPage() {
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['유통주식'],
       valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
+      comparator: numComparator,
     },
     {
       headerName: '매출액',
@@ -288,6 +308,7 @@ export default function MyStockPage() {
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['매출액'],
       valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
+      comparator: numComparator,
     },
     {
       headerName: '영업이익',
@@ -295,6 +316,7 @@ export default function MyStockPage() {
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['영업이익'],
       valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
+      comparator: numComparator,
     }
   ], [setStockDetail, openByScreenNo, menus, toggleWatchMutation, toggleAllWatchMutation, data, currentPrices])
 
@@ -309,6 +331,11 @@ export default function MyStockPage() {
           <Button size="sm" variant="outline" className="h-[26px] px-2" onClick={openStockFindModal}>
             <Search className="w-4 h-4" />
           </Button>
+          <StockFilterButton
+            uniqueStocks={uniqueStocks}
+            filterCodes={filterCodes}
+            onFilterChange={setFilterCodes}
+          />          
           <GroupRadioButton
             options={[
               {
@@ -332,11 +359,29 @@ export default function MyStockPage() {
             className="h-[26px] bg-white"
             itemClassName="h-[24px] text-xs px-3"
           />
-          <StockFilterButton
-            uniqueStocks={uniqueStocks}
-            filterCodes={filterCodes}
-            onFilterChange={setFilterCodes}
+          <GroupRadioButton
+            options={[
+              { label: '코스닥', value: 'KOSDAQ', className: 'data-[state=on]:bg-pink-100 data-[state=on]:text-pink-700' },
+              { label: '全', value: 'ALL', className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800' },
+              { label: '코스피', value: 'KOSPI', className: 'data-[state=on]:bg-orange-100 data-[state=on]:text-orange-700' },              
+            ]}
+            value={marketFilter}
+            onValueChange={(v) => setMarketFilter(v as typeof marketFilter)}
+            className="h-[26px] bg-white"
+            itemClassName="h-[24px] text-xs px-3"
           />
+          <GroupRadioButton
+            options={[
+              { label: '소형', value: 'SMALL', className: 'data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-700' },
+              { label: '全', value: 'ALL', className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800' },
+              { label: '대형', value: 'LARGE', className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700' },
+            ]}
+            value={sizeFilter}
+            onValueChange={(v) => setSizeFilter(v as typeof sizeFilter)}
+            className="h-[26px] bg-white"
+            itemClassName="h-[24px] text-xs px-3"
+          />
+
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => fillAllSpecMutation.mutate()} disabled={fillAllSpecMutation.isPending}>

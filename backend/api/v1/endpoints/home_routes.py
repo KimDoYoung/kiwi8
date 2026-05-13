@@ -68,7 +68,7 @@ async def logout(request: Request, response: Response):
     # 2. 쿠키 삭제 설정
     response = JSONResponse(content={"status": "success", "message": "Logged out"})
     response.delete_cookie(key=config.ACCESS_TOKEN_NAME, path='/')
-    response.delete_cookie(key=config.REFRESH_TOKEN_NAME, path='/kiwi8/api/auth/refresh')
+    response.delete_cookie(key=config.REFRESH_TOKEN_NAME, path='/')
     
     return response
 
@@ -124,7 +124,7 @@ async def login_for_access_token(
         path='/'
     )
     
-    # 4. 쿠키 설정 (Refresh Token) - 경로 제한으로 보안 강화
+    # 4. 쿠키 설정 (Refresh Token) - 경로 제한 완화하여 신뢰성 확보
     response.set_cookie(
         key=config.REFRESH_TOKEN_NAME,
         value=refresh_token,
@@ -132,7 +132,7 @@ async def login_for_access_token(
         httponly=True,
         secure=False,
         samesite='lax',
-        path='/kiwi8/api/auth/refresh' # Refresh 요청 시에만 전송
+        path='/' # 모든 경로에서 접근 가능하도록 변경
     )
     
     return AccessToken(access_token=access_token, token_type='bearer', user_id=userId)
