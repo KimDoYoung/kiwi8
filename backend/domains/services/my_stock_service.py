@@ -291,9 +291,14 @@ class MyStockService:
                 "상장주식수": out1.get("상장주식", ""),
                 "외인소진율": out1.get("외인소진률", ""),
                 "유통비율": out1.get("유통비율", ""),
+                "유통주식": out1.get("유통주식", ""),
                 "상한가": out1.get("상한가", ""),
                 "하한가": out1.get("하한가", ""),
-                "기준가": out1.get("기준가", "")
+                "기준가": out1.get("기준가", ""),
+                "250최고": out1.get("250최고", ""),
+                "250최저": out1.get("250최저", ""),
+                "시장명" : out2.get("시장명", ""),
+                "감리구분": out2.get("감리구분", "")
             }
             logger.info(f"Final spec object for {stk_cd}: {spec}")
 

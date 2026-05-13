@@ -20,6 +20,8 @@ import LoadingFail from '@/shared/components/LoadingFail'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import { StockFilterButton } from '@/shared/components/StockFilterButton'
 import type { StockOption } from '@/shared/components/StocksSelectBox'
+import { PricePositionBar } from '@/shared/components/PricePositionBar'
+import { MarketBadge, CompanySizeBadge, NXTBadge } from '@/shared/components/StockBadges'
 import { RefreshCw, Search, Info, Check, Heart } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { setStatusMessage } from '@/store/statusStore'
@@ -117,25 +119,32 @@ export default function MyStockPage() {
       headerName: '종목명(종목코드)',
       width: 160,
       pinned: 'left',
-      cellRenderer: (params: any) => (
-        <div className="flex items-center gap-1 h-full">
-          <span
-            className="text-sm font-medium cursor-pointer hover:text-blue-600"
-            onClick={() => {
-              setStockDetail(params.data.stk_cd, params.data.stk_nm)
-              openByScreenNo('1201', menus || [])
-            }}
+      cellRenderer: (params: any) => {
+        const status = params.data.spec_data?.['감리구분']
+        const isNotNormal = status && status !== '정상'
+        return (
+          <div 
+            className={`flex items-center gap-1 h-full px-2 -mx-2 ${isNotNormal ? 'bg-red-50 text-red-900' : ''}`}
+            title={isNotNormal ? status : undefined}
           >
-            {params.data.stk_nm}
-          </span>
-          <span
-            className="text-[10px] text-blue-500 font-mono cursor-pointer hover:underline"
-            onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${params.data.stk_cd}`, '_blank')}
-          >
-            ({params.data.stk_cd})
-          </span>
-        </div>
-      ),
+            <span
+              className="text-sm font-medium cursor-pointer hover:text-blue-600"
+              onClick={() => {
+                setStockDetail(params.data.stk_cd, params.data.stk_nm)
+                openByScreenNo('1201', menus || [])
+              }}
+            >
+              {params.data.stk_nm}
+            </span>
+            <span
+              className="text-[10px] text-blue-500 font-mono cursor-pointer hover:underline"
+              onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${params.data.stk_cd}`, '_blank')}
+            >
+              ({params.data.stk_cd})
+            </span>
+          </div>
+        )
+      },
     },
     {
       headerName: '',
@@ -159,6 +168,27 @@ export default function MyStockPage() {
               style={{ width: 22, height: 22, color: allWatched ? '#ef4444' : '#e5e7eb', fill: allWatched ? '#ef4444' : 'none', cursor: 'pointer' }}
               onClick={() => toggleAllWatchMutation.mutate(allWatched ? 0 : 1)}
             />
+          </div>
+        )
+      },
+    },
+    {
+      headerName: '구분',
+      width: 140,
+      cellClass: 'text-center',
+      cellRenderer: (p: any) => {
+        const spec = p.data.spec_data
+        if (!spec) return null
+        
+        const market = spec['시장명']
+        const size = spec['회사크기분류']
+        const nxt = spec['NTX']
+
+        return (
+          <div className="flex items-center justify-center gap-1 h-full">
+            {market && <MarketBadge market={market} />}
+            {size && <CompanySizeBadge size={size} />}
+            <NXTBadge isPossible={nxt === 'Y' ? 'Y' : 'N'} />
           </div>
         )
       },
@@ -191,6 +221,17 @@ export default function MyStockPage() {
           </div>
         )
       },
+    },
+    {
+      headerName: '250일 범위',
+      width: 200,
+      cellRenderer: (p: any) => (
+        <PricePositionBar
+          high={Math.abs(toNum(p.data.spec_data?.['250최고']))}
+          low={Math.abs(toNum(p.data.spec_data?.['250최저']))}
+          current={Math.abs(currentPrices?.[p.data.stk_cd] || 0)}
+        />
+      )
     },
     {
       headerName: '상장일',
@@ -229,6 +270,19 @@ export default function MyStockPage() {
       valueGetter: (p) => p.data.spec_data?.['외인소진율'],
     },
     {
+      headerName: '유통(%)',
+      width: 85,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['유통비율'],
+    },
+    {
+      headerName: '유통주식',
+      width: 110,
+      cellClass: 'text-right',
+      valueGetter: (p) => p.data.spec_data?.['유통주식'],
+      valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
+    },
+    {
       headerName: '매출액',
       width: 110,
       cellClass: 'text-right',
@@ -241,24 +295,7 @@ export default function MyStockPage() {
       cellClass: 'text-right',
       valueGetter: (p) => p.data.spec_data?.['영업이익'],
       valueFormatter: (p) => p.value ? fmt(toNum(p.value)) : '',
-    },
-    {
-      headerName: 'NXT',
-      width: 60,
-      cellClass: 'text-center',
-      valueGetter: (p) => p.data.spec_data?.['NTX'],
-      cellRenderer: (p: any) => {
-        const v = p.value
-        if (!v) return null
-        return (
-          <span style={{ fontSize: 10, padding: '1px 4px', borderRadius: 3,
-            background: v === 'Y' ? '#dcfce7' : '#fee2e2',
-            color: v === 'Y' ? '#16a34a' : '#dc2626' }}>
-            {v}
-          </span>
-        )
-      },
-    },
+    }
   ], [setStockDetail, openByScreenNo, menus, toggleWatchMutation, toggleAllWatchMutation, data, currentPrices])
 
   if (isLoading) return <Loading />
@@ -282,7 +319,7 @@ export default function MyStockPage() {
               {
                 label: '全',
                 value: 'all',
-                className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-400',
+                className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-200',
               },
               {
                 label: <Heart style={{ width: 13, height: 13 }} />,
