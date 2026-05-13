@@ -267,7 +267,7 @@ class MyStockService:
             
             # 한글 필드명으로 변환
             out1 = KiwoomApiHelper.to_korea_data(resp1.data, "ka10001")
-            logger.debug(f"ka10001 processed output (Korean) for {stk_cd}: {out1}")
+            # logger.debug(f"ka10001 processed output (Korean) for {stk_cd}: {out1}")
             
             # 종목정보조회 (ka10100)
             resp2 = await kiwoom.send_request(KiwoomRequest(api_id="ka10100", payload={"stk_cd": stk_cd}))
@@ -275,7 +275,7 @@ class MyStockService:
                 out2 = KiwoomApiHelper.to_korea_data(resp2.data, "ka10100")
             else:
                 out2 = {}
-            logger.debug(f"ka10100 processed output (Korean) for {stk_cd}: {out2}")
+            # logger.debug(f"ka10100 processed output (Korean) for {stk_cd}: {out2}")
 
             spec = {
                 "상태": out2.get("감리구분", ""),

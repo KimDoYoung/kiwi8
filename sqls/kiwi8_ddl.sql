@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS tokens (
 -- ---------------------------------------------------------------
 -- my_stock
 -- ---------------------------------------------------------------
-DROP TABLE IF EXISTS my_stock;
+-- DROP TABLE IF EXISTS my_stock;
 CREATE TABLE IF NOT EXISTS my_stock (
   stk_cd     TEXT    NOT NULL,                               -- 종목코드 (PK)
   stk_nm     TEXT    NOT NULL,                               -- 종목명
@@ -242,6 +242,45 @@ CREATE TABLE IF NOT EXISTS layout_presets (
 
 CREATE INDEX IF NOT EXISTS idx_layout_presets_user ON layout_presets(user_id);
 
+-- judal 테이블
+CREATE TABLE IF NOT EXISTS judal_themes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    theme_name TEXT NOT NULL,                -- 테마명  
+    stock_name TEXT NOT NULL,                -- 종목명
+    yesterday_ratio REAL,                    -- 전일비
+    three_day_sum REAL,                      -- 3일합산
+    alienation_index_52w INTEGER,            -- 52주 소외지수
+    alienation_index_3y INTEGER,             -- 3년 소외지수
+    stock_index_3y INTEGER,                  -- 3년 주가지수
+    expected_return REAL,                    -- 기대 수익률 (%)
+    pbr REAL,                                -- PBR
+    per REAL,                                -- PER
+    eps INTEGER,                             -- EPS
+    market_cap INTEGER,                      -- 시가총액 (억 단위 등)
+    volume_index_today REAL,                 -- 당일 거래량지수
+    volume_index_7d REAL,                    -- 최근7일 거래량지수
+    buffett_choice INTEGER,                  -- 버핏초이스
+    related_themes TEXT,                     -- 관련테마
+    updated_at TEXT,                         -- 업데이트 (상대 시간)
+    market_type TEXT,                        -- 시장종류 (KOSPI/KOSDAQ 등)
+    stock_code TEXT,                         -- 종목코드 (6자리)
+    current_price INTEGER,                   -- 현재가
+    price_change INTEGER,                    -- 등락가
+    high_52w INTEGER,                        -- 52주최고
+    low_52w INTEGER,                         -- 52주최저
+    change_rate_low_52w REAL,                -- 52주변동률최저
+    change_rate_high_52w REAL,               -- 52주변동률최고
+    high_3y INTEGER,                         -- 3년최고
+    low_3y INTEGER,                          -- 3년최저
+    change_rate_low_3y REAL,                 -- 3년변동률최저
+    change_rate_high_3y REAL,                -- 3년변동률최고
+    created_at DATETIME DEFAULT (DATETIME('now', 'localtime')) -- 데이터 수집 일시
+);
+
+-- 검색 최적화를 위한 인덱스 설정
+CREATE INDEX IF NOT EXISTS idx_stock_code ON judal_themes(stock_code);
+CREATE INDEX IF NOT EXISTS idx_created_at ON judal_themes(created_at);
+
 
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;
@@ -325,5 +364,5 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 (32, 3, '8202', 'K-스케줄러 설정', '/manage/scheduler', 2);
 
 -- [9100 시스템 설정] 하위
-INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(41, 3, '9101', '시스템 제어', '/settings/system', 1);
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (41, 3, '9101', '시스템 제어', '/settings/system', 1);
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (41, 3, '9102', '로그 보기', '/settings/logs', 2);

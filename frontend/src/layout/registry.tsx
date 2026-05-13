@@ -9,6 +9,7 @@ import KisAccountPage from '@/pages/brokers/KisAccountPage'
 import LsAccountPage from '@/pages/brokers/LsAccountPage'
 import StkDiaryList from '@/pages/diary/StkDiaryList'
 import SettingsPage from '@/pages/settings/SettingsPage'
+import LogViewPage from '@/pages/settings/LogViewPage'
 import StockDetailPage from '@/pages/stock/StockDetailPage'
 import MyStockPage from '@/pages/stock/MyStockPage'
 import SchedulerPage from '@/pages/manage/SchedulerPage'
@@ -50,6 +51,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '8202': SchedulerPage,
   // [9100 시스템 설정]
   '9101': SettingsPage,
+  '9102': LogViewPage,
 }
 
 export default registry

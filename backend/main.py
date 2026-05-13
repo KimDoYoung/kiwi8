@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
@@ -84,6 +85,7 @@ def add_middlewares(app: FastAPI):
 def add_routes(app: FastAPI):
     # API 라우터 포함
     app.include_router(home_router)
+    app.include_router(system_router, prefix='/api/v1/common', tags=['common'])
     app.include_router(settings_router, prefix='/api/v1/settings', tags=['settings'])
     # 증권사 API 라우터
     app.include_router(kiwoom_router, prefix='/api/v1/stkcompany/kiwoom', tags=['kiwoom'])
@@ -123,6 +125,7 @@ async def startup_event():
     create_kiwi8_db(db_path)
 
     logger.info(f'DB 파일 경로: {db_path}')
+    logger.info(f'Log 파일 경로: {config.LOG_FILE}')
     logger.info('scheduler 시작함...')
     global scheduler
     scheduler = KScheduler(db_path=db_path, poll_sec=1)
