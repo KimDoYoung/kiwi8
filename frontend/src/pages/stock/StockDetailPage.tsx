@@ -6,7 +6,7 @@ import api from '@/lib/api'
 import { toNum, fmt } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search } from 'lucide-react'
+import { type LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search } from 'lucide-react'
 import { findStock, type StockSearchItem } from '@/services/stockService'
 import { InputWithIcon } from '@/shared/components/InputWithIcon'
 

@@ -170,10 +170,7 @@ export default function MyStockPage() {
       valueGetter: (p) => currentPrices?.[p.data.stk_cd] ?? 0,
       valueFormatter: (p) => p.value ? fmt(p.value) : '',
       cellStyle: (p) => {
-        const cur = p.value
-        const base = p.data?.base_price
-        if (!cur || !base) return {}
-        return { color: cur > base ? '#ef4444' : cur < base ? '#2563eb' : undefined }
+        return { color: '#2563eb' }
       },
     },
     {
@@ -265,7 +262,7 @@ export default function MyStockPage() {
   ], [setStockDetail, openByScreenNo, menus, toggleWatchMutation, toggleAllWatchMutation, data, currentPrices])
 
   if (isLoading) return <Loading />
-  if (error) return <LoadingFail error={error} refetch={refetch} />
+  if (error) return <LoadingFail message={typeof error === 'string' ? error : error?.message || 'Unknown error'} />
 
   return (
     <div className="flex flex-col h-full bg-gray-50 p-4">

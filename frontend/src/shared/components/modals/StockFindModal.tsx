@@ -98,7 +98,7 @@ export default function StockFindModal() {
 
   return (
     <Dialog open={isStockFindModalOpen} onOpenChange={(open) => !open && closeStockFindModal()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col p-0 overflow-hidden top-[40%]">
         <DialogHeader className="p-6 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Search className="w-5 h-5 text-primary" />
