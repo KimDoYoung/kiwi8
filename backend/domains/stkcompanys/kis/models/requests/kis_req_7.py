@@ -2417,5 +2417,62 @@ KIS_REQUEST_DEF_7 = {
                 "description": "다음조회시 입력"
             }
         ]
+    },
+    "FHKST03010100": {
+        "url": "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
+        "title": "국내주식기간별시세(일_주_월_년)",
+        "method": "GET",
+        "tr_id": "FHKST03010100",
+        "query": [
+            {
+                "key": "FID_COND_MRKT_DIV_CODE",
+                "name": "조건 시장 분류 코드",
+                "type": "string",
+                "required": True,
+                "length": 2,
+                "description": "J:KRX, NX:NXT, UN:통합"
+            },
+            {
+                "key": "FID_INPUT_ISCD",
+                "name": "입력 종목코드",
+                "type": "string",
+                "required": True,
+                "length": 12,
+                "description": "종목코드 (ex 005930 삼성전자)"
+            },
+            {
+                "key": "FID_INPUT_DATE_1",
+                "name": "입력 날짜 1",
+                "type": "string",
+                "required": True,
+                "length": 10,
+                "description": "조회 시작일자"
+            },
+            {
+                "key": "FID_INPUT_DATE_2",
+                "name": "입력 날짜 2",
+                "type": "string",
+                "required": True,
+                "length": 10,
+                "description": "조회 종료일자 (최대 100개)"
+            },
+            {
+                "key": "FID_PERIOD_DIV_CODE",
+                "name": "기간분류코드",
+                "type": "string",
+                "required": True,
+                "length": 32,
+                "description": "D:일봉 W:주봉, M:월봉, Y:년봉"
+            },
+            {
+                "key": "FID_ORG_ADJ_PRC",
+                "name": "수정주가 원주가 가격 여부",
+                "type": "string",
+                "required": True,
+                "length": 10,
+                "description": "0:수정주가 1:원주가"
+            }
+        ]
     }
+
 }

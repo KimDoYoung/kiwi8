@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from typing import Optional
 
-from backend.core.exceptions import KiwoomApiException
+from backend.core.exceptions import KiwoomApiException, KisApiException
 from backend.core.logger import get_logger
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.services import get_service
@@ -10,11 +11,61 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
     KiwoomRequest,
     KiwoomResponse,
 )
+from backend.domains.stkcompanys.kis.kis_service import get_kis_api
+from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest, KisResponse
 from backend.utils.kiwi_utils import merge_dicts
 from backend.utils.naver_utils import get_summary_from_naver
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+@router.get("/chart/candle", response_model=KisResponse)
+async def get_candle_chart(
+    stk_code: str,
+    start_date: str,
+    end_date: str,
+    market_div: str = "UN"
+):
+    """
+    KIS API를 사용하여 캔들 차트 데이터를 가져옵니다.
+    TR_ID: FHKST03010100 (국내주식기간별시세)
+    """
+    logger.info(f"[STOCK] 캔들 차트 요청: stk_code={stk_code}, range={start_date}~{end_date}")
+    
+    try:
+        kis = await get_kis_api()
+        if not kis:
+            return KisApiHelper.create_error_response(error_code="999", error_message="KIS API 인스턴스 생성 실패")
+
+        payload = {
+            "FID_COND_MRKT_DIV_CODE": market_div,
+            "FID_INPUT_ISCD": stk_code,
+            "FID_INPUT_DATE_1": start_date,
+            "FID_INPUT_DATE_2": end_date,
+            "FID_PERIOD_DIV_CODE": "D",
+            "FID_ORG_ADJ_PRC": "0"
+        }
+
+        req = KisRequest(
+            api_id="FHKST03010100",
+            title="stock_candle_chart",
+            payload=payload
+        )
+
+        response = await kis.send_request(req)
+        
+        if response.success and response.data:
+            # 한글 필드명 변환 적용
+            response.data = KisApiHelper.to_korea_data(response.data, "FHKST03010100")
+            
+        return response
+
+    except KisApiException as e:
+        logger.error(f"[STOCK] KIS API 예외: {e}")
+        return KisApiHelper.create_error_response(error_code=e.error_code or "999", error_message=str(e))
+    except Exception as e:
+        logger.error(f"[STOCK] 캔들 차트 조회 오류: {e}")
+        return KisApiHelper.create_error_response(error_code="999", error_message=str(e))
 
 @router.get("/info/{stk_code}", response_model=KiwoomResponse)
 async def get_stock_info(stk_code: str):

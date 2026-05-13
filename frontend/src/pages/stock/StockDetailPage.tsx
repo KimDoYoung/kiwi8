@@ -6,13 +6,39 @@ import api from '@/lib/api'
 import { toNum, fmt } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { type LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search } from 'lucide-react'
+import { type LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search, LineChart } from 'lucide-react'
 import { findStock, type StockSearchItem } from '@/services/stockService'
 import { InputWithIcon } from '@/shared/components/InputWithIcon'
+import CandleChart from '@/shared/components/charts/CandleChart'
 
 async function fetchStockInfo(stk_cd: string | null) {
   if (!stk_cd) return null
   const res = await api.get(`/api/v1/stock/info/${stk_cd}`)
+  return res.data
+}
+
+async function fetchCandleData(stk_cd: string | null) {
+  if (!stk_cd) return null
+  
+  // MA60(60일선)을 제대로 그리려면 약 3개월 분량의 데이터가 필요함
+  const now = new Date()
+  const threeMonthsAgo = new Date()
+  threeMonthsAgo.setMonth(now.getMonth() - 3)
+  
+  const formatDate = (date: Date) => {
+    return date.toISOString().split('T')[0].replace(/-/g, '')
+  }
+
+  // 새로 구현된 추상화된 엔드포인트 사용 (GET)
+  const res = await api.get('/api/v1/stock/chart/candle', {
+    params: {
+      stk_code: stk_cd,
+      start_date: formatDate(threeMonthsAgo),
+      end_date: formatDate(now),
+      market_div: 'UN'
+    }
+  })
+  
   return res.data
 }
 
@@ -161,7 +187,17 @@ export default function StockDetailPage() {
     staleTime: 1000 * 60,
   })
 
+  // 차트 데이터 쿼리 추가
+  const { data: chartData, isLoading: isChartLoading } = useQuery({
+    queryKey: ['stock', 'chart', stk_cd],
+    queryFn: () => fetchCandleData(stk_cd),
+    enabled: !!stk_cd,
+    staleTime: 1000 * 60 * 5, // 차트는 5분 정도 캐싱
+  })
+
   const info = data?.data || {}
+  // 한글 변환된 경우 '응답2', 아닌 경우 'output2' 사용
+  const candleList = chartData?.data?.['응답2'] || chartData?.data?.output2 || []
 
   const priceClass = (v: string | number) => {
     const n = toNum(v)
@@ -415,6 +451,25 @@ export default function StockDetailPage() {
                       </div>
                     </div>
                   </SectionCard>
+
+                  {/* 7. 캔들 차트 (전체 너비 사용) */}
+                  <div className="w-full mt-2">
+                    <SectionCard title="최근 2개월 주가 추이" icon={LineChart}>
+                      {isChartLoading ? (
+                        <div className="h-64 flex items-center justify-center text-gray-400">
+                          <RefreshCw size={24} className="animate-spin mr-2" />
+                          차트 데이터를 불러오는 중...
+                        </div>
+                      ) : candleList.length > 0 ? (
+                        <CandleChart data={candleList} height={350} />
+                      ) : (
+                        <div className="h-64 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-200 rounded">
+                          <BarChart3 size={48} className="mb-2 opacity-20" />
+                          <p>차트 데이터가 없습니다.</p>
+                        </div>
+                      )}
+                    </SectionCard>
+                  </div>
                 </div>
               </div>
             </>

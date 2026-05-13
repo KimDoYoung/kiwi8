@@ -836,5 +836,64 @@ KIS_RESPONSE_DEF_7 = {
                 {'key': 'sbsc_unpr', 'name': '청약단가', 'type': 'string', 'required': True, 'length': 224, 'description': ''}
             ]
         }
-    }
+    },
+    # === 국내주식기간별시세(일_주_월_년) ===
+    'FHKST03010100': {
+        'rt_cd': {'name': '성공실패여부', 'type': 'string', 'required': True, 'length': 1, 'description': ''},
+        'msg_cd': {'name': '응답코드', 'type': 'string', 'required': True, 'length': 8, 'description': ''},
+        'msg1': {'name': '응답메세지', 'type': 'string', 'required': True, 'length': 80, 'description': ''},
+        'output1': {
+            'type': 'object',
+            'fields': [
+                {'key': 'prdy_vrss', 'name': '전일대비', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'prdy_vrss_sign', 'name': '전일대비부호', 'type': 'string', 'required': True, 'length': 1, 'description': ''},
+                {'key': 'prdy_ctrt', 'name': '전일대비율', 'type': 'string', 'required': True, 'length': 11, 'description': ''},
+                {'key': 'stck_prdy_clpr', 'name': '주식전일종가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'acml_vol', 'name': '누적거래량', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'acml_tr_pbmn', 'name': '누적거래대금', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'hts_kor_isnm', 'name': 'HTS한글종목명', 'type': 'string', 'required': True, 'length': 40, 'description': ''},
+                {'key': 'stck_prpr', 'name': '주식현재가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_shrn_iscd', 'name': '주식단축종목코드', 'type': 'string', 'required': True, 'length': 9, 'description': ''},
+                {'key': 'prdy_vol', 'name': '전일거래량', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'stck_mxpr', 'name': '주식FHKST03010100상한가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_llam', 'name': '주식하한가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_oprc', 'name': '주식시가2', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_hgpr', 'name': '주식최고가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_lwpr', 'name': '주식최저가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_prdy_oprc', 'name': '주식전일시가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_prdy_hgpr', 'name': '주식전일최고가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_prdy_lwpr', 'name': '주식전일최저가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'askp', 'name': '매도호가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'bidp', 'name': '매수호가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'prdy_vrss_vol', 'name': '전일대비거래량', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'vol_tnrt', 'name': '거래량회전율', 'type': 'string', 'required': True, 'length': 11, 'description': '11(8.2)'},
+                {'key': 'stck_fcam', 'name': '주식액면가', 'type': 'string', 'required': True, 'length': 11, 'description': ''},
+                {'key': 'lstn_stcn', 'name': '상장주수', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'cpfn', 'name': '자본금', 'type': 'string', 'required': True, 'length': 22, 'description': ''},
+                {'key': 'hts_avls', 'name': 'HTS시가총액', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'per', 'name': 'PER', 'type': 'string', 'required': True, 'length': 11, 'description': '11(8.2)'},
+                {'key': 'eps', 'name': 'EPS', 'type': 'string', 'required': True, 'length': 14, 'description': '14(11.2)'},
+                {'key': 'pbr', 'name': 'PBR', 'type': 'string', 'required': True, 'length': 11, 'description': '11(8.2)'},
+                {'key': 'itewhol_loan_rmnd_ratem', 'name': '전체융자잔고비율', 'type': 'string', 'required': True, 'length': 13, 'description': '13(8.4)'}
+            ]
+        },
+        'output2': {
+            'type': 'array',
+            'fields': [
+                {'key': 'stck_bsop_date', 'name': '주식영업일자', 'type': 'string', 'required': True, 'length': 8, 'description': ''},
+                {'key': 'stck_clpr', 'name': '주식종가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_oprc', 'name': '주식시가2', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_hgpr', 'name': '주식최고가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'stck_lwpr', 'name': '주식최저가', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'acml_vol', 'name': '누적거래량', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'acml_tr_pbmn', 'name': '누적거래대금', 'type': 'string', 'required': True, 'length': 18, 'description': ''},
+                {'key': 'flng_cls_code', 'name': '락구분코드', 'type': 'string', 'required': True, 'length': 2, 'description': '01 : 권리락 02 : 배당락 03 : 분배락 04 : 권배락 05 : 중간(분기)배당락 06 : 권리중간배당락 07 : 권리분기배당락'},
+                {'key': 'prtt_rate', 'name': '분할비율', 'type': 'string', 'required': True, 'length': 11, 'description': '기준가/전일 종가'},
+                {'key': 'mod_yn', 'name': '변경여부', 'type': 'string', 'required': True, 'length': 1, 'description': '현재 영업일에 체결이 발생하지 않아 시가가 없을경우 Y 로 표시(차트에서 사용)'},
+                {'key': 'prdy_vrss_sign', 'name': '전일대비부호', 'type': 'string', 'required': True, 'length': 1, 'description': ''},
+                {'key': 'prdy_vrss', 'name': '전일대비', 'type': 'string', 'required': True, 'length': 10, 'description': ''},
+                {'key': 'revl_issu_reas', 'name': '재평가사유코드', 'type': 'string', 'required': True, 'length': 2, 'description': '00:해당없음 01:회사분할 02:자본감소 03:장기간정지 04:초과분배 05:대규모배당 06:회사분할합병 07:ETN증권병합/분할 08:신종증권기세조정 99:기타'}
+            ]
+        }
+    }    
 }
