@@ -28,6 +28,7 @@ from backend.core.jwtmiddleware import JWTAuthMiddleware
 from backend.core.kiwi8_db import create_kiwi8_db
 from backend.core.logger import get_logger
 from backend.domains.kscheduler.k_scheduler import KScheduler
+import backend.jobs.judal_data_collect  # noqa: F401 — job_registry 등록 활성화
 
 logger = get_logger(__name__)
 schduler: KScheduler | None = None
@@ -138,6 +139,16 @@ async def startup_event():
         schedule_type="interval",
         schedule_expr="seconds=300",
         enabled=True
+    ))
+
+    scheduler.upsert_job(Job(
+        name="scrap_judal",
+        func_name="scrap_judal",
+        schedule_type="cron",
+        schedule_expr="0 1 * * *",
+        enabled=True,
+        timeout_sec=2400,
+        overlap_policy="skip",
     ))
 
     asyncio.create_task(scheduler.start(worker_count=4))
