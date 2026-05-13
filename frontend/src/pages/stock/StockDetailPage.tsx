@@ -20,10 +20,12 @@ async function fetchStockInfo(stk_cd: string | null) {
 async function fetchCandleData(stk_cd: string | null) {
   if (!stk_cd) return null
   
-  // MA60(60일선)을 제대로 그리려면 약 3개월 분량의 데이터가 필요함
+  // KIS API는 최대 100개 데이터 제공. MA60이 45개 표시 구간 전체에 걸쳐
+  // 유효값을 갖으려면 최소 100개(60 + 45 - 5 여유)가 필요하므로
+  // 6개월(약 130 거래일)을 요청하여 API 최대치인 100개를 안정적으로 수신한다.
   const now = new Date()
   const threeMonthsAgo = new Date()
-  threeMonthsAgo.setMonth(now.getMonth() - 3)
+  threeMonthsAgo.setMonth(now.getMonth() - 6)
   
   const formatDate = (date: Date) => {
     return date.toISOString().split('T')[0].replace(/-/g, '')
@@ -35,7 +37,6 @@ async function fetchCandleData(stk_cd: string | null) {
       stk_code: stk_cd,
       start_date: formatDate(threeMonthsAgo),
       end_date: formatDate(now),
-      market_div: 'UN'
     }
   })
   

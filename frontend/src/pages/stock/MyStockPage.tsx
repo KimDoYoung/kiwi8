@@ -212,7 +212,7 @@ export default function MyStockPage() {
       valueGetter: (p) => currentPrices?.[p.data.stk_cd] ?? 0,
       valueFormatter: (p) => p.value ? fmt(p.value) : '',
       cellStyle: (p) => {
-        return { color: '#2563eb' }
+        return { color: '#f2401c' }
       },
     },
     {
@@ -249,13 +249,17 @@ export default function MyStockPage() {
     },
     {
       headerName: '상장일',
-      width: 90,
-      cellClass: 'text-right',
-      valueGetter: (p) => p.data.spec_data?.['상장일'],
-      valueFormatter: (p) => {
-        if (!p.value) return ''
-        const v = String(p.value).replace(/[^0-9]/g, '')
-        return v.length >= 6 ? `${v.slice(0, 4)}-${v.slice(4, 6)}` : p.value
+      width: 110,
+      cellRenderer: (p: any) => {
+        const v = String(p.data.spec_data?.['상장일'] ?? '').replace(/[^0-9]/g, '')
+        if (!v || v.length < 6) return null
+        const years = new Date().getFullYear() - parseInt(v.slice(0, 4))
+        return (
+          <span>
+            <span className="inline-block w-[18px] text-right font-mono">{years}</span>
+            <span className="text-[10px] text-gray-400 font-mono">{`(${v.slice(0, 4)}-${v.slice(4, 6)})`}</span>
+          </span>
+        )
       },
     },
     {

@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Query
-from typing import Optional
+from fastapi import APIRouter
 
 from backend.core.exceptions import KiwoomApiException, KisApiException
 from backend.core.logger import get_logger
@@ -24,15 +23,23 @@ async def get_candle_chart(
     stk_code: str,
     start_date: str,
     end_date: str,
-    market_div: str = "UN"
 ):
     """
     KIS API를 사용하여 캔들 차트 데이터를 가져옵니다.
     TR_ID: FHKST03010100 (국내주식기간별시세)
+
+    market_div는 stk_code의 NXT 거래 가능 여부에 따라 자동 결정:
+    - NXT 가능: "UN" (통합)
+    - NXT 불가: "J" (KRX)
     """
     logger.info(f"[STOCK] 캔들 차트 요청: stk_code={stk_code}, range={start_date}~{end_date}")
-    
+
     try:
+        from backend.domains.infrahub.stock_resolver import StockResolver
+        is_nxt = await StockResolver.get().is_enable_nxt(stk_code)
+        market_div = "UN" if is_nxt else "J"
+        logger.debug(f"[STOCK] market_div 결정: {stk_code} is_nxt={is_nxt} -> {market_div}")
+
         kis = await get_kis_api()
         if not kis:
             return KisApiHelper.create_error_response(error_code="999", error_message="KIS API 인스턴스 생성 실패")
@@ -42,7 +49,7 @@ async def get_candle_chart(
             "FID_INPUT_ISCD": stk_code,
             "FID_INPUT_DATE_1": start_date,
             "FID_INPUT_DATE_2": end_date,
-            "FID_PERIOD_DIV_CODE": "D",
+            "FID_PERIOD_DIV_CODE": "D", # 일 단위
             "FID_ORG_ADJ_PRC": "0"
         }
 

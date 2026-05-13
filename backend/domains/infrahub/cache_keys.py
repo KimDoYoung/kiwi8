@@ -23,6 +23,7 @@ class CacheKey(str, Enum):
     STK_INFO_KA10100 = "stk_info_ka10100"  # ka10100 API - 종목정보조회 결과
     OPENDAY = "openday"  # 장 오픈일 여부 (Y/N)
     CURRENT_PRICE = "current_price"  # 주식 현재가 (CurrentPricer)
+    NXT_ENABLE = "nxt_enable"  # NXT 거래 가능 여부 (Y/N) - StockResolver
 
     def __str__(self) -> str:
         """문자열로 변환될 때 value 반환"""
