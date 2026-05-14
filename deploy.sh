@@ -90,6 +90,50 @@ sync_env() {
     info "업로드 완료"
 }
 
+# ── 백엔드 사전 검증 ─────────────────────────────────────────────────────────
+check_backend() {
+    header "백엔드 사전 검증"
+
+    # ruff lint
+    info "ruff lint 검사 중..."
+    if ! uv run ruff check backend/ 2>&1; then
+        error "ruff 검사 실패. 위 오류를 수정 후 다시 실행하세요."
+        exit 1
+    fi
+    info "ruff lint 통과"
+
+    # 구문 검사 (syntax)
+    info "Python 구문 검사 중..."
+    local fail=0
+    while IFS= read -r f; do
+        if ! uv run python -m py_compile "$f" 2>&1; then
+            fail=1
+        fi
+    done < <(find backend -name "*.py")
+    if [[ $fail -ne 0 ]]; then
+        error "Python 구문 오류가 있습니다. 수정 후 다시 실행하세요."
+        exit 1
+    fi
+    info "Python 구문 검사 통과"
+}
+
+# ── 프론트엔드 빌드 사전 검증 ─────────────────────────────────────────────────
+check_frontend_build() {
+    header "프론트엔드 빌드 검증 (tsc + vite build)"
+
+    if [ ! -d "frontend/node_modules" ]; then
+        warn "node_modules 없음. npm install 실행 중..."
+        (cd frontend && npm install --silent)
+    fi
+
+    info "npm run build 실행 중 (시간이 걸릴 수 있습니다)..."
+    if ! (cd frontend && npm run build 2>&1); then
+        error "프론트엔드 빌드 실패. 위 오류를 수정 후 다시 실행하세요."
+        exit 1
+    fi
+    info "프론트엔드 빌드 검증 통과"
+}
+
 # ── Git 상태 확인 ─────────────────────────────────────────────────────────────
 check_git_status() {
     header "Git 상태 확인"
@@ -128,6 +172,8 @@ check_git_status() {
 confirm_deploy() {
     header "배포 확인"
     echo -e "${BOLD}수행할 작업 목록:${NC}"
+    echo -e "  ✔  [완료] 백엔드 ruff lint 및 구문 검사"
+    echo -e "  ✔  [완료] 프론트엔드 tsc + vite build 검증"
     echo -e "  1. .env.local의 VERSION($VERSION)을 .env.jskn에 동기화"
     echo -e "  2. .env.jskn 파일을 $SSH_HOST 서버로 업로드 (scp)"
     echo -e "  3. $SSH_HOST 서버에서 소스 최신화 (git pull)"
@@ -149,6 +195,8 @@ main() {
 
     check_ssh
     check_git_status
+    check_backend
+    check_frontend_build
     sync_env
     confirm_deploy
 
