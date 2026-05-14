@@ -34,7 +34,6 @@ const LogViewPage: React.FC = () => {
   const [lines, setLines] = useState(100);
   const [level, setLevel] = useState<string>('');
   const [fileIndex, setFileIndex] = useState(0);
-  const [autoRefresh, setAutoRefresh] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -88,12 +87,9 @@ const LogViewPage: React.FC = () => {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
-    if (autoRefresh && !loading) {
-      interval = setInterval(fetchLogs, 5000); // 5초마다 갱신
-    }
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, loading, lines, level, fileIndex]);
+  }, [loading, lines, level, fileIndex]);
 
   const handleDownload = () => {
     window.location.href = `/kiwi8/api/v1/common/logs/download?file_index=${fileIndex}`;
@@ -157,18 +153,9 @@ const LogViewPage: React.FC = () => {
             </div>
         </div>
 
-        <div className="flex items-center gap-4">           
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer hover:text-slate-900 transition-colors">
-                <input 
-                type="checkbox" 
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500"
-                />
-                자동 갱신 (5초)
-            </label>
+        <div className="flex items-center gap-6">           
 
-            <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-2">
                 {/* 새로고침 버튼 */}
                 <Button
                     onClick={fetchLogs}
@@ -182,7 +169,7 @@ const LogViewPage: React.FC = () => {
                 {/* 다운로드 버튼 */}
                 <Button
                     onClick={handleDownload}
-                    variant="outline"
+                    variant="warning"
                     title="현재 선택된 로그 파일 전체 다운로드"
                 >
                 <Download size={16} />
