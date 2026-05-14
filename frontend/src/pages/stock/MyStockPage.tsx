@@ -389,15 +389,15 @@ export default function MyStockPage() {
 
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => fillAllSpecMutation.mutate()} disabled={fillAllSpecMutation.isPending}>
+          <Button variant="warning" size="sm" onClick={() => fillAllSpecMutation.mutate()} disabled={fillAllSpecMutation.isPending}>
             <Info className={`w-4 h-4 mr-2 ${fillAllSpecMutation.isPending ? 'animate-pulse' : ''}`} />
             전체 Spec 갱신
           </Button>
-          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+          <Button variant="secondary" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
             <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
             보유 종목 동기화
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { refetch(); refetchPrices() }} disabled={isFetching}>
+          <Button variant="secondary" size="sm" onClick={() => { refetch(); refetchPrices() }} disabled={isFetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             {isFetching ? '로딩중...' : '새로고침'}
           </Button>
