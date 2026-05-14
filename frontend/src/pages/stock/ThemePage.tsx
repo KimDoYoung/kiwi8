@@ -14,7 +14,7 @@ import { fetchMenuTree } from '@/services/menuService'
 import { fmt, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import ThemeQueryConditionPanel, { type ThemeFilterState } from './ThemeQueryConditionPanel'
+import ThemeQueryConditionPanel, { type ThemeFilterState } from '@/shared/components/ThemeQueryConditionPanel'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { cn } from '@/lib/utils'
@@ -43,7 +43,6 @@ export default function ThemePage() {
   })
 
   const [themeMode, setThemeMode] = useState(false) // 테마별 보기 스위치
-  const [deduplicate, setDeduplicate] = useState(false) // 종목별 보기 (중복 제거)
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   
   const [keyword, setKeyword] = useState('') // 상단 전역 검색용
@@ -53,7 +52,7 @@ export default function ThemePage() {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
   const [filterSummary, setFilterSummary] = useState('')
 
-  const [searchParams, setSearchParams] = useState<ThemeParams>({ limit: 100 })
+  const [searchParams, setSearchParams] = useState<ThemeParams>({ limit: 100, deduplicate: true })
 
   // 필터 요약 문자열 생성
   const getFilterSummary = (filters: ThemeFilterState) => {
@@ -99,7 +98,7 @@ export default function ThemePage() {
     
     const params: ThemeParams = {
       theme_name_like: keyword.trim() || undefined,
-      deduplicate: deduplicate,
+      deduplicate: true, // 항상 중복 제거
       limit: (keyword.trim() || hasNumericFilter) ? 1000 : 100
     }
 
@@ -139,8 +138,7 @@ export default function ThemePage() {
     setNumFilters(INITIAL_FILTERS)
     setKeyword('')
     setSelectedTheme(null)
-    setDeduplicate(false)
-    setSearchParams({ limit: 100 })
+    setSearchParams({ limit: 100, deduplicate: true })
     setFilterSummary('')
   }
 
@@ -150,6 +148,7 @@ export default function ThemePage() {
     setKeyword(themeName) 
     setSearchParams({
       theme_name: themeName,
+      deduplicate: true,
       limit: 0
     })
   }
@@ -170,9 +169,9 @@ export default function ThemePage() {
       hide: !!selectedTheme
     },
     { 
-      headerName: '코드', 
+      headerName: '종목코드', 
       field: 'stock_code', 
-      width: 80,
+      width: 90,
       pinned: 'left',
       cellRenderer: (params: any) => (
         <span 
@@ -292,12 +291,6 @@ export default function ThemePage() {
         <div className="flex items-center space-x-2 shrink-0">
           <Switch id="theme-mode" checked={themeMode} onCheckedChange={setThemeMode} />
           <Label htmlFor="theme-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">테마별 보기</Label>
-        </div>
-
-        {/* 종목별 보기 (중복 제거) */}
-        <div className="flex items-center space-x-2 shrink-0 ml-2">
-          <Switch id="deduplicate-mode" checked={deduplicate} onCheckedChange={setDeduplicate} />
-          <Label htmlFor="deduplicate-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">종목별 보기</Label>
         </div>
 
         {/* 검색창 */}

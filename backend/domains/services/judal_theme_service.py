@@ -75,8 +75,8 @@ class JudalThemeService:
             query += " AND pbr <= ?"
             params.append(filter_data.pbr_max)
 
-        if filter_data.deduplicate:
-            query += " GROUP BY stock_code"
+        # 항상 종목코드 기준으로 그룹화하여 중복 제거
+        query += " GROUP BY stock_code"
 
         query += " ORDER BY theme_name ASC, buffett_choice ASC"
         
