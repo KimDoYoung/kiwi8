@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Judal Themes Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 overflow-hidden">
+
+    <div class="flex h-screen border-t border-slate-800">
+        <!-- 사이드바 네비게이션 -->
+        <nav class="w-20 flex flex-col items-center py-6 bg-slate-900 border-r border-slate-800 gap-8">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i data-lucide="trending-up" class="text-white"></i>
+            </div>
+            <button class="p-3 bg-slate-800 rounded-lg text-blue-400 border border-slate-700 shadow-sm" title="테마 맵">
+                <i data-lucide="layout-grid"></i>
+            </button>
+            <button class="p-3 text-slate-500 hover:text-slate-300 transition-colors" title="종목 스크리너">
+                <i data-lucide="filter"></i>
+            </button>
+            <button class="p-3 text-slate-500 hover:text-slate-300 transition-colors mt-auto" title="설정">
+                <i data-lucide="settings"></i>
+            </button>
+        </nav>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 상단 헤더 -->
+            <header class="h-16 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between px-8 backdrop-blur-md">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-xl font-bold tracking-tight">Judal Analysis <span class="text-slate-500 font-normal text-sm ml-2">Data: 2026-05-14 01:00 AM</span></h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-medium">
+                        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Market Open Ready
+                    </span>
+                    <button class="p-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors">
+                        <i data-lucide="refresh-cw" size="18"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 컨텐츠 그리드 -->
+            <main class="flex-1 flex overflow-hidden">
+                
+                <!-- 좌측: 테마 리스트 (Master) -->
+                <section class="w-80 border-r border-slate-800 flex flex-col bg-slate-900/20">
+                    <div class="p-4 border-b border-slate-800">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-2.5 text-slate-500" size="16"></i>
+                            <input type="text" placeholder="테마명 검색..." class="w-full bg-slate-950 border border-slate-800 rounded-md py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                        <!-- 테마 아이템 활성화 상태 -->
+                        <div class="p-3 bg-blue-600/10 border border-blue-500/30 rounded-lg cursor-pointer group">
+                            <div class="flex justify-between items-start">
+                                <span class="font-semibold text-blue-400 text-sm">인공지능(AI)</span>
+                                <span class="text-xs font-bold text-red-400">+5.24%</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-2 text-[11px] text-slate-500">
+                                <span>3일 합산: 12.8%</span>
+                                <span>12 종목</span>
+                            </div>
+                        </div>
+                        <!-- 일반 상태 -->
+                        <div class="p-3 hover:bg-slate-900 rounded-lg cursor-pointer group transition-colors border border-transparent hover:border-slate-800">
+                            <div class="flex justify-between items-start">
+                                <span class="font-semibold text-slate-200 text-sm group-hover:text-white">반도체 세정</span>
+                                <span class="text-xs font-bold text-red-500">+2.11%</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-2 text-[11px] text-slate-500">
+                                <span>3일 합산: 4.2%</span>
+                                <span>8 종목</span>
+                            </div>
+                        </div>
+                        <!-- 반복 아이템들... -->
+                    </div>
+                </section>
+
+                <!-- 우측: 분석 및 필터 (Detail) -->
+                <section class="flex-1 overflow-y-auto custom-scrollbar bg-slate-950 p-6">
+                    <!-- 필터 툴바 -->
+                    <div class="mb-6 flex flex-wrap gap-4 items-center bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">소외지수 (52주)</label>
+                            <input type="range" class="w-32 accent-blue-500">
+                        </div>
+                        <div class="h-8 w-px bg-slate-800 mx-2"></div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">PBR 필터</label>
+                            <select class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs outline-none">
+                                <option>전체</option>
+                                <option>1.0 이하 (저평가)</option>
+                                <option>0.5 이하 (극저평가)</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">버핏 초이스</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" value="" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <button class="ml-auto flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-blue-600/10">
+                            <i data-lucide="play" size="14"></i> 조건 검색 실행
+                        </button>
+                    </div>
+
+                    <!-- 종목 리스트 테이블 -->
+                    <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-800/50 text-[11px] text-slate-400 uppercase tracking-widest">
+                                    <th class="p-4 font-bold">종목명</th>
+                                    <th class="p-4 font-bold">현재가</th>
+                                    <th class="p-4 font-bold text-center">전일비</th>
+                                    <th class="p-4 font-bold text-center">거래지수(7d)</th>
+                                    <th class="p-4 font-bold">52주 위치</th>
+                                    <th class="p-4 font-bold text-right">기대수익률</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                <!-- 종목 행 -->
+                                <tr class="border-t border-slate-800 hover:bg-white/[0.02] transition-colors">
+                                    <td class="p-4">
+                                        <div class="font-bold">신성델타테크</div>
+                                        <div class="text-[10px] text-slate-500">065350 · KOSDAQ</div>
+                                    </td>
+                                    <td class="p-4 font-mono">54,300</td>
+                                    <td class="p-4 text-center">
+                                        <span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded font-bold">+4.2%</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-2 justify-center">
+                                            <div class="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                                <div class="bg-emerald-400 h-full" style="width: 85%"></div>
+                                            </div>
+                                            <span class="text-[10px] text-emerald-400 font-bold">High</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 w-48">
+                                        <div class="w-full bg-slate-800 h-1 rounded-full relative mt-1">
+                                            <div class="absolute w-2 h-2 bg-blue-500 rounded-full top-[-2px]" style="left: 65%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-[9px] text-slate-600 mt-1 uppercase font-bold">
+                                            <span>Low</span>
+                                            <span>High</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right font-bold text-blue-400">+24.5%</td>
+                                </tr>
+                                <!-- 추가 종목 데이터 반복... -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Lucide 아이콘 초기화
+        lucide.createIcons();
+    </script>
+</body>
+</html>

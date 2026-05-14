@@ -14,9 +14,50 @@ from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest, KisResponse
 from backend.utils.kiwi_utils import merge_dicts
 from backend.utils.naver_utils import get_summary_from_naver
+from backend.domains.models.judal_theme_model import JudalThemeFilter, JudalThemeResponse
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+@router.get("/theme", response_model=JudalThemeResponse)
+async def get_themes(
+    theme_name: str | None = None,
+    theme_name_like: str | None = None,
+    stock_name: str | None = None,
+    stock_code: str | None = None,
+    limit: int = 1000
+):
+    """
+    주달 테마 데이터를 조회합니다.
+    """
+    try:
+        service = get_service("judal_theme")
+        filter_data = JudalThemeFilter(
+            theme_name=theme_name,
+            theme_name_like=theme_name_like,
+            stock_name=stock_name,
+            stock_code=stock_code
+        )
+        results = await service.list_themes(filter_data, limit=limit)
+        return JudalThemeResponse(success=True, data=results)
+    except Exception as e:
+        logger.error(f"Error fetching themes: {e}")
+        return JudalThemeResponse(success=False, data=[], message=str(e))
+
+@router.get("/theme/names", response_model=JudalThemeResponse)
+async def get_theme_names():
+    """
+    중복 제거된 테마명 목록을 조회합니다.
+    """
+    try:
+        service = get_service("judal_theme")
+        results = await service.get_distinct_themes()
+        # frontend combo box 에서 사용하기 좋게 dict list로 변환
+        data = [{"name": name} for name in results]
+        return JudalThemeResponse(success=True, data=data)
+    except Exception as e:
+        logger.error(f"Error fetching theme names: {e}")
+        return JudalThemeResponse(success=False, data=[], message=str(e))
 
 @router.get("/chart/candle", response_model=KisResponse)
 async def get_candle_chart(

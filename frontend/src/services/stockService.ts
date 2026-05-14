@@ -65,3 +65,51 @@ export const findStock = async (keyword: string): Promise<StockSearchItem[]> => 
   })
   return response.data.data.results
 }
+
+export interface JudalTheme {
+  theme_name: string
+  stock_name: string
+  stock_code: string
+  market_type: string
+  current_price: number
+  price_change: number
+  yesterday_ratio: number
+  three_day_sum: number
+  expected_return: number
+  pbr: number
+  per: number
+  eps: number
+  market_cap: number
+  volume_index_today: number
+  volume_index_7d: number
+  buffett_choice: number
+  high_52w: number
+  low_52w: number
+  change_rate_low_52w: number
+  change_rate_high_52w: number
+  high_3y: number
+  low_3y: number
+  change_rate_low_3y: number
+  change_rate_high_3y: number
+  related_themes: string
+  updated_at: string
+}
+
+export interface ThemeParams {
+  theme_name?: string
+  theme_name_like?: string
+  stock_name?: string
+  stock_code?: string
+  limit?: number
+}
+
+export const fetchThemes = async (params: ThemeParams): Promise<JudalTheme[]> => {
+  const response = await api.get('/api/v1/stock/theme', { params })
+  return response.data.data
+}
+
+export const fetchThemeNames = async (): Promise<{ name: string }[]> => {
+  const response = await api.get('/api/v1/stock/theme/names')
+  return response.data.data
+}
+

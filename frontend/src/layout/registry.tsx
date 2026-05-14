@@ -12,6 +12,7 @@ import SettingsPage from '@/pages/settings/SettingsPage'
 import LogViewPage from '@/pages/settings/LogViewPage'
 import StockDetailPage from '@/pages/stock/StockDetailPage'
 import MyStockPage from '@/pages/stock/MyStockPage'
+import ThemePage from '@/pages/stock/ThemePage'
 import SchedulerPage from '@/pages/manage/SchedulerPage'
 
 // screen_no → React 컴포넌트 매핑
@@ -28,7 +29,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '1201': StockDetailPage,
   '1202': PlaceholderPage,
   '1203': MyStockPage,
-  '1204': PlaceholderPage,
+  '1204': ThemePage,
   // [1300 주문 센터]
   '1301': PlaceholderPage,
   '1302': PlaceholderPage,
