@@ -1,9 +1,10 @@
+import collections
 import os
 import re
-import collections
-from fastapi import APIRouter, Query, HTTPException
+
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
-from typing import List, Optional
+
 from backend.core.config import config
 
 router = APIRouter()
@@ -19,7 +20,7 @@ def tail(filename, n=100):
 @router.get("/logs")
 async def get_logs(
     lines: int = Query(100, ge=1, le=1000),
-    level: Optional[str] = Query(None, regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"),
+    level: str | None = Query(None, regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"),
     file_index: int = Query(0, ge=0, le=7)
 ):
     log_file = config.LOG_FILE

@@ -4,6 +4,7 @@
 """
 from typing import Any
 
+
 def parse_price(val: Any, default: int = 0) -> int:
     """
     금액, 수량, 단가 등을 나타내는 값(문자열, 숫자)을 안전하게 정수로 변환합니다.

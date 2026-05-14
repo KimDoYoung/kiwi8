@@ -1,6 +1,6 @@
 import json
+
 import aiosqlite
-from typing import List, Optional
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -11,7 +11,7 @@ from backend.domains.models.my_stock_model import (
     MyStockUpdate,
 )
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomRequest, KiwoomApiHelper
+from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
 
 logger = get_logger(__name__)
 
@@ -22,7 +22,7 @@ class MyStockService:
     def _get_conn(self):
         return aiosqlite.connect(self.db_path)
 
-    async def get_list(self, filter: Optional[MyStockFilter] = None) -> List[MyStockResponse]:
+    async def get_list(self, filter: MyStockFilter | None = None) -> list[MyStockResponse]:
         """나의 관심/보유 종목 리스트 조회 (spec 파싱 포함)"""
         # is_hold, is_watch 모두 false인 레코드 먼저 삭제
         async with self._get_conn() as db:
@@ -69,7 +69,7 @@ class MyStockService:
                     
                 return result
 
-    async def get_by_cd(self, stk_cd: str) -> Optional[MyStockResponse]:
+    async def get_by_cd(self, stk_cd: str) -> MyStockResponse | None:
         """종목 코드로 상세 조회"""
         async with self._get_conn() as db:
             db.row_factory = aiosqlite.Row
@@ -135,7 +135,7 @@ class MyStockService:
         
         return await self.get_by_cd(data.stk_cd)
 
-    async def update(self, stk_cd: str, data: MyStockUpdate) -> Optional[MyStockResponse]:
+    async def update(self, stk_cd: str, data: MyStockUpdate) -> MyStockResponse | None:
         """종목 정보 수정 및 가격/비율 자동 계산"""
         current_resp = await self.get_by_cd(stk_cd)
         if not current_resp:
@@ -192,7 +192,7 @@ class MyStockService:
                 update_dict["buy_price"] = None
 
         # DB 업데이트
-        set_clause = ", ".join([f"{k} = ?" for k in update_dict.keys()])
+        set_clause = ", ".join([f"{k} = ?" for k in update_dict])
         params = list(update_dict.values())
         params.append(stk_cd)
 
@@ -387,7 +387,7 @@ class MyStockService:
                     
         logger.info("MyStock scheduler task completed.")
 
-    async def sync_holdings(self, holdings: List[dict]):
+    async def sync_holdings(self, holdings: list[dict]):
         """수동 보유 종목 동기화 (holdings_utils 결과물을 인자로 받음)
         - DB에 있고 실제 보유 아닌 종목: is_watch=false면 삭제, true면 is_hold=0 유지
         - 실제 보유하나 DB에 없는 종목: 추가 (현재가 기준 기준가/매도가 초기화)

@@ -1,5 +1,4 @@
-from typing import List, Optional
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query
 
 from backend.core.logger import get_logger
 from backend.domains.models.my_stock_model import (
@@ -18,10 +17,10 @@ logger = get_logger(__name__)
 
 @router.get("/", response_model=KiwoomResponse)
 async def get_my_stocks(
-    is_hold: Optional[int] = Query(None),
-    is_watch: Optional[int] = Query(None),
-    sector: Optional[str] = Query(None),
-    stk_nm_like: Optional[str] = Query(None),
+    is_hold: int | None = Query(None),
+    is_watch: int | None = Query(None),
+    sector: str | None = Query(None),
+    stk_nm_like: str | None = Query(None),
 ):
     """나의 관심/보유 종목 리스트 조회"""
     try:

@@ -7,6 +7,7 @@ import json
 
 from backend.core.config import config
 from backend.core.logger import get_logger
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
@@ -16,7 +17,6 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
 )
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest
-from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.utils.common_utils import parse_price
 from backend.utils.kiwi_utils import format_account_number
 

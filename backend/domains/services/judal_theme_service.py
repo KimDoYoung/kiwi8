@@ -1,8 +1,8 @@
-from typing import List, Optional
 import aiosqlite
+
 from backend.core.config import config
-from backend.domains.models.judal_theme_model import JudalTheme, JudalThemeFilter
 from backend.core.logger import get_logger
+from backend.domains.models.judal_theme_model import JudalThemeFilter
 
 logger = get_logger(__name__)
 
@@ -10,7 +10,7 @@ class JudalThemeService:
     def __init__(self, db_path: str = None):
         self.db_path = db_path or config.DB_PATH
 
-    async def list_themes(self, filter_data: JudalThemeFilter, limit: int = 1000) -> List[dict]:
+    async def list_themes(self, filter_data: JudalThemeFilter, limit: int = 1000) -> list[dict]:
         """테마 목록 조회"""
         query = "SELECT * FROM judal_themes WHERE 1=1"
         params = []
@@ -97,7 +97,7 @@ class JudalThemeService:
 
         return results
 
-    async def get_distinct_themes(self) -> List[str]:
+    async def get_distinct_themes(self) -> list[str]:
         """중복 제거된 테마명 목록 조회"""
         query = "SELECT DISTINCT theme_name FROM judal_themes ORDER BY theme_name"
         themes = []

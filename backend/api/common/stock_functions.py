@@ -1,11 +1,11 @@
 
 from backend.api.common.validators import validate_market_type
 from backend.core.logger import get_logger
+from backend.domains.infrahub.cache_keys import CacheKey
 from backend.domains.models.stk_info_model import (
     StkInfoBulkCreate,
     StkInfoCreate,
 )
-from backend.domains.infrahub.cache_keys import CacheKey
 from backend.domains.services.dependency import get_service
 from backend.domains.services.settings_keys import SettingsKey
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api

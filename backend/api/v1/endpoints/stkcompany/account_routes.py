@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.infrahub.current_pricer import CurrentPricer
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 from backend.domains.infrahub.stk_info_provider import StkInfoProvider
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
@@ -30,7 +31,6 @@ from backend.domains.stkcompanys.ls.models.ls_schema import (
     LsRequest,
     LsResponse,
 )
-from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.utils.acct_summary import (
     get_kis_account_summary,
     get_kiwoom_account_summary,

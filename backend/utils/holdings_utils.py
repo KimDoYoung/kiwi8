@@ -1,20 +1,20 @@
 """
 보유 종목 리스트 조회 유틸리티
 """
-from typing import List, Dict
+
 from backend.core.config import config
 from backend.core.logger import get_logger
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
 from backend.domains.stkcompanys.ls.ls_service import get_ls_api
 from backend.domains.stkcompanys.ls.models.ls_schema import LsApiHelper, LsRequest
-from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 
 logger = get_logger(__name__)
 
-async def get_all_holdings() -> List[Dict[str, str]]:
+async def get_all_holdings() -> list[dict[str, str]]:
     """모든 증권사 계좌의 보유 종목 리스트 통합 조회"""
     all_holdings = []
     seen_cds = set()
@@ -31,7 +31,7 @@ async def get_all_holdings() -> List[Dict[str, str]]:
                 items = kdata.get('종목별계좌평가현황', [])
                 for item in items:
                     cd = item.get('종목코드', '').strip()
-                    if cd.startswith('A'): cd = cd[1:]
+                    cd = cd.removeprefix('A')
                     if cd and cd not in seen_cds:
                         all_holdings.append({'stk_cd': cd, 'stk_nm': item.get('종목명', '')})
                         seen_cds.add(cd)
@@ -85,7 +85,7 @@ async def get_all_holdings() -> List[Dict[str, str]]:
                 for item in items:
                     cd = item.get('종목번호', '').strip()
                     # LS는 종목코드 앞에 A가 붙는 경우가 있음
-                    if cd.startswith('A'): cd = cd[1:]
+                    cd = cd.removeprefix('A')
                     qty = int(item.get('잔고수량', 0) or 0)
                     if cd and qty > 0 and cd not in seen_cds:
                         all_holdings.append({'stk_cd': cd, 'stk_nm': item.get('종목명', '')})

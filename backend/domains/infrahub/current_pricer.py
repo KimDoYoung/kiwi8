@@ -40,8 +40,8 @@ import json
 from datetime import time
 
 from backend.core.logger import get_logger
-from backend.domains.infrahub.open_time_checker import OpenTimeChecker, now_kst
 from backend.domains.infrahub.cache_keys import CacheKey
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker, now_kst
 
 logger = get_logger(__name__)
 

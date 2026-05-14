@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
@@ -43,6 +43,15 @@ export default function ThemePage() {
   })
 
   const [themeMode, setThemeMode] = useState(false) // 테마별 보기 스위치
+  
+  // 스위치 변경 핸들러
+  const handleThemeModeChange = (val: boolean) => {
+    setThemeMode(val)
+    if (!val) {
+      setThemeFilter('')
+    }
+  }
+
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   
   const [keyword, setKeyword] = useState('') // 상단 전역 검색용
@@ -152,13 +161,6 @@ export default function ThemePage() {
       limit: 0
     })
   }
-
-  // 스위치 변경 시 동작
-  useEffect(() => {
-    if (!themeMode) {
-      setThemeFilter('') // 사이드바 필터만 초기화
-    }
-  }, [themeMode])
 
   const columnDefs = useMemo<ColDef<JudalTheme>[]>(() => [
     { 
@@ -273,7 +275,7 @@ export default function ThemePage() {
       width: 250,
       tooltipField: 'related_themes'
     },
-  ], [selectedTheme, menus])
+  ], [selectedTheme, menus, setStockDetail, openByScreenNo])
 
   const onRowDoubleClicked = (p: any) => {
     if (!p.data) return
@@ -289,7 +291,7 @@ export default function ThemePage() {
       <div className="flex items-center p-2 border-b bg-gray-50/50 gap-4 overflow-x-auto no-scrollbar">
         {/* 테마별 보기 */}
         <div className="flex items-center space-x-2 shrink-0">
-          <Switch id="theme-mode" checked={themeMode} onCheckedChange={setThemeMode} />
+          <Switch id="theme-mode" checked={themeMode} onCheckedChange={handleThemeModeChange} />
           <Label htmlFor="theme-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">테마별 보기</Label>
         </div>
 
@@ -346,12 +348,9 @@ export default function ThemePage() {
             <Search size={14} className="mr-1.5" />
             조회
           </Button>
-        </div>
-
-        {/* 초기화 버튼 */}
-        <div className="flex items-center gap-1 ml-auto">
-          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={handleResetFilters} title="필터 초기화">
+          <Button size="sm" variant="outline" className="h-8 px-3 gap-1.5 border-gray-300" onClick={handleResetFilters}>
             <RefreshCw size={14} className={cn(isFetching && "animate-spin")} />
+            초기화
           </Button>
         </div>
       </div>

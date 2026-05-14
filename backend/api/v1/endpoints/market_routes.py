@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from backend.domains.services.dependency import get_service
-from backend.domains.infrahub.open_time_checker import OpenTimeChecker
+
 from backend.core.logger import get_logger
+from backend.domains.infrahub.open_time_checker import OpenTimeChecker
+from backend.domains.services.dependency import get_service
 
 logger = get_logger(__name__)
 router = APIRouter()

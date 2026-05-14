@@ -211,7 +211,7 @@ export default function MyStockPage() {
       cellClass: 'text-right',
       valueGetter: (p) => currentPrices?.[p.data.stk_cd] ?? 0,
       valueFormatter: (p) => p.value ? fmt(p.value) : '',
-      cellStyle: (p) => {
+      cellStyle: (_p) => {
         return { color: '#f2401c' }
       },
     },

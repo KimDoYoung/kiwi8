@@ -372,7 +372,6 @@ class KScheduler:
 
 from backend.core.logger import get_logger
 from backend.domains.services.my_stock_service import get_my_stock_service
-from backend.utils.holdings_utils import get_all_holdings
 
 logger = get_logger(__name__)
 

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+import backend.jobs.judal_data_collect  # noqa: F401 — job_registry 등록 활성화
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
@@ -28,7 +29,6 @@ from backend.core.jwtmiddleware import JWTAuthMiddleware
 from backend.core.kiwi8_db import create_kiwi8_db
 from backend.core.logger import get_logger
 from backend.domains.kscheduler.k_scheduler import KScheduler
-import backend.jobs.judal_data_collect  # noqa: F401 — job_registry 등록 활성화
 
 logger = get_logger(__name__)
 schduler: KScheduler | None = None

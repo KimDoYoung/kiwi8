@@ -21,8 +21,10 @@ def get_service(name: str):
         return _services[name]
     
     # 순환 참조 방지를 위해 함수 내부에서 import
-    from backend.domains.services.auth_service import AuthService
     from backend.domains.infrahub.cache_manager import CacheManager
+    from backend.domains.market.market_service import MarketService
+    from backend.domains.services.auth_service import AuthService
+    from backend.domains.services.judal_theme_service import JudalThemeService
     from backend.domains.services.layout_preset_service import LayoutPresetService
     from backend.domains.services.menus_service import MenusService
     from backend.domains.services.my_stock_service import MyStockService
@@ -32,8 +34,6 @@ def get_service(name: str):
     from backend.domains.services.stk_info_service import StkInfoService
     from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
     from backend.domains.services.tokens_service import TokensService
-    from backend.domains.market.market_service import MarketService
-    from backend.domains.services.judal_theme_service import JudalThemeService
     
     # 서비스 클래스 매핑
     service_classes = {

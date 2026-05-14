@@ -1,28 +1,13 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 
-interface CandleData {
-  주식영업일자?: string;
-  주식시가2?: string;
-  주식종가?: string;
-  주식최저가?: string;
-  주식최고가?: string;
-  누적거래량?: string;
-  '영업일자'?: string;
-  '시가'?: string;
-  '종가'?: string;
-  '저가'?: string;
-  '고가'?: string;
-  '거래량'?: string;
-}
-
 interface CandleChartProps {
   data: any[];
   title?: string;
   height?: string | number;
 }
 
-const CandleChart: React.FC<CandleChartProps> = ({ data, title, height = 400 }) => {
+const CandleChart: React.FC<CandleChartProps> = ({ data, _title, height = 400 }) => {
   const chartOptions = useMemo(() => {
     if (!data || data.length === 0) return {};
 

@@ -1,11 +1,12 @@
-import sqlite3
 import asyncio
+import sqlite3
 from datetime import datetime
+
 from backend.core.config import config
 from backend.core.logger import get_logger
-from backend.utils.naver_utils import get_jisu_from_naver
-from backend.domains.models.market_model import MarketJisu
 from backend.domains.kscheduler.k_scheduler import job_registry
+from backend.domains.models.market_model import MarketJisu
+from backend.utils.naver_utils import get_jisu_from_naver
 
 logger = get_logger(__name__)
 
@@ -137,8 +138,8 @@ async def proactive_token_refresh_job(_payload: dict):
     내부적으로 BaseTokenManager.refresh_token()이 만료 시간을 체크하므로,
     여기서는 각 증권사별 API 인스턴스를 가져와 refresh_token을 호출하기만 함.
     """
-    from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
     from backend.domains.stkcompanys.kis.kis_service import get_kis_api
+    from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
     from backend.domains.stkcompanys.ls.ls_service import get_ls_api
     
     logger.info("[스케줄러] 증권사 토큰 갱신 확인 중...")
