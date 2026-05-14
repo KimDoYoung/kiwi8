@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-interface DiaryInitialData {
+export interface DiaryInitialData {
   id?: string
   ymd?: string
   stk_cd?: string
