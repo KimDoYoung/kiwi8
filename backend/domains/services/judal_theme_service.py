@@ -31,6 +31,49 @@ class JudalThemeService:
             query += " AND stock_code = ?"
             params.append(filter_data.stock_code)
 
+        # 수치형 필터 추가
+        if filter_data.current_price_min is not None:
+            query += " AND current_price >= ?"
+            params.append(filter_data.current_price_min)
+        if filter_data.current_price_max is not None:
+            query += " AND current_price <= ?"
+            params.append(filter_data.current_price_max)
+        
+        if filter_data.market_cap_min is not None:
+            query += " AND market_cap >= ?"
+            params.append(filter_data.market_cap_min)
+        if filter_data.market_cap_max is not None:
+            query += " AND market_cap <= ?"
+            params.append(filter_data.market_cap_max)
+
+        if filter_data.yesterday_ratio_min is not None:
+            query += " AND yesterday_ratio >= ?"
+            params.append(filter_data.yesterday_ratio_min)
+        if filter_data.yesterday_ratio_max is not None:
+            query += " AND yesterday_ratio <= ?"
+            params.append(filter_data.yesterday_ratio_max)
+
+        if filter_data.three_day_sum_min is not None:
+            query += " AND three_day_sum >= ?"
+            params.append(filter_data.three_day_sum_min)
+        if filter_data.three_day_sum_max is not None:
+            query += " AND three_day_sum <= ?"
+            params.append(filter_data.three_day_sum_max)
+
+        if filter_data.per_min is not None:
+            query += " AND per >= ?"
+            params.append(filter_data.per_min)
+        if filter_data.per_max is not None:
+            query += " AND per <= ?"
+            params.append(filter_data.per_max)
+
+        if filter_data.pbr_min is not None:
+            query += " AND pbr >= ?"
+            params.append(filter_data.pbr_min)
+        if filter_data.pbr_max is not None:
+            query += " AND pbr <= ?"
+            params.append(filter_data.pbr_max)
+
         query += " ORDER BY theme_name ASC, buffett_choice ASC"
         
         if limit and limit > 0:

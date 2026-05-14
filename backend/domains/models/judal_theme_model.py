@@ -46,6 +46,18 @@ class JudalThemeFilter(BaseModel):
     stock_name: Optional[str] = None
     stock_code: Optional[str] = None
     theme_name_like: Optional[str] = None
+    current_price_min: Optional[int] = None
+    current_price_max: Optional[int] = None
+    market_cap_min: Optional[int] = None
+    market_cap_max: Optional[int] = None
+    yesterday_ratio_min: Optional[float] = None
+    yesterday_ratio_max: Optional[float] = None
+    three_day_sum_min: Optional[float] = None
+    three_day_sum_max: Optional[float] = None
+    per_min: Optional[float] = None
+    per_max: Optional[float] = None
+    pbr_min: Optional[float] = None
+    pbr_max: Optional[float] = None
 
 class JudalThemeResponse(BaseModel):
     """테마 응답 모델"""

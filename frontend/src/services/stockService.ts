@@ -100,6 +100,18 @@ export interface ThemeParams {
   theme_name_like?: string
   stock_name?: string
   stock_code?: string
+  current_price_min?: number
+  current_price_max?: number
+  market_cap_min?: number
+  market_cap_max?: number
+  yesterday_ratio_min?: number
+  yesterday_ratio_max?: number
+  three_day_sum_min?: number
+  three_day_sum_max?: number
+  per_min?: number
+  per_max?: number
+  pbr_min?: number
+  pbr_max?: number
   limit?: number
 }
 

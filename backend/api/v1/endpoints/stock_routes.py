@@ -25,6 +25,18 @@ async def get_themes(
     theme_name_like: str | None = None,
     stock_name: str | None = None,
     stock_code: str | None = None,
+    current_price_min: int | None = None,
+    current_price_max: int | None = None,
+    market_cap_min: int | None = None,
+    market_cap_max: int | None = None,
+    yesterday_ratio_min: float | None = None,
+    yesterday_ratio_max: float | None = None,
+    three_day_sum_min: float | None = None,
+    three_day_sum_max: float | None = None,
+    per_min: float | None = None,
+    per_max: float | None = None,
+    pbr_min: float | None = None,
+    pbr_max: float | None = None,
     limit: int = 1000
 ):
     """
@@ -36,7 +48,19 @@ async def get_themes(
             theme_name=theme_name,
             theme_name_like=theme_name_like,
             stock_name=stock_name,
-            stock_code=stock_code
+            stock_code=stock_code,
+            current_price_min=current_price_min,
+            current_price_max=current_price_max,
+            market_cap_min=market_cap_min,
+            market_cap_max=market_cap_max,
+            yesterday_ratio_min=yesterday_ratio_min,
+            yesterday_ratio_max=yesterday_ratio_max,
+            three_day_sum_min=three_day_sum_min,
+            three_day_sum_max=three_day_sum_max,
+            per_min=per_min,
+            per_max=per_max,
+            pbr_min=pbr_min,
+            pbr_max=pbr_max
         )
         results = await service.list_themes(filter_data, limit=limit)
         return JudalThemeResponse(success=True, data=results)

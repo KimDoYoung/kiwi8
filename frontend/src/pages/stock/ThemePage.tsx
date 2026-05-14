@@ -8,10 +8,12 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
-import { fetchThemes, fetchThemeNames, type JudalTheme } from '@/services/stockService'
+import { fetchThemes, fetchThemeNames, type JudalTheme, type ThemeParams } from '@/services/stockService'
+import { fetchMenuTree } from '@/services/menuService'
 import { fmt, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
+import NumberOverBelow from '@/shared/components/NumberOverBelow'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { cn } from '@/lib/utils'
@@ -23,17 +25,30 @@ export default function ThemePage() {
   const setStockDetail = useStockDetailStore((s) => s.setStock)
   const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
 
+  // 메뉴 정보 가져오기 (화면 이동용)
+  const { data: menus } = useQuery({
+    queryKey: ['menus'],
+    queryFn: fetchMenuTree,
+    staleTime: 1000 * 60 * 10,
+  })
+
   const [themeMode, setThemeMode] = useState(false) // 테마별 보기 스위치
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   
   const [keyword, setKeyword] = useState('') // 상단 전역 검색용
   const [themeFilter, setThemeFilter] = useState('') // 왼쪽 테마 리스트 필터 전용
   
-  const [searchParams, setSearchParams] = useState<{
-    theme_name?: string
-    theme_name_like?: string
-    limit?: number
-  }>({ limit: 100 })
+  // 상세 필터 상태
+  const [numFilters, setNumFilters] = useState({
+    current_price: { value: 0, isOver: true },
+    market_cap: { value: 0, isOver: true },
+    yesterday_ratio: { value: 0, isOver: true },
+    three_day_sum: { value: 0, isOver: true },
+    per: { value: 0, isOver: true },
+    pbr: { value: 0, isOver: true },
+  })
+
+  const [searchParams, setSearchParams] = useState<ThemeParams>({ limit: 100 })
 
   // 테마명 목록 (왼쪽 사이드바용)
   const { data: themeNames, isLoading: isThemeNamesLoading } = useQuery({
@@ -61,10 +76,54 @@ export default function ThemePage() {
   const handleSearch = () => {
     setSelectedTheme(null)
     setThemeFilter('') 
-    setSearchParams({
+    
+    const params: ThemeParams = {
       theme_name_like: keyword.trim() || undefined,
       limit: keyword.trim() ? 1000 : 100
+    }
+
+    // 수치 필터 적용
+    if (numFilters.current_price.value > 0) {
+      if (numFilters.current_price.isOver) params.current_price_min = numFilters.current_price.value
+      else params.current_price_max = numFilters.current_price.value
+    }
+    if (numFilters.market_cap.value > 0) {
+      if (numFilters.market_cap.isOver) params.market_cap_min = numFilters.market_cap.value
+      else params.market_cap_max = numFilters.market_cap.value
+    }
+    if (numFilters.yesterday_ratio.value !== 0) {
+      if (numFilters.yesterday_ratio.isOver) params.yesterday_ratio_min = numFilters.yesterday_ratio.value
+      else params.yesterday_ratio_max = numFilters.yesterday_ratio.value
+    }
+    if (numFilters.three_day_sum.value !== 0) {
+      if (numFilters.three_day_sum.isOver) params.three_day_sum_min = numFilters.three_day_sum.value
+      else params.three_day_sum_max = numFilters.three_day_sum.value
+    }
+    if (numFilters.per.value > 0) {
+      if (numFilters.per.isOver) params.per_min = numFilters.per.value
+      else params.per_max = numFilters.per.value
+    }
+    if (numFilters.pbr.value > 0) {
+      if (numFilters.pbr.isOver) params.pbr_min = numFilters.pbr.value
+      else params.pbr_max = numFilters.pbr.value
+    }
+
+    setSearchParams(params)
+  }
+
+  // 필터 초기화
+  const handleResetFilters = () => {
+    setNumFilters({
+      current_price: { value: 10000, isOver: true },
+      market_cap: { value: 5000, isOver: true },
+      yesterday_ratio: { value: 0.5, isOver: true },
+      three_day_sum: { value: 0.5, isOver: true },
+      per: { value: 10, isOver: true },
+      pbr: { value: 10, isOver: true },
     })
+    setKeyword('')
+    setSelectedTheme(null)
+    setSearchParams({ limit: 100 })
   }
 
   // 테마 선택 핸들러
@@ -77,12 +136,10 @@ export default function ThemePage() {
     })
   }
 
-  // 스위치 변경 시 초기화
+  // 스위치 변경 시 동작
   useEffect(() => {
     if (!themeMode) {
-      setSelectedTheme(null)
-      setThemeFilter('')
-      setSearchParams({ limit: 100 })
+      setThemeFilter('') // 사이드바 필터만 초기화
     }
   }, [themeMode])
 
@@ -121,8 +178,8 @@ export default function ThemePage() {
         <span 
           className="text-blue-600 font-medium cursor-pointer hover:underline"
           onClick={() => {
-             setStockDetail({ stk_cd: params.data.stock_code, stk_nm: params.data.stock_name })
-             openByScreenNo('1201')
+             setStockDetail(params.data.stock_code, params.data.stock_name)
+             openByScreenNo('1201', menus || [])
           }}
         >
           {params.value}
@@ -132,7 +189,7 @@ export default function ThemePage() {
     { 
       headerName: '현재가', 
       field: 'current_price', 
-      width: 100,
+      width: 110,
       valueFormatter: (p) => fmt(p.value),
       cellClass: 'text-right font-mono',
       comparator: numComparator
@@ -140,7 +197,7 @@ export default function ThemePage() {
     { 
       headerName: '전일비(%)', 
       field: 'yesterday_ratio', 
-      width: 90,
+      width: 100,
       valueFormatter: (p) => p.value != null ? `${p.value.toFixed(2)}%` : '',
       cellClassRules: {
         'text-red-500': (p: any) => p.value > 0,
@@ -152,7 +209,7 @@ export default function ThemePage() {
     { 
       headerName: '3일합산', 
       field: 'three_day_sum', 
-      width: 90,
+      width: 100,
       valueFormatter: (p) => p.value != null ? `${p.value.toFixed(2)}%` : '',
       cellClassRules: {
         'text-red-500': (p: any) => p.value > 0,
@@ -162,17 +219,9 @@ export default function ThemePage() {
       comparator: numComparator
     },
     { 
-      headerName: '기대수익', 
-      field: 'expected_return', 
-      width: 90,
-      valueFormatter: (p) => p.value != null ? `${p.value.toFixed(2)}%` : '',
-      cellClass: 'text-right font-mono',
-      comparator: numComparator
-    },
-    { 
       headerName: '시가총액(억)', 
       field: 'market_cap', 
-      width: 110,
+      width: 120,
       valueFormatter: (p) => fmt(p.value),
       cellClass: 'text-right font-mono',
       comparator: numComparator
@@ -180,7 +229,7 @@ export default function ThemePage() {
     { 
       headerName: 'PER', 
       field: 'per', 
-      width: 70,
+      width: 100,
       valueFormatter: (p) => p.value != null ? p.value.toFixed(2) : '',
       cellClass: 'text-right font-mono',
       comparator: numComparator
@@ -188,7 +237,7 @@ export default function ThemePage() {
     { 
       headerName: 'PBR', 
       field: 'pbr', 
-      width: 70,
+      width: 100,
       valueFormatter: (p) => p.value != null ? p.value.toFixed(2) : '',
       cellClass: 'text-right font-mono',
       comparator: numComparator
@@ -196,7 +245,7 @@ export default function ThemePage() {
     { 
       headerName: '거래지수(일)', 
       field: 'volume_index_today', 
-      width: 100,
+      width: 120,
       valueFormatter: (p) => p.value != null ? p.value.toFixed(2) : '',
       cellClass: 'text-right font-mono',
       comparator: numComparator
@@ -207,60 +256,102 @@ export default function ThemePage() {
       width: 250,
       tooltipField: 'related_themes'
     },
-  ], [selectedTheme])
+  ], [selectedTheme, menus])
+
+  const onRowDoubleClicked = (p: any) => {
+    if (!p.data) return
+    setStockDetail(p.data.stock_code, p.data.stock_name)
+    openByScreenNo('1201', menus || [])
+  }
 
   if (error) return <LoadingFail message="테마 데이터를 불러오지 못했습니다." onRetry={() => refetch()} />
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* 상단 툴바 */}
-      <div className="flex items-center justify-between p-3 border-b bg-gray-50/50 gap-4">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center space-x-2">
-            <Switch 
-              id="theme-mode" 
-              checked={themeMode} 
-              onCheckedChange={setThemeMode} 
-            />
-            <Label htmlFor="theme-mode" className="text-sm font-medium cursor-pointer">
-              테마별 보기
-            </Label>
-          </div>
+      <div className="flex items-center p-2 border-b bg-gray-50/50 gap-4 overflow-x-auto no-scrollbar">
+        {/* 테마별 보기 */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <Switch id="theme-mode" checked={themeMode} onCheckedChange={setThemeMode} />
+          <Label htmlFor="theme-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">테마별 보기</Label>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="relative group">
-              <Input
-                placeholder="종목/테마 검색..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-64 h-9 pr-8"
-              />
-              {keyword && (
-                <button 
-                  onClick={() => { setKeyword(''); setSelectedTheme(null); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-            <Button size="sm" onClick={handleSearch} disabled={isFetching}>
-              <Search size={16} className="mr-1.5" />
-              검색
-            </Button>
+        {/* 검색창 */}
+        <div className="flex items-center gap-1 shrink-0">
+          <div className="relative group">
+            <Input
+              placeholder="종목/테마 검색..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="w-48 h-8 pr-7 text-xs"
+            />
+            {keyword && (
+              <button 
+                onClick={() => { setKeyword(''); setSelectedTheme(null); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
+          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={handleSearch} disabled={isFetching}>
+            <Search size={14} />
+          </Button>
+        </div>
 
-          <div className="flex items-center gap-3 border-l pl-4">
-             <span className="text-xs text-gray-500 whitespace-nowrap">
-               {selectedTheme ? `[${selectedTheme}] ` : ''}{data?.length ?? 0}건 조회됨
-             </span>
-             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => refetch()} disabled={isFetching} title="새로고침">
-               <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-             </Button>
-          </div>
+        {/* 수치 필터들 */}
+        <div className="flex items-center gap-2">
+          <NumberOverBelow 
+            label="현재가" 
+            value={numFilters.current_price.value} 
+            isOver={numFilters.current_price.isOver}
+            onChange={(d) => setNumFilters(prev => ({ ...prev, current_price: d }))}
+            step={1000}
+            min={0}
+          />
+          <NumberOverBelow 
+            label="시총(억)" 
+            value={numFilters.market_cap.value} 
+            isOver={numFilters.market_cap.isOver}
+            onChange={(d) => setNumFilters(prev => ({ ...prev, market_cap: d }))}
+            step={100}
+            min={0}
+          />
+          <NumberOverBelow 
+            label="전일비(%)" 
+            value={numFilters.yesterday_ratio.value} 
+            isOver={numFilters.yesterday_ratio.isOver}
+            onChange={(d) => setNumFilters(prev => ({ ...prev, yesterday_ratio: d }))}
+            step={1}
+            min={-30}
+            max={30}
+          />
+          <NumberOverBelow 
+            label="3일합(%)" 
+            value={numFilters.three_day_sum.value} 
+            isOver={numFilters.three_day_sum.isOver}
+            onChange={(d) => setNumFilters(prev => ({ ...prev, three_day_sum: d }))}
+            step={1}
+            min={-100}
+            max={100}
+          />
+          <NumberOverBelow 
+            label="PER" 
+            value={numFilters.per.value} 
+            isOver={numFilters.per.isOver}
+            onChange={(d) => setNumFilters(prev => ({ ...prev, per: d }))}
+            step={1}
+            min={0}
+          />
+          <NumberOverBelow 
+            label="PBR" 
+            value={numFilters.pbr.value} 
+            isOver={numFilters.pbr.isOver}
+            onChange={(d) => setNumFilters(prev => ({ ...prev, pbr: d }))}
+            step={0.1}
+            min={0}
+          />
         </div>
       </div>
 
@@ -325,7 +416,7 @@ export default function ThemePage() {
 
         {/* 오른쪽 데이터 그리드 */}
         <div className="flex-1 relative overflow-hidden">
-          {isLoading && <Loading overlay />}
+          {isLoading && <Loading />}
           <div className="ag-theme-alpine w-full h-full">
             <AgGridReact
               ref={gridRef}
@@ -339,6 +430,7 @@ export default function ThemePage() {
               animateRows={true}
               headerHeight={34}
               rowHeight={32}
+              onRowDoubleClicked={onRowDoubleClicked}
             />
           </div>
         </div>
