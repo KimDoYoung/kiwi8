@@ -6,56 +6,25 @@ Usage:
 
 Example:
   python tools/naver_option.py 005930
-  python tools/naver_option.py 160190
+  python tools/naver_option.py 047810
 
-오늘 날짜 게시물을 수집해 stk_options 테이블에 UPSERT한다.
-(배치 job과 로직 동일, 날짜만 오늘로)
+오늘 날짜 게시물(최대 40건)을 제목+본문으로 수집해 stk_options 테이블에 UPSERT한다.
 """
 
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-import time
-
-import requests
-from bs4 import BeautifulSoup
-
 from backend.jobs.naver_options import (
-    _HEADERS,
-    _NAVER_BOARD_URL,
     _fetch_detail,
     _fetch_posts,
     _make_session,
     _save_options,
 )
-
-
-def _diagnose(stk_cd: str):
-    """1페이지를 직접 파싱해 날짜 포맷을 출력"""
-    url = f"{_NAVER_BOARD_URL}?code={stk_cd}&page=1"
-    session = _make_session()
-    time.sleep(0.5)
-    resp = session.get(url, timeout=10)
-    soup = BeautifulSoup(resp.text, "html.parser")
-    table = soup.find('table', class_='type2')
-    if not table:
-        print("[진단] type2 테이블을 찾을 수 없습니다. 응답 앞부분:")
-        print(resp.text[:500])
-        return
-    rows = table.find_all('tr', onmouseover=True)
-    print(f"[진단] onmouseover 행 수: {len(rows)}")
-    for i, row in enumerate(rows[:5]):
-        tds = row.find_all('td')
-        date_span = tds[0].find('span', class_='tah p10 gray03') if tds else None
-        date_str = date_span.get_text(strip=True) if date_span else '(날짜 없음)'
-        title_td = tds[1] if len(tds) > 1 else None
-        anchor = title_td.find('a', title=True) if title_td else None
-        title = anchor.get('title', '')[:40] if anchor else '(제목 없음)'
-        print(f"  행{i+1}: 날짜='{date_str}'  제목='{title}'")
 
 
 def main():
@@ -67,10 +36,10 @@ def main():
     today_dot = datetime.now().strftime('%Y.%m.%d')
     today_ymd = datetime.now().strftime('%Y%m%d')
 
-    print(f"종목코드: {stk_cd}")
-    print(f"수집 날짜: {today_dot}")
-    print("-" * 60)
-    _diagnose(stk_cd)
+    start = time.time()
+
+    print(f"종목코드 : {stk_cd}")
+    print(f"수집 날짜: {today_dot}  (최대 40건, 제목+본문)")
     print("-" * 60)
 
     posts = _fetch_posts(stk_cd, today_dot)
@@ -78,13 +47,12 @@ def main():
         print("오늘 게시물이 없습니다.")
         sys.exit(0)
 
-    print(f"게시물 {len(posts)}건 발견 — 본문 수집 중...\n")
+    print(f"게시물 {len(posts)}건 수집 완료 — 본문 수집 중...\n")
 
     detail_session = _make_session()
     parts: list[str] = []
-
     for idx, post in enumerate(posts, 1):
-        print(f"  [{idx}/{len(posts)}] {post['title']}")
+        print(f"  [{idx}/{len(posts)}] {post['title'][:50]}")
         body = _fetch_detail(post['href'], detail_session)
         entry = f"[{idx}] {post['title']}"
         if body:
@@ -100,7 +68,10 @@ def main():
     print("=" * 60)
 
     _save_options(stk_cd, today_ymd, options_text)
+
+    elapsed = time.time() - start
     print(f"\nstk_options UPSERT 완료 ({len(posts)}건 → 1 row)")
+    print(f"수집 시간: {elapsed:.1f}초")
 
 
 if __name__ == "__main__":

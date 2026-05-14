@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import random
 import sqlite3
 import time
 from datetime import datetime, timedelta
@@ -72,11 +73,13 @@ def _get_stock_codes() -> list[str]:
 # 스크래핑
 # ==============================================================
 
-def _fetch_posts(stk_cd: str, target_dot: str, max_pages: int = 10) -> list[dict]:
+def _fetch_posts(stk_cd: str, target_dot: str, max_posts: int = 40, max_pages: int = 10) -> list[dict]:
     """
     target_dot('YYYY.MM.DD') 날짜의 게시물만 수집.
     날짜 셀은 'YYYY.MM.DD HH:MM' 포맷이므로 앞 10자리만 비교한다.
-    대상 날짜보다 이전 글이 나오면 즉시 중단.
+    아래 두 조건 중 하나라도 충족되면 즉시 중단:
+      - 대상 날짜보다 이전 글 등장
+      - max_posts(기본 40)건 수집 완료
     """
     session = _make_session()
     posts: list[dict] = []
@@ -126,6 +129,9 @@ def _fetch_posts(stk_cd: str, target_dot: str, max_pages: int = 10) -> list[dict
             href = anchor.get('href', '').strip()
             if title and href:
                 posts.append({'title': title, 'href': href})
+                if len(posts) >= max_posts:
+                    done = True
+                    break
 
         if done:
             break
@@ -240,7 +246,6 @@ def collect_naver_options() -> int:
     logger.info(f"[naver_options] 대상 종목 {len(stk_codes)}개, 날짜: {yest_dot}")
 
     saved_count = 0
-    detail_session = _make_session()
 
     for stk_cd in stk_codes:
         posts = _fetch_posts(stk_cd, yest_dot)
@@ -250,11 +255,7 @@ def collect_naver_options() -> int:
 
         parts: list[str] = []
         for idx, post in enumerate(posts, 1):
-            body = _fetch_detail(post['href'], detail_session)
-            entry = f"[{idx}] {post['title']}"
-            if body:
-                entry += f"\n{body}"
-            parts.append(entry)
+            parts.append(f"[{idx}] {post['title']}")
 
         options_text = '\n\n'.join(parts)
         try:
@@ -263,6 +264,10 @@ def collect_naver_options() -> int:
             saved_count += 1
         except Exception as e:
             logger.error(f"[naver_options] {stk_cd} DB 저장 실패: {e}")
+
+        wait = random.uniform(2, 5)
+        logger.debug(f"[naver_options] 다음 종목까지 {wait:.1f}초 대기")
+        time.sleep(wait)
 
     logger.info(f"[naver_options] 완료 — {saved_count}/{len(stk_codes)} 종목 저장")
     return saved_count
