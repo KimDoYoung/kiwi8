@@ -281,6 +281,18 @@ CREATE TABLE IF NOT EXISTS judal_themes (
 CREATE INDEX IF NOT EXISTS idx_stock_code ON judal_themes(stock_code);
 CREATE INDEX IF NOT EXISTS idx_created_at ON judal_themes(created_at);
 
+-- stk_options : 네이버 종목토론방 일별 의견 집계
+CREATE TABLE IF NOT EXISTS stk_options (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    stk_cd     TEXT NOT NULL,
+    date       TEXT NOT NULL,    -- YYYYMMDD
+    options    TEXT NOT NULL,    -- 집계된 의견 텍스트 (제목+본문)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (stk_cd, date)
+);
+CREATE INDEX IF NOT EXISTS idx_stk_options_stk_cd ON stk_options(stk_cd);
+
+
 
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;

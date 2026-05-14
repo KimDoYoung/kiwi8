@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import backend.jobs.judal_data_collect  # noqa: F401 — job_registry 등록 활성화
+import backend.jobs.naver_options  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
@@ -148,6 +149,16 @@ async def startup_event():
         schedule_expr="0 1 * * *",
         enabled=True,
         timeout_sec=2400,
+        overlap_policy="skip",
+    ))
+
+    scheduler.upsert_job(Job(
+        name="scrap_naver_options",
+        func_name="scrap_naver_options",
+        schedule_type="cron",
+        schedule_expr="0 2 * * *",
+        enabled=True,
+        timeout_sec=3600,
         overlap_policy="skip",
     ))
 

@@ -330,7 +330,7 @@ def main():
     """
     메인 함수 - 사용자로부터 종목코드를 입력받아 게시물 정보를 출력
     """
-    stock_code = "000720"
+    stock_code = "160190"
     posts_list = capture_naver_forum(stock_code)
     
     print(f"\n총 {len(posts_list)}개의 게시물을 찾았습니다:")
