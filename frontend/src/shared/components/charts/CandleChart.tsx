@@ -1,8 +1,22 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 
+interface CandleData {
+  주식영업일자?: string; 영업일자?: string;
+  주식종가?: string; 종가?: string;
+  주식시가2?: string; 시가?: string;
+  주식최저가?: string; 저가?: string;
+  주식최고가?: string; 고가?: string;
+  누적거래량?: string; 거래량?: string;
+}
+
+interface TooltipParam {
+  name: string; seriesName: string;
+  data: number[]; value: number | null; marker: string;
+}
+
 interface CandleChartProps {
-  data: any[];
+  data: CandleData[];
   title?: string;
   height?: string | number;
 }
@@ -88,9 +102,9 @@ const CandleChart: React.FC<CandleChartProps> = ({ data, _title, height = 400 })
         borderColor: '#ddd',
         padding: 10,
         textStyle: { fontSize: 12, color: '#333' },
-        formatter: (params: any) => {
+        formatter: (params: TooltipParam[]) => {
           let res = `<div style="border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:5px;font-weight:bold">${params[0].name}</div>`;
-          params.forEach((item: any) => {
+          params.forEach((item: TooltipParam) => {
             if (item.seriesName === '봉차트') {
               const d = item.data;
               const isUp = d[2] >= d[1];

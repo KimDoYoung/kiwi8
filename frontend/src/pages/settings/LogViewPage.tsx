@@ -71,9 +71,9 @@ const LogViewPage: React.FC = () => {
           }
         }, 100);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Log fetch error:', err);
-      setError(err.code === 'ECONNABORTED' ? '응답 시간이 초과되었습니다.' : (err.response?.data?.detail || '로그를 가져오는데 실패했습니다.'));
+      setError(axios.isAxiosError(err) && err.code === 'ECONNABORTED' ? '응답 시간이 초과되었습니다.' : (axios.isAxiosError(err) ? (err.response?.data?.detail || '로그를 가져오는데 실패했습니다.') : '로그를 가져오는데 실패했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -82,14 +82,16 @@ const LogViewPage: React.FC = () => {
   useEffect(() => {
     fetchLogFiles();
     fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileIndex, level]); // 파일이나 레벨 변경 시 자동 로드
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (autoRefresh && !loading) {
       interval = setInterval(fetchLogs, 5000); // 5초마다 갱신
     }
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, loading, lines, level, fileIndex]);
 
   const handleDownload = () => {

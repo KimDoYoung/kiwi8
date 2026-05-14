@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, ICellRendererParams, CellClassParams, RowDoubleClickedEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
-import { Search, RefreshCw, ChevronRight, X, Filter, Settings2 } from 'lucide-react'
+import { Search, RefreshCw, ChevronRight, X, Filter, Settings2, Heart } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
@@ -18,6 +18,8 @@ import ThemeQueryConditionPanel, { type ThemeFilterState } from '@/shared/compon
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { cn } from '@/lib/utils'
+import { createMyStock, updateMyStock } from '@/services/myStockService'
+import { setStatusMessage } from '@/store/statusStore'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -43,6 +45,25 @@ export default function ThemePage() {
   })
 
   const [themeMode, setThemeMode] = useState(false) // 테마별 보기 스위치
+  const [watchedCodes, setWatchedCodes] = useState<Set<string>>(new Set())
+
+  const toggleWatchMutation = useMutation({
+    mutationFn: (stock: { stk_cd: string; stk_nm: string; isWatched: boolean }) =>
+      stock.isWatched
+        ? updateMyStock(stock.stk_cd, { is_watch: 0 })
+        : createMyStock({ stk_cd: stock.stk_cd, stk_nm: stock.stk_nm, is_watch: 1 }),
+    onSuccess: (_, vars) => {
+      if (vars.isWatched) {
+        setWatchedCodes(prev => { const next = new Set(prev); next.delete(vars.stk_cd); return next })
+        setStatusMessage(`'${vars.stk_nm}' 관심종목에서 제거되었습니다.`, 'info')
+      } else {
+        setWatchedCodes(prev => new Set(prev).add(vars.stk_cd))
+        setStatusMessage(`'${vars.stk_nm}' 관심종목에 추가되었습니다.`, 'success')
+        window.dispatchEvent(new CustomEvent('mystock-updated'))
+      }
+    },
+    onError: (err: Error) => setStatusMessage(`처리 실패: ${err.message}`, 'error'),
+  })
   
   // 스위치 변경 핸들러
   const handleThemeModeChange = (val: boolean) => {
@@ -175,8 +196,8 @@ export default function ThemePage() {
       field: 'stock_code', 
       width: 90,
       pinned: 'left',
-      cellRenderer: (params: any) => (
-        <span 
+      cellRenderer: (params: ICellRendererParams) => (
+        <span
           className="font-mono text-gray-500 cursor-pointer hover:text-green-600 hover:underline"
           onClick={(e) => {
             e.stopPropagation();
@@ -193,8 +214,8 @@ export default function ThemePage() {
       field: 'stock_name', 
       width: 130, 
       pinned: 'left',
-      cellRenderer: (params: any) => (
-        <span 
+      cellRenderer: (params: ICellRendererParams) => (
+        <span
           className="text-blue-600 font-medium cursor-pointer hover:underline"
           onClick={() => {
              setStockDetail(params.data.stock_code, params.data.stock_name)
@@ -205,9 +226,36 @@ export default function ThemePage() {
         </span>
       )
     },
-    { 
-      headerName: '현재가', 
-      field: 'current_price', 
+    {
+      headerName: '',
+      width: 36,
+      sortable: false,
+      resizable: false,
+      cellRenderer: (params: ICellRendererParams) => {
+        const stk_cd = params.data.stock_code
+        const isWatched = watchedCodes.has(stk_cd)
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <Heart
+              style={{
+                width: 15,
+                height: 15,
+                color: isWatched ? '#ef4444' : '#9ca3af',
+                fill: isWatched ? '#ef4444' : 'none',
+                cursor: isWatched ? 'default' : 'pointer',
+                flexShrink: 0,
+              }}
+              onClick={() => {
+                toggleWatchMutation.mutate({ stk_cd, stk_nm: params.data.stock_name, isWatched })
+              }}
+            />
+          </div>
+        )
+      }
+    },
+    {
+      headerName: '현재가',
+      field: 'current_price',
       width: 110,
       valueFormatter: (p) => fmt(p.value),
       cellClass: 'text-right font-mono',
@@ -219,20 +267,20 @@ export default function ThemePage() {
       width: 100,
       valueFormatter: (p) => p.value != null ? `${p.value.toFixed(2)}%` : '',
       cellClassRules: {
-        'text-red-500': (p: any) => p.value > 0,
-        'text-blue-500': (p: any) => p.value < 0,
+        'text-red-500': (p: CellClassParams) => p.value > 0,
+        'text-blue-500': (p: CellClassParams) => p.value < 0,
       },
       cellClass: 'text-right font-mono',
       comparator: numComparator
     },
-    { 
-      headerName: '3일합산', 
-      field: 'three_day_sum', 
+    {
+      headerName: '3일합산',
+      field: 'three_day_sum',
       width: 100,
       valueFormatter: (p) => p.value != null ? `${p.value.toFixed(2)}%` : '',
       cellClassRules: {
-        'text-red-500': (p: any) => p.value > 0,
-        'text-blue-500': (p: any) => p.value < 0,
+        'text-red-500': (p: CellClassParams) => p.value > 0,
+        'text-blue-500': (p: CellClassParams) => p.value < 0,
       },
       cellClass: 'text-right font-mono',
       comparator: numComparator
@@ -275,9 +323,9 @@ export default function ThemePage() {
       width: 250,
       tooltipField: 'related_themes'
     },
-  ], [selectedTheme, menus, setStockDetail, openByScreenNo])
+  ], [selectedTheme, menus, setStockDetail, openByScreenNo, watchedCodes, toggleWatchMutation])
 
-  const onRowDoubleClicked = (p: any) => {
+  const onRowDoubleClicked = (p: RowDoubleClickedEvent) => {
     if (!p.data) return
     setStockDetail(p.data.stock_code, p.data.stock_name)
     openByScreenNo('1201', menus || [])

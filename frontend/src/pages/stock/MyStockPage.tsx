@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, ICellRendererParams } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
@@ -12,6 +12,7 @@ import {
   getCurrentPrices,
   syncHoldings,
   fillAllSpec,
+  type MyStock,
 } from '@/services/myStockService'
 import { fetchMenuTree } from '@/services/menuService'
 import { toNum, fmt, numComparator } from '@/lib/utils'
@@ -62,8 +63,8 @@ export default function MyStockPage() {
     mutationFn: ({ stk_cd, is_watch }: { stk_cd: string; is_watch: number }) =>
       updateMyStock(stk_cd, { is_watch }),
     onMutate: ({ stk_cd, is_watch }) => {
-      queryClient.setQueryData(['myStocks'], (old: any) =>
-        old?.map((item: any) => item.stk_cd === stk_cd ? { ...item, is_watch } : item) ?? old
+      queryClient.setQueryData(['myStocks'], (old: MyStock[] | undefined) =>
+        old?.map((item: MyStock) => item.stk_cd === stk_cd ? { ...item, is_watch } : item) ?? old
       )
     },
   })
@@ -72,8 +73,8 @@ export default function MyStockPage() {
     mutationFn: (is_watch: number) =>
       Promise.all((data ?? []).map(s => updateMyStock(s.stk_cd, { is_watch }))),
     onMutate: (is_watch) => {
-      queryClient.setQueryData(['myStocks'], (old: any) =>
-        old?.map((item: any) => ({ ...item, is_watch })) ?? old
+      queryClient.setQueryData(['myStocks'], (old: MyStock[] | undefined) =>
+        old?.map((item: MyStock) => ({ ...item, is_watch })) ?? old
       )
     },
   })
@@ -92,7 +93,7 @@ export default function MyStockPage() {
       queryClient.invalidateQueries({ queryKey: ['myStocks'] })
       setStatusMessage(`${count}개 종목 Spec이 갱신되었습니다.`, 'success')
     },
-    onError: (err: any) => setStatusMessage(`Spec 갱신 실패: ${err.message}`, 'error')
+    onError: (err: Error) => setStatusMessage(`Spec 갱신 실패: ${err.message}`, 'error')
   })
 
   // StockFindModal에서 종목 추가 시 쿼리 갱신
@@ -130,7 +131,7 @@ export default function MyStockPage() {
       field: 'stk_nm',
       width: 160,
       pinned: 'left',
-      cellRenderer: (params: any) => {
+      cellRenderer: (params: ICellRendererParams) => {
         const status = params.data.spec_data?.['감리구분']
         const isNotNormal = status && status !== '정상'
         return (
@@ -161,7 +162,7 @@ export default function MyStockPage() {
       headerName: '',
       width: 70,
       sortable: false,
-      cellRenderer: (params: any) => (
+      cellRenderer: (params: ICellRendererParams) => (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <Check style={{ width: 18, height: 18, color: params.data.is_hold ? '#16a34a' : '#e5e7eb', flexShrink: 0 }} />
           <Heart
@@ -188,7 +189,7 @@ export default function MyStockPage() {
       width: 140,
       sortable: false,
       cellClass: 'text-center',
-      cellRenderer: (p: any) => {
+      cellRenderer: (p: ICellRendererParams) => {
         const spec = p.data.spec_data
         if (!spec) return null
         
@@ -219,7 +220,7 @@ export default function MyStockPage() {
       headerName: '기준가 (매도|매수)',
       width: 170,
       sortable: false,
-      cellRenderer: (params: any) => {
+      cellRenderer: (params: ICellRendererParams) => {
         const base = params.data.base_price
         const sell = params.data.sell_price
         const buy = params.data.buy_price
@@ -239,7 +240,7 @@ export default function MyStockPage() {
       headerName: '250일 범위',
       width: 200,
       sortable: false,
-      cellRenderer: (p: any) => (
+      cellRenderer: (p: ICellRendererParams) => (
         <PricePositionBar
           high={Math.abs(toNum(p.data.spec_data?.['250최고']))}
           low={Math.abs(toNum(p.data.spec_data?.['250최저']))}
@@ -250,7 +251,7 @@ export default function MyStockPage() {
     {
       headerName: '상장일',
       width: 110,
-      cellRenderer: (p: any) => {
+      cellRenderer: (p: ICellRendererParams) => {
         const v = String(p.data.spec_data?.['상장일'] ?? '').replace(/[^0-9]/g, '')
         if (!v || v.length < 6) return null
         const years = new Date().getFullYear() - parseInt(v.slice(0, 4))

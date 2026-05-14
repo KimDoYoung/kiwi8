@@ -12,7 +12,7 @@ export interface MyStock {
   buy_rate?: number
   buy_price?: number
   spec?: string
-  spec_data?: Record<string, any>
+  spec_data?: Record<string, unknown>
   note?: string
   created_at: string
   updated_at: string
@@ -45,7 +45,7 @@ export interface MyStockUpdate {
   note?: string
 }
 
-export const getMyStocks = async (filter?: any): Promise<MyStock[]> => {
+export const getMyStocks = async (filter?: Record<string, unknown>): Promise<MyStock[]> => {
   const response = await api.get('/api/v1/mystock/', { params: filter })
   return response.data.data.list
 }
