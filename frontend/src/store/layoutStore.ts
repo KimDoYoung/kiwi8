@@ -5,7 +5,7 @@ import type { MenuItem } from '@/services/menuService'
 const STORAGE_KEY = 'kiwi8-layout'         // FlexLayout 자동저장 (매 변경마다)
 const SAVED_LAYOUT_KEY = 'kiwi8-saved-layout' // 사용자가 명시적으로 저장한 전체 레이아웃
 
-const HOME_TAB = { type: 'tab', id: 'HOME', name: '홈', component: 'HOME' }
+const HOME_TAB = { type: 'tab', id: 'HOME', name: '홈', component: 'HOME', enableClose: false }
 
 const DEFAULT_LAYOUT = {
   global: {

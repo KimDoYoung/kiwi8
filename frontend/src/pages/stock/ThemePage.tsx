@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef, ICellRendererParams, CellClassParams, RowDoubleClickedEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
@@ -18,7 +18,7 @@ import ThemeQueryConditionPanel, { type ThemeFilterState } from '@/shared/compon
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { cn } from '@/lib/utils'
-import { createMyStock, updateMyStock } from '@/services/myStockService'
+import { createMyStock, updateMyStock, getMyStocks, type MyStock } from '@/services/myStockService'
 import { setStatusMessage } from '@/store/statusStore'
 
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -44,25 +44,44 @@ export default function ThemePage() {
     staleTime: 1000 * 60 * 10,
   })
 
+  const queryClient = useQueryClient()
+
   const [themeMode, setThemeMode] = useState(false) // 테마별 보기 스위치
-  const [watchedCodes, setWatchedCodes] = useState<Set<string>>(new Set())
+
+  const { data: watchedSet = new Set<string>() } = useQuery({
+    queryKey: ['watchedStocks'],
+    queryFn: () => getMyStocks({ is_watch: 1 }),
+    select: (stocks) => new Set(stocks.map(s => s.stk_cd)),
+    staleTime: 60_000,
+  })
 
   const toggleWatchMutation = useMutation({
     mutationFn: (stock: { stk_cd: string; stk_nm: string; isWatched: boolean }) =>
       stock.isWatched
         ? updateMyStock(stock.stk_cd, { is_watch: 0 })
         : createMyStock({ stk_cd: stock.stk_cd, stk_nm: stock.stk_nm, is_watch: 1 }),
-    onSuccess: (_, vars) => {
-      if (vars.isWatched) {
-        setWatchedCodes(prev => { const next = new Set(prev); next.delete(vars.stk_cd); return next })
-        setStatusMessage(`'${vars.stk_nm}' 관심종목에서 제거되었습니다.`, 'info')
-      } else {
-        setWatchedCodes(prev => new Set(prev).add(vars.stk_cd))
-        setStatusMessage(`'${vars.stk_nm}' 관심종목에 추가되었습니다.`, 'success')
-        window.dispatchEvent(new CustomEvent('mystock-updated'))
-      }
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: ['watchedStocks'] })
+      const prev = queryClient.getQueryData<MyStock[]>(['watchedStocks'])
+      queryClient.setQueryData<MyStock[]>(['watchedStocks'], (old = []) =>
+        vars.isWatched
+          ? old.filter(s => s.stk_cd !== vars.stk_cd)
+          : [...old, { stk_cd: vars.stk_cd, stk_nm: vars.stk_nm } as MyStock]
+      )
+      return { prev }
     },
-    onError: (err: Error) => setStatusMessage(`처리 실패: ${err.message}`, 'error'),
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['watchedStocks'], ctx.prev)
+      setStatusMessage('처리 실패', 'error')
+    },
+    onSuccess: (_data, vars) => {
+      setStatusMessage(
+        vars.isWatched ? `'${vars.stk_nm}' 관심종목에서 제거되었습니다.` : `'${vars.stk_nm}' 관심종목에 추가되었습니다.`,
+        vars.isWatched ? 'info' : 'success'
+      )
+      if (!vars.isWatched) window.dispatchEvent(new CustomEvent('mystock-updated'))
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['watchedStocks'] }),
   })
   
   // 스위치 변경 핸들러
@@ -233,7 +252,7 @@ export default function ThemePage() {
       resizable: false,
       cellRenderer: (params: ICellRendererParams) => {
         const stk_cd = params.data.stock_code
-        const isWatched = watchedCodes.has(stk_cd)
+        const isWatched = watchedSet.has(stk_cd)
         return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
             <Heart
@@ -323,7 +342,7 @@ export default function ThemePage() {
       width: 250,
       tooltipField: 'related_themes'
     },
-  ], [selectedTheme, menus, setStockDetail, openByScreenNo, watchedCodes, toggleWatchMutation])
+  ], [selectedTheme, menus, setStockDetail, openByScreenNo, watchedSet, toggleWatchMutation])
 
   const onRowDoubleClicked = (p: RowDoubleClickedEvent) => {
     if (!p.data) return
@@ -367,7 +386,7 @@ export default function ThemePage() {
         {/* 상세 검색 조건 패널 */}
         <div className="flex items-center gap-2">
           <Popover open={isFilterPanelOpen} onOpenChange={setIsFilterPanelOpen}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger>
               <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-medium border-gray-300">
                 <Settings2 size={14} />
                 검색 조건

@@ -1,5 +1,5 @@
 import { useState, useRef, type KeyboardEvent } from 'react'
-import { LogOut, Settings, Search, PenLine } from 'lucide-react'
+import { LogOut, Settings, Search, PenLine, Home } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
@@ -64,6 +64,15 @@ export default function TopBar() {
           <span className="text-[10px] text-gray-400 font-mono">v{health.version}</span>
         )}
       </div>
+
+      {/* Home 버튼 */}
+      <button
+        onClick={() => openByScreenNo('HOME', menus)}
+        title="홈으로"
+        className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors shrink-0"
+      >
+        <Home size={16} />
+      </button>
 
       {/* 구분선 */}
       <span className="h-5 w-px bg-gray-200 shrink-0" />

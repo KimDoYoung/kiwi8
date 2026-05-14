@@ -1,4 +1,5 @@
 import React from 'react'
+import DashboardPage from '@/pages/DashboardPage'
 import PlaceholderPage from '@/pages/common/PlaceholderPage'
 import AccountSummaryPage from '@/pages/accounts/AccountSummaryPage'
 import TotalBalancePage from '@/pages/accounts/TotalBalancePage'
@@ -19,7 +20,7 @@ import SchedulerPage from '@/pages/manage/SchedulerPage'
 // 향후 실제 페이지 구현 시 PlaceholderPage를 교체
 const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: string }>> = {
   // 홈
-  'HOME': PlaceholderPage,
+  'HOME': DashboardPage,
   // [1100 자산 현황]
   '1101': AccountSummaryPage,
   '1102': TotalBalancePage,

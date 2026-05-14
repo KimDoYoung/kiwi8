@@ -21,7 +21,7 @@ interface CandleChartProps {
   height?: string | number;
 }
 
-const CandleChart: React.FC<CandleChartProps> = ({ data, _title, height = 400 }) => {
+const CandleChart: React.FC<CandleChartProps> = ({ data,  height = 400 }) => {
   const chartOptions = useMemo(() => {
     if (!data || data.length === 0) return {};
 
@@ -89,7 +89,7 @@ const CandleChart: React.FC<CandleChartProps> = ({ data, _title, height = 400 })
 
     return {
       legend: {
-        data: ['봉차트', 'MA5', 'MA20', 'MA60'],
+        data: ['캔들차트', 'MA5', 'MA20', 'MA60'],
         top: 0,
         itemGap: 15,
         textStyle: { fontSize: 11, fontWeight: 'bold' }
@@ -105,7 +105,7 @@ const CandleChart: React.FC<CandleChartProps> = ({ data, _title, height = 400 })
         formatter: (params: TooltipParam[]) => {
           let res = `<div style="border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:5px;font-weight:bold">${params[0].name}</div>`;
           params.forEach((item: TooltipParam) => {
-            if (item.seriesName === '봉차트') {
+            if (item.seriesName === '캔들차트') {
               const d = item.data;
               const isUp = d[2] >= d[1];
               const color = isUp ? '#ef4444' : '#3b82f6';
@@ -135,7 +135,7 @@ const CandleChart: React.FC<CandleChartProps> = ({ data, _title, height = 400 })
       dataZoom: [{ type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100 }],
       series: [
         {
-          name: '봉차트',
+          name: '캔들차트',
           type: 'candlestick',
           data: values,
           itemStyle: {
