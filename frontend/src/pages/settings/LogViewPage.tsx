@@ -100,23 +100,23 @@ const LogViewPage: React.FC = () => {
   };
 
   const getLevelColor = (line: string) => {
-    if (line.includes('- ERROR -')) return 'text-red-400';
-    if (line.includes('- WARNING -')) return 'text-yellow-400';
-    if (line.includes('- INFO -')) return 'text-blue-400';
-    if (line.includes('- DEBUG -')) return 'text-gray-400';
-    return 'text-gray-100';
+    if (line.includes('- ERROR -')) return 'text-red-600 font-semibold';
+    if (line.includes('- WARNING -')) return 'text-amber-600';
+    if (line.includes('- INFO -')) return 'text-blue-600';
+    if (line.includes('- DEBUG -')) return 'text-slate-500 italic';
+    return 'text-slate-800';
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] space-y-4 p-4">
+    <div className="flex flex-col h-[calc(100vh-120px)] space-y-4 p-4 bg-slate-50/50">
       {/* 상단 컨트롤 바 */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 p-2 rounded-lg border border-slate-700 shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">
             {/* 파일 선택 섹션 */}
             <div className="flex items-center gap-2">
-            <FileText size={18} className="text-blue-400" />
+            <FileText size={18} className="text-blue-500" />
             <select 
-                className="bg-slate-800 text-white border-slate-600 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none hover:border-slate-500 transition-colors"
+                className="bg-white text-slate-900 border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none hover:border-slate-400 transition-colors"
                 value={fileIndex}
                 onChange={(e) => setFileIndex(Number(e.target.value))}
             >
@@ -129,26 +129,26 @@ const LogViewPage: React.FC = () => {
 
             {/* 필터 섹션 */}
             <div className="flex items-center gap-2">
-            <Filter size={18} className="text-emerald-400" />
+            <Filter size={18} className="text-emerald-500" />
             <select 
-                className="bg-slate-800 text-white border-slate-600 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none hover:border-slate-500 transition-colors"
+                className="bg-white text-slate-900 border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none hover:border-slate-400 transition-colors"
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
             >
                 <option value="">모든 레벨</option>
-                <option value="INFO" className="text-blue-400">INFO</option>
-                <option value="DEBUG" className="text-purple-400">DEBUG</option>
-                <option value="WARNING" className="text-yellow-400">WARNING</option>
-                <option value="ERROR" className="text-red-400">ERROR</option>
+                <option value="INFO" className="text-blue-600">INFO</option>
+                <option value="DEBUG" className="text-slate-600">DEBUG</option>
+                <option value="WARNING" className="text-amber-600">WARNING</option>
+                <option value="ERROR" className="text-red-600">ERROR</option>
             </select>
             </div>
 
             {/* 줄 수 입력 섹션 */}
             <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-300">줄 수:</span>
+            <span className="text-sm font-medium text-slate-600">줄 수:</span>
             <input 
                 type="number" 
-                className="w-20 bg-slate-800 text-white border-slate-600 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-20 bg-white text-slate-900 border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 value={lines}
                 onChange={(e) => setLines(Number(e.target.value))}
                 min={1}
@@ -158,23 +158,22 @@ const LogViewPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">           
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-300 cursor-pointer hover:text-white transition-colors">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer hover:text-slate-900 transition-colors">
                 <input 
                 type="checkbox" 
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500"
                 />
                 자동 갱신 (5초)
             </label>
 
-            <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
                 {/* 새로고침 버튼 */}
                 <Button
                     onClick={fetchLogs}
                     disabled={loading}
-                    variant="default" // 기본 버튼 스타일 사용
-                    className="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-400 text-white px-5 py-1.5 rounded-md text-sm font-semibold transition-all shadow-md"
+                    variant="default"
                 >
                     <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
                     새로고침
@@ -183,8 +182,7 @@ const LogViewPage: React.FC = () => {
                 {/* 다운로드 버튼 */}
                 <Button
                     onClick={handleDownload}
-                    variant="default"
-                    className="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-5 py-1.5 rounded-md text-sm font-semibold transition-all shadow-md border border-slate-600"
+                    variant="outline"
                     title="현재 선택된 로그 파일 전체 다운로드"
                 >
                 <Download size={16} />
@@ -196,7 +194,7 @@ const LogViewPage: React.FC = () => {
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-900/30 border border-red-800/50 text-red-400 rounded-md text-sm">
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm font-medium">
           <AlertCircle size={18} />
           {error}
         </div>
@@ -205,19 +203,19 @@ const LogViewPage: React.FC = () => {
       {/* 로그 터미널 영역 */}
       <div 
         ref={scrollRef}
-        className="flex-1 bg-black rounded-lg border border-slate-800 overflow-auto shadow-inner p-4 font-mono text-sm"
+        className="flex-1 bg-white rounded-lg border border-slate-200 overflow-auto shadow-sm p-4 font-mono text-sm"
       >
         {logs.length > 0 ? (
           <div className="space-y-0.5">
             {logs.map((line, i) => (
-              <div key={i} className="whitespace-pre-wrap break-all border-l-2 border-transparent hover:border-slate-700 pl-2">
-                <span className="text-slate-500 mr-2 shrink-0 inline-block w-8 text-right select-none">{i + 1}</span>
+              <div key={i} className="whitespace-pre-wrap break-all border-l-2 border-transparent hover:border-slate-100 pl-2">
+                <span className="text-slate-400 mr-2 shrink-0 inline-block w-8 text-right select-none">{i + 1}</span>
                 <span className={getLevelColor(line)}>{line}</span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-slate-600 space-y-2">
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
             <Terminal size={48} opacity={0.2} />
             <p>{loading ? '로그를 불러오는 중...' : '표시할 로그가 없습니다.'}</p>
           </div>
