@@ -8,6 +8,7 @@ import {
   Download,
   AlertCircle
 } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
 
 interface LogResponse {
   file_name: string;
@@ -169,24 +170,26 @@ const LogViewPage: React.FC = () => {
 
             <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
                 {/* 새로고침 버튼 */}
-                <button 
-                onClick={fetchLogs}
-                disabled={loading}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-400 text-white px-5 py-1.5 rounded-md text-sm font-semibold transition-all shadow-md"
+                <Button
+                    onClick={fetchLogs}
+                    disabled={loading}
+                    variant="default" // 기본 버튼 스타일 사용
+                    className="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-400 text-white px-5 py-1.5 rounded-md text-sm font-semibold transition-all shadow-md"
                 >
-                <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-                새로고침
-                </button>
+                    <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
+                    새로고침
+                </Button>
 
                 {/* 다운로드 버튼 */}
-                <button 
-                onClick={handleDownload}
-                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-5 py-1.5 rounded-md text-sm font-semibold transition-all shadow-md border border-slate-600"
-                title="현재 선택된 로그 파일 전체 다운로드"
+                <Button
+                    onClick={handleDownload}
+                    variant="default"
+                    className="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-5 py-1.5 rounded-md text-sm font-semibold transition-all shadow-md border border-slate-600"
+                    title="현재 선택된 로그 파일 전체 다운로드"
                 >
                 <Download size={16} />
                 다운로드
-                </button>
+                </Button>
             </div>
         </div>
       </div>
