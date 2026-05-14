@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, RowDoubleClickedEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useModalStore } from '@/store/modalStore'
 import { useStockDetailStore } from '@/store/stockDetailStore'
@@ -209,7 +209,7 @@ export default function KiwoomAccountPage() {
         sortable: true, resizable: true,
     }), [])
 
-    const onRowDoubleClicked = (p: CustomCellRendererProps) => {
+    const onRowDoubleClicked = (p: RowDoubleClickedEvent) => {
         if (p.data?._isSummary) return
         const code = p.data?.종목코드
         const name = p.data?.종목명

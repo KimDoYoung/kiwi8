@@ -52,11 +52,10 @@ export default function LsAccountPage() {
     const [filterCodes, setFilterCodes] = useState<string[]>([])
 
     const accountData = useMemo(() => data?.data ?? {}, [data])
-    const rawStocks = useMemo<Record<string, unknown>[]>(() =>
-        (accountData as Record<string, unknown>)?.t0424OutBlock1 ??
-        (accountData as Record<string, unknown>)?.t0424OutBlock_1 ??
-        (accountData as Record<string, unknown>)?.output1 ??
-        [], [accountData])
+    const rawStocks = useMemo<Record<string, unknown>[]>(() => {
+        const d = accountData as Record<string, unknown>
+        return (d.t0424OutBlock1 ?? d.t0424OutBlock_1 ?? d.output1 ?? []) as Record<string, unknown>[]
+    }, [accountData])
 
     const uniqueStocks = useMemo<StockOption[]>(() => {
         const seen = new Set<string>()
@@ -91,10 +90,10 @@ export default function LsAccountPage() {
         return list
     }, [rawStocks, profitFilter, filterCodes])
 
-    const summary = useMemo(() =>
-        (accountData as Record<string, unknown>)?.t0424OutBlock ??
-        (accountData as Record<string, unknown>)?.output2?.[0] ??
-        {}, [accountData])
+    const summary = useMemo(() => {
+        const d = accountData as Record<string, unknown>
+        return (d.t0424OutBlock ?? (d.output2 as Record<string, unknown>[])?.[0] ?? {}) as Record<string, unknown>
+    }, [accountData])
 
     const totalMaeip = useMemo(() =>
         rawStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [rawStocks])

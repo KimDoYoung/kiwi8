@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, RowDoubleClickedEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { useModalStore } from '@/store/modalStore'
 import { useStockDetailStore } from '@/store/stockDetailStore'
@@ -55,7 +55,7 @@ export default function KisAccountPage() {
     const uniqueStocks = useMemo<StockOption[]>(() => {
         const seen = new Set<string>()
         const list: StockOption[] = []
-        rawStocks.forEach((s: KisStockItem) => {
+        rawStocks.forEach((s: Record<string, unknown>) => {
             const code = String(s['상품번호'] ?? '')
             const cleanCode = code.startsWith('A') ? code.slice(1) : code
             const name = String(s['상품명'] ?? '')
@@ -218,7 +218,7 @@ export default function KisAccountPage() {
         sortable: true, resizable: true,
     }), [])
 
-    const onRowDoubleClicked = (p: CustomCellRendererProps) => {
+    const onRowDoubleClicked = (p: RowDoubleClickedEvent) => {
         if (p.data?._isSummary) return
         const code = String(p.data?.상품번호 ?? '').replace(/^A/, '')
         const name = p.data?.상품명
