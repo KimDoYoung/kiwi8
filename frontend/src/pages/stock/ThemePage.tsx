@@ -3,22 +3,32 @@ import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
-import { Search, RefreshCw, ChevronRight, X, Filter } from 'lucide-react'
+import { Search, RefreshCw, ChevronRight, X, Filter, Settings2 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
+import { Popover, PopoverTrigger, PopoverContent } from '@/shared/components/ui/popover'
 import { fetchThemes, fetchThemeNames, type JudalTheme, type ThemeParams } from '@/services/stockService'
 import { fetchMenuTree } from '@/services/menuService'
 import { fmt, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import NumberOverBelow from '@/shared/components/NumberOverBelow'
+import ThemeQueryConditionPanel, { type ThemeFilterState } from './ThemeQueryConditionPanel'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
 import { cn } from '@/lib/utils'
 
 ModuleRegistry.registerModules([AllCommunityModule])
+
+const INITIAL_FILTERS: ThemeFilterState = {
+  current_price: { value: 0, isOver: true },
+  market_cap: { value: 0, isOver: true },
+  yesterday_ratio: { value: 0, isOver: true },
+  three_day_sum: { value: 0, isOver: true },
+  per: { value: 0, isOver: true },
+  pbr: { value: 0, isOver: true },
+}
 
 export default function ThemePage() {
   const gridRef = useRef<AgGridReact>(null)
@@ -33,22 +43,29 @@ export default function ThemePage() {
   })
 
   const [themeMode, setThemeMode] = useState(false) // 테마별 보기 스위치
+  const [deduplicate, setDeduplicate] = useState(false) // 종목별 보기 (중복 제거)
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   
   const [keyword, setKeyword] = useState('') // 상단 전역 검색용
   const [themeFilter, setThemeFilter] = useState('') // 왼쪽 테마 리스트 필터 전용
   
-  // 상세 필터 상태
-  const [numFilters, setNumFilters] = useState({
-    current_price: { value: 0, isOver: true },
-    market_cap: { value: 0, isOver: true },
-    yesterday_ratio: { value: 0, isOver: true },
-    three_day_sum: { value: 0, isOver: true },
-    per: { value: 0, isOver: true },
-    pbr: { value: 0, isOver: true },
-  })
+  const [numFilters, setNumFilters] = useState<ThemeFilterState>(INITIAL_FILTERS)
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  const [filterSummary, setFilterSummary] = useState('')
 
   const [searchParams, setSearchParams] = useState<ThemeParams>({ limit: 100 })
+
+  // 필터 요약 문자열 생성
+  const getFilterSummary = (filters: ThemeFilterState) => {
+    const summary: string[] = []
+    if (filters.current_price.value > 0) summary.push(`현재가 ${filters.current_price.value}${filters.current_price.isOver ? '↑' : '↓'}`)
+    if (filters.market_cap.value > 0) summary.push(`시총 ${filters.market_cap.value}${filters.market_cap.isOver ? '↑' : '↓'}`)
+    if (filters.yesterday_ratio.value !== 0) summary.push(`전일비 ${filters.yesterday_ratio.value}%${filters.yesterday_ratio.isOver ? '↑' : '↓'}`)
+    if (filters.three_day_sum.value !== 0) summary.push(`3일합 ${filters.three_day_sum.value}%${filters.three_day_sum.isOver ? '↑' : '↓'}`)
+    if (filters.per.value > 0) summary.push(`PER ${filters.per.value}${filters.per.isOver ? '↑' : '↓'}`)
+    if (filters.pbr.value > 0) summary.push(`PBR ${filters.pbr.value}${filters.pbr.isOver ? '↑' : '↓'}`)
+    return summary.join(', ')
+  }
 
   // 테마명 목록 (왼쪽 사이드바용)
   const { data: themeNames, isLoading: isThemeNamesLoading } = useQuery({
@@ -73,57 +90,58 @@ export default function ThemePage() {
   })
 
   // 상단 검색 핸들러
-  const handleSearch = () => {
+  const handleSearch = (customFilters?: ThemeFilterState) => {
     setSelectedTheme(null)
     setThemeFilter('') 
     
+    const targetFilters = customFilters || numFilters
+    const hasNumericFilter = Object.values(targetFilters).some(f => f.value !== 0)
+    
     const params: ThemeParams = {
       theme_name_like: keyword.trim() || undefined,
-      limit: keyword.trim() ? 1000 : 100
+      deduplicate: deduplicate,
+      limit: (keyword.trim() || hasNumericFilter) ? 1000 : 100
     }
 
     // 수치 필터 적용
-    if (numFilters.current_price.value > 0) {
-      if (numFilters.current_price.isOver) params.current_price_min = numFilters.current_price.value
-      else params.current_price_max = numFilters.current_price.value
+    if (targetFilters.current_price.value > 0) {
+      if (targetFilters.current_price.isOver) params.current_price_min = targetFilters.current_price.value
+      else params.current_price_max = targetFilters.current_price.value
     }
-    if (numFilters.market_cap.value > 0) {
-      if (numFilters.market_cap.isOver) params.market_cap_min = numFilters.market_cap.value
-      else params.market_cap_max = numFilters.market_cap.value
+    if (targetFilters.market_cap.value > 0) {
+      if (targetFilters.market_cap.isOver) params.market_cap_min = targetFilters.market_cap.value
+      else params.market_cap_max = targetFilters.market_cap.value
     }
-    if (numFilters.yesterday_ratio.value !== 0) {
-      if (numFilters.yesterday_ratio.isOver) params.yesterday_ratio_min = numFilters.yesterday_ratio.value
-      else params.yesterday_ratio_max = numFilters.yesterday_ratio.value
+    if (targetFilters.yesterday_ratio.value !== 0) {
+      if (targetFilters.yesterday_ratio.isOver) params.yesterday_ratio_min = targetFilters.yesterday_ratio.value
+      else params.yesterday_ratio_max = targetFilters.yesterday_ratio.value
     }
-    if (numFilters.three_day_sum.value !== 0) {
-      if (numFilters.three_day_sum.isOver) params.three_day_sum_min = numFilters.three_day_sum.value
-      else params.three_day_sum_max = numFilters.three_day_sum.value
+    if (targetFilters.three_day_sum.value !== 0) {
+      if (targetFilters.three_day_sum.isOver) params.three_day_sum_min = targetFilters.three_day_sum.value
+      else params.three_day_sum_max = targetFilters.three_day_sum.value
     }
-    if (numFilters.per.value > 0) {
-      if (numFilters.per.isOver) params.per_min = numFilters.per.value
-      else params.per_max = numFilters.per.value
+    if (targetFilters.per.value > 0) {
+      if (targetFilters.per.isOver) params.per_min = targetFilters.per.value
+      else params.per_max = targetFilters.per.value
     }
-    if (numFilters.pbr.value > 0) {
-      if (numFilters.pbr.isOver) params.pbr_min = numFilters.pbr.value
-      else params.pbr_max = numFilters.pbr.value
+    if (targetFilters.pbr.value > 0) {
+      if (targetFilters.pbr.isOver) params.pbr_min = targetFilters.pbr.value
+      else params.pbr_max = targetFilters.pbr.value
     }
 
     setSearchParams(params)
+    setIsFilterPanelOpen(false)
+    setFilterSummary(getFilterSummary(targetFilters))
   }
 
   // 필터 초기화
   const handleResetFilters = () => {
-    setNumFilters({
-      current_price: { value: 10000, isOver: true },
-      market_cap: { value: 5000, isOver: true },
-      yesterday_ratio: { value: 0.5, isOver: true },
-      three_day_sum: { value: 0.5, isOver: true },
-      per: { value: 10, isOver: true },
-      pbr: { value: 10, isOver: true },
-    })
+    setNumFilters(INITIAL_FILTERS)
     setKeyword('')
     setSelectedTheme(null)
+    setDeduplicate(false)
     setSearchParams({ limit: 100 })
+    setFilterSummary('')
   }
 
   // 테마 선택 핸들러
@@ -276,6 +294,12 @@ export default function ThemePage() {
           <Label htmlFor="theme-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">테마별 보기</Label>
         </div>
 
+        {/* 종목별 보기 (중복 제거) */}
+        <div className="flex items-center space-x-2 shrink-0 ml-2">
+          <Switch id="deduplicate-mode" checked={deduplicate} onCheckedChange={setDeduplicate} />
+          <Label htmlFor="deduplicate-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">종목별 보기</Label>
+        </div>
+
         {/* 검색창 */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="relative group">
@@ -295,63 +319,47 @@ export default function ThemePage() {
               </button>
             )}
           </div>
-          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={handleSearch} disabled={isFetching}>
-            <Search size={14} />
+        </div>
+
+        {/* 상세 검색 조건 패널 */}
+        <div className="flex items-center gap-2">
+          <Popover open={isFilterPanelOpen} onOpenChange={setIsFilterPanelOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-medium border-gray-300">
+                <Settings2 size={14} />
+                검색 조건
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-auto" align="start">
+              <ThemeQueryConditionPanel 
+                initialFilters={numFilters} 
+                onApply={(f) => {
+                  setNumFilters(f);
+                  setFilterSummary(getFilterSummary(f));
+                  setIsFilterPanelOpen(false);
+                }}
+                onReset={handleResetFilters}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {filterSummary && (
+            <span className="text-[11px] text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded border border-blue-100 animate-in fade-in slide-in-from-left-2 duration-300">
+              {filterSummary}
+            </span>
+          )}
+
+          <Button size="sm" className="h-8 px-3" onClick={() => handleSearch()} disabled={isFetching}>
+            <Search size={14} className="mr-1.5" />
+            조회
           </Button>
         </div>
 
-        {/* 수치 필터들 */}
-        <div className="flex items-center gap-2">
-          <NumberOverBelow 
-            label="현재가" 
-            value={numFilters.current_price.value} 
-            isOver={numFilters.current_price.isOver}
-            onChange={(d) => setNumFilters(prev => ({ ...prev, current_price: d }))}
-            step={1000}
-            min={0}
-          />
-          <NumberOverBelow 
-            label="시총(억)" 
-            value={numFilters.market_cap.value} 
-            isOver={numFilters.market_cap.isOver}
-            onChange={(d) => setNumFilters(prev => ({ ...prev, market_cap: d }))}
-            step={100}
-            min={0}
-          />
-          <NumberOverBelow 
-            label="전일비(%)" 
-            value={numFilters.yesterday_ratio.value} 
-            isOver={numFilters.yesterday_ratio.isOver}
-            onChange={(d) => setNumFilters(prev => ({ ...prev, yesterday_ratio: d }))}
-            step={1}
-            min={-30}
-            max={30}
-          />
-          <NumberOverBelow 
-            label="3일합(%)" 
-            value={numFilters.three_day_sum.value} 
-            isOver={numFilters.three_day_sum.isOver}
-            onChange={(d) => setNumFilters(prev => ({ ...prev, three_day_sum: d }))}
-            step={1}
-            min={-100}
-            max={100}
-          />
-          <NumberOverBelow 
-            label="PER" 
-            value={numFilters.per.value} 
-            isOver={numFilters.per.isOver}
-            onChange={(d) => setNumFilters(prev => ({ ...prev, per: d }))}
-            step={1}
-            min={0}
-          />
-          <NumberOverBelow 
-            label="PBR" 
-            value={numFilters.pbr.value} 
-            isOver={numFilters.pbr.isOver}
-            onChange={(d) => setNumFilters(prev => ({ ...prev, pbr: d }))}
-            step={0.1}
-            min={0}
-          />
+        {/* 초기화 버튼 */}
+        <div className="flex items-center gap-1 ml-auto">
+          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={handleResetFilters} title="필터 초기화">
+            <RefreshCw size={14} className={cn(isFetching && "animate-spin")} />
+          </Button>
         </div>
       </div>
 

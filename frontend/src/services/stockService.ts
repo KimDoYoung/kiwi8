@@ -112,6 +112,7 @@ export interface ThemeParams {
   per_max?: number
   pbr_min?: number
   pbr_max?: number
+  deduplicate?: boolean
   limit?: number
 }
 

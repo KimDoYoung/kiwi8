@@ -37,6 +37,7 @@ async def get_themes(
     per_max: float | None = None,
     pbr_min: float | None = None,
     pbr_max: float | None = None,
+    deduplicate: bool = False,
     limit: int = 1000
 ):
     """
@@ -60,7 +61,8 @@ async def get_themes(
             per_min=per_min,
             per_max=per_max,
             pbr_min=pbr_min,
-            pbr_max=pbr_max
+            pbr_max=pbr_max,
+            deduplicate=deduplicate
         )
         results = await service.list_themes(filter_data, limit=limit)
         return JudalThemeResponse(success=True, data=results)

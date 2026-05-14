@@ -20,8 +20,9 @@ class JudalThemeService:
             params.append(filter_data.theme_name)
         
         if filter_data.theme_name_like:
-            query += " AND theme_name LIKE ?"
-            params.append(f"%{filter_data.theme_name_like}%")
+            query += " AND (theme_name LIKE ? OR stock_name LIKE ? OR stock_code LIKE ?)"
+            like_val = f"%{filter_data.theme_name_like}%"
+            params.extend([like_val, like_val, like_val])
 
         if filter_data.stock_name:
             query += " AND stock_name = ?"
@@ -73,6 +74,9 @@ class JudalThemeService:
         if filter_data.pbr_max is not None:
             query += " AND pbr <= ?"
             params.append(filter_data.pbr_max)
+
+        if filter_data.deduplicate:
+            query += " GROUP BY stock_code"
 
         query += " ORDER BY theme_name ASC, buffett_choice ASC"
         

@@ -58,6 +58,7 @@ class JudalThemeFilter(BaseModel):
     per_max: Optional[float] = None
     pbr_min: Optional[float] = None
     pbr_max: Optional[float] = None
+    deduplicate: Optional[bool] = False
 
 class JudalThemeResponse(BaseModel):
     """테마 응답 모델"""

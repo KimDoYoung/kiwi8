@@ -1,4 +1,5 @@
-import React, { ChangeEvent } from 'react';
+import React from 'react';
+import type { ChangeEvent } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 // 1. 반환될 데이터의 타입을 정의합니다.
