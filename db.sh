@@ -141,6 +141,33 @@ delete_db() {
     fi
 }
 
+fetch_server_db() {
+    local remote_host="jskn"
+    local remote_db="/data/docker/apps/kiwi8/db/kiwi8.db"
+    local local_tmp="/tmp/kiwi8.db"
+
+    echo "서버($remote_host)에서 DB를 가져옵니다..."
+    
+    # 로컬 임시 파일 삭제
+    if [ -f "$local_tmp" ]; then
+        echo "기존 $local_tmp 삭제 중..."
+        rm -f "$local_tmp"
+    fi
+
+    # SFTP로 파일 가져오기
+    sftp "$remote_host" <<EOF
+get $remote_db $local_tmp
+quit
+EOF
+
+    if [ $? -eq 0 ] && [ -f "$local_tmp" ]; then
+        echo "DB 가져오기 성공: $local_tmp"
+        ls -lh "$local_tmp"
+    else
+        echo "오류: DB 가져오기에 실패했습니다."
+    fi
+}
+
 #----------------------------------------------------
 # 4. 실행 로직 (CLI 인자 처리 또는 단일 메뉴 실행 후 종료)
 #----------------------------------------------------
@@ -153,7 +180,8 @@ if [ $# -gt 0 ]; then
         select) select_table "$2" ;;
         run)    run_sql "$2" ;;
         delete) delete_db ;;
-        *)      echo "사용법: $0 {list|desc|select|run|delete}" ;;
+        fetch)  fetch_server_db ;;
+        *)      echo "사용법: $0 {list|desc|select|run|delete|fetch}" ;;
     esac
     exit 0
 fi
@@ -164,6 +192,7 @@ echo "1. 테이블 목록 (db.sh list)"
 echo "2. 테이블 desc (db.sh desc)"
 echo "3. 테이블 select (db.sh select)"
 echo "4. sql 실행 (db.sh run)"
+echo "5. 서버 DB 가져오기 (db.sh fetch)"
 echo "---------------------------------------------"
 echo "99. db 삭제"
 echo "q. 종료"
@@ -175,6 +204,7 @@ case "$choice" in
     2) desc_table ;;
     3) select_table ;;
     4) run_sql ;;
+    5) fetch_server_db ;;
     99) delete_db ;;
     q|Q) exit 0 ;;
     *) echo "잘못된 선택입니다." ;;
