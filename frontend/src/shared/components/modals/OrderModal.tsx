@@ -35,6 +35,7 @@ export default function OrderModal() {
   const [loadingType, setLoadingType] = useState<'buy' | 'sell' | null>(null)
   const [message, setMessage] = useState<{ text: string; type: 'info' | 'error' | 'success' } | null>(null)
   const [broker, setBroker] = useState<'kis' | 'kiwoom' | 'ls'>('kis')
+  const [confirmed, setConfirmed] = useState(false)
 
   const { data: marketStatus } = useQuery({
     queryKey: ['marketStatus'],
@@ -127,6 +128,7 @@ export default function OrderModal() {
 
       if (res.success) {
         showMessage(`${type === 'buy' ? '매수' : '매도'} 주문이 성공적으로 전송되었습니다.`, 'success')
+        setConfirmed(false)
       } else {
         showMessage(res.error_message || '주문 실패', 'error')
       }
@@ -240,6 +242,20 @@ export default function OrderModal() {
                 </div>
               </div>
 
+              {/* 확인 체크박스 */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="confirmed"
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                  className="w-4 h-4 accent-blue-600 cursor-pointer"
+                />
+                <label htmlFor="confirmed" className="text-sm text-slate-700 cursor-pointer select-none">
+                  수량 및 가격 확인 함
+                </label>
+              </div>
+
               {/* 메시지 영역 */}
               {message && (
                 <div className={`flex items-start gap-2 p-3 rounded-md text-sm ${
@@ -257,7 +273,7 @@ export default function OrderModal() {
                   <Button 
                     type="button" 
                     className="flex-1 h-12 text-lg font-bold bg-red-600 hover:bg-red-700 text-white"
-                    disabled={loadingType !== null || isMarketClosed}
+                    disabled={loadingType !== null || isMarketClosed || !confirmed}
                     onClick={form.handleSubmit((v) => onSubmit(v as unknown as OrderFormValues, 'buy'))}
                   >
                     {loadingType === 'buy' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매수'}
@@ -267,7 +283,7 @@ export default function OrderModal() {
                   <Button 
                     type="button" 
                     className="flex-1 h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={loadingType !== null || isMarketClosed}
+                    disabled={loadingType !== null || isMarketClosed || !confirmed}
                     onClick={form.handleSubmit((v) => onSubmit(v as unknown as OrderFormValues, 'sell'))}
                   >
                     {loadingType === 'sell' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매도'}
@@ -279,11 +295,10 @@ export default function OrderModal() {
                 type="button" 
                 variant="outline" 
                 className="w-full"
-                onClick={() => form.reset({
-                  ...form.getValues(),
-                  qty: 1,
-                  price: 0
-                })}
+                onClick={() => {
+                  form.reset({ ...form.getValues(), qty: 1, price: 0 })
+                  setConfirmed(false)
+                }}
               >
                 초기화
               </Button>
