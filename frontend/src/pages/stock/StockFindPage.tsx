@@ -201,7 +201,7 @@ export default function StockFindPage() {
     <div className="flex flex-col h-full bg-gray-50 p-4">
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl font-bold text-gray-800">전종목 탐색</h1>
+          <h1 className="text-xl font-bold text-gray-800">全 종목 탐색</h1>
           <Input
             className="h-[26px] w-44 text-xs"
             placeholder="종목명/코드/주요제품/대표자"
