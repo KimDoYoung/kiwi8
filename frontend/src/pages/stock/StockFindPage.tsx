@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef, ICellRendererParams } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
@@ -8,12 +8,15 @@ import { useLayoutStore } from '@/store/layoutStore'
 import { fetchMenuTree } from '@/services/menuService'
 import { fetchStkInfoList } from '@/services/stockService'
 import type { StkInfoItem } from '@/services/stockService'
+import { getMyStocks, updateMyStock, createMyStock } from '@/services/myStockService'
+import type { MyStock } from '@/services/myStockService'
 import { fmt, toNum, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import { BizTypeFilterButton } from '@/shared/components/BizTypeFilterButton'
 import { MarketBadge, CompanySizeBadge, NXTBadge } from '@/shared/components/StockBadges'
-import { RefreshCw, RotateCcw } from 'lucide-react'
+import { RefreshCw, RotateCcw, Heart } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 
@@ -21,6 +24,7 @@ ModuleRegistry.registerModules([AllCommunityModule])
 
 export default function StockFindPage() {
   const gridRef = useRef<AgGridReact>(null)
+  const queryClient = useQueryClient()
   const setStockDetail = useStockDetailStore((s) => s.setStock)
   const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
 
@@ -36,16 +40,45 @@ export default function StockFindPage() {
     staleTime: 1000 * 60 * 30,
   })
 
+  const { data: myStocks } = useQuery({
+    queryKey: ['myStocks'],
+    queryFn: getMyStocks,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const watchMap = useMemo<Record<string, number>>(() => {
+    const map: Record<string, number> = {}
+    for (const s of myStocks ?? []) map[s.stk_cd] = s.is_watch
+    return map
+  }, [myStocks])
+
+  const watchMutation = useMutation({
+    mutationFn: async ({ stk_cd, stk_nm, inMyStock, is_watch }: { stk_cd: string; stk_nm: string; inMyStock: boolean; is_watch: number }) => {
+      if (inMyStock) return updateMyStock(stk_cd, { is_watch })
+      return createMyStock({ stk_cd, stk_nm, is_watch: 1 })
+    },
+    onMutate: ({ stk_cd, inMyStock, is_watch, stk_nm }) => {
+      queryClient.setQueryData(['myStocks'], (old: MyStock[] | undefined) => {
+        if (!old) return old
+        if (inMyStock) return old.map(s => s.stk_cd === stk_cd ? { ...s, is_watch } : s)
+        return [...old, { stk_cd, stk_nm, is_watch: 1, is_hold: 0, created_at: '', updated_at: '' } as MyStock]
+      })
+    },
+    onSuccess: () => {
+      window.dispatchEvent(new Event('mystock-updated'))
+    },
+  })
+
   const [keyword, setKeyword] = useState('')
   const [marketFilter, setMarketFilter] = useState<'ALL' | '거래소' | '코스닥'>('ALL')
   const [sizeFilter, setSizeFilter] = useState<'ALL' | '대형주' | '중형주' | '소형주'>('ALL')
-  const [sectorFilter, setSectorFilter] = useState('ALL')
+  const [sectorFilters, setSectorFilters] = useState<string[]>([])
 
   const sectors = useMemo(() => {
     const names = (data ?? [])
       .map(s => s.up_name)
       .filter((n): n is string => !!n && n !== '')
-    return ['ALL', ...Array.from(new Set(names)).sort()]
+    return Array.from(new Set(names)).sort()
   }, [data])
 
   const filteredData = useMemo(() => {
@@ -59,9 +92,9 @@ export default function StockFindPage() {
     }
     if (marketFilter !== 'ALL') list = list.filter(s => s.market_name === marketFilter)
     if (sizeFilter !== 'ALL') list = list.filter(s => s.up_size_name === sizeFilter)
-    if (sectorFilter !== 'ALL') list = list.filter(s => s.up_name === sectorFilter)
+    if (sectorFilters.length > 0) list = list.filter(s => s.up_name != null && sectorFilters.includes(s.up_name))
     return list
-  }, [data, keyword, marketFilter, sizeFilter, sectorFilter])
+  }, [data, keyword, marketFilter, sizeFilter, sectorFilters])
 
   const columnDefs = useMemo<ColDef<StkInfoItem>[]>(() => [
     {
@@ -89,6 +122,34 @@ export default function StockFindPage() {
         </div>
       ),
     },
+    {
+      headerName: '❤️',
+      width: 60,
+      sortable: false,
+      cellRenderer: (p: ICellRendererParams<StkInfoItem>) => {
+        const stk_cd = p.data!.stk_cd
+        const stk_nm = p.data!.stk_nm ?? ''
+        const inMyStock = stk_cd in watchMap
+        const isWatched = watchMap[stk_cd] === 1
+        return (
+          <div className="flex items-center justify-center h-full">
+            <Heart
+              style={{
+                width: 15, height: 15,
+                color: isWatched ? '#ef4444' : '#e5e7eb',
+                fill: isWatched ? '#ef4444' : 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+              onClick={() => watchMutation.mutate({
+                stk_cd, stk_nm, inMyStock,
+                is_watch: isWatched ? 0 : 1,
+              })}
+            />
+          </div>
+        )
+      },
+    },    
     {
       headerName: '시장',
       field: 'market_name',
@@ -191,8 +252,8 @@ export default function StockFindPage() {
           </span>
         )
       },
-    },
-  ], [setStockDetail, openByScreenNo, menus])
+    }
+  ], [setStockDetail, openByScreenNo, menus, watchMap, watchMutation])
 
   if (isLoading) return <Loading />
   if (error) return <LoadingFail message={error instanceof Error ? error.message : '오류'} />
@@ -230,20 +291,15 @@ export default function StockFindPage() {
             className="h-[26px] bg-white"
             itemClassName="h-[24px] text-xs px-3"
           />
-          <select
-            className="h-[26px] text-xs border rounded px-2 bg-white"
-            value={sectorFilter}
-            onChange={(e) => setSectorFilter(e.target.value)}
-          >
-            {sectors.map(s => (
-              <option key={s} value={s}>{s === 'ALL' ? '업종 전체' : s}</option>
-            ))}
-          </select>
+          <BizTypeFilterButton
+            sectors={sectors}
+            selectedSectors={sectorFilters}
+            onFilterChange={setSectorFilters}
+          />
           <Button
-            variant="ghost"
+            variant="warning"
             size="sm"
-            className="h-[26px] px-2 text-xs text-gray-500 hover:text-gray-800"
-            onClick={() => { setKeyword(''); setMarketFilter('ALL'); setSizeFilter('ALL'); setSectorFilter('ALL') }}
+            onClick={() => { setKeyword(''); setMarketFilter('ALL'); setSizeFilter('ALL'); setSectorFilters([]) }}
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             초기화

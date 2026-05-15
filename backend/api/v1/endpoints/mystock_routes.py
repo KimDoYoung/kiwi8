@@ -134,6 +134,12 @@ async def sync_holdings_manually():
         from backend.utils.holdings_utils import get_all_holdings
         service = get_service("my_stock")
         holdings = await get_all_holdings()
+        if not holdings:
+            logger.warning("sync_holdings_manually: 모든 증권사 API에서 보유 종목 조회 실패 또는 보유 없음")
+            return KiwoomApiHelper.create_error_response(
+                error_code="SYNC_EMPTY",
+                error_message="보유 종목을 가져오지 못했습니다. 증권사 API 토큰을 확인하세요."
+            )
         await service.sync_holdings(holdings)
         return KiwoomApiHelper.create_success_response(data={"count": len(holdings)})
     except Exception as e:

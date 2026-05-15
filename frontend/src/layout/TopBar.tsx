@@ -1,4 +1,3 @@
-import { useState, useRef, type KeyboardEvent } from 'react'
 import { LogOut, Settings, Search, PenLine, Home } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
@@ -7,16 +6,12 @@ import { useModalStore } from '@/store/modalStore'
 import { fetchMenuTree } from '@/services/menuService'
 import api from '@/lib/api'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
-import LayoutPresetPanel from './topbar/LayoutPresetPanel'
+import ScreenInputPanel from './topbar/ScreenInputPanel'
 
 export default function TopBar() {
   const { username, logout } = useAuthStore()
   const { openByScreenNo } = useLayoutStore()
   const { openStockFindModal, openDiaryEditModal } = useModalStore()
-
-  const [screenInput, setScreenInput] = useState('')
-  const [inputError, setInputError] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const { data: menus = [] } = useQuery({
     queryKey: ['menus'],
@@ -29,21 +24,6 @@ export default function TopBar() {
     queryFn: () => fetch('/kiwi8/health').then((r) => r.json()) as Promise<{ version: string }>,
     staleTime: Infinity,
   })
-
-  const handleScreenEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return
-    const val = screenInput.trim()
-    if (!val) return
-
-    const ok = openByScreenNo(val, menus)
-    if (ok) {
-      setScreenInput('')
-      setInputError(false)
-    } else {
-      setInputError(true)
-      setTimeout(() => setInputError(false), 1000)
-    }
-  }
 
   const handleLogout = async () => {
     try { await api.get('/logout') } finally { logout() }
@@ -71,30 +51,14 @@ export default function TopBar() {
         title="홈으로"
         className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors shrink-0"
       >
-        <Home size={16} />
+        <Home size={15} />
       </button>
 
       {/* 구분선 */}
       <span className="h-5 w-px bg-gray-200 shrink-0" />
 
       {/* 2) Screen Control Area */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <input
-          ref={inputRef}
-          type="text"
-          value={screenInput}
-          onChange={(e) => setScreenInput(e.target.value)}
-          onKeyDown={handleScreenEnter}
-          placeholder="화면번호"
-          maxLength={6}
-          className={`w-22 border rounded-lg px-2 py-1 text-sm font-mono text-center focus:outline-none transition-colors
-            ${inputError
-              ? 'border-red-400 bg-red-50 text-red-600 focus:ring-1 focus:ring-red-300'
-              : 'border-gray-200 focus:ring-2 focus:ring-green-300'
-            }`}
-        />
-        <LayoutPresetPanel />
-      </div>
+      <ScreenInputPanel />
 
       {/* 구분선 */}
       <span className="h-5 w-px bg-gray-200 shrink-0" />

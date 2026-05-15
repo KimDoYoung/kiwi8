@@ -324,7 +324,11 @@ class MyStockService:
         # 1. 보유 종목 리스트 구하기 (유틸리티 사용)
         from backend.utils.holdings_utils import get_all_holdings
         hold_stocks = await get_all_holdings()
-        
+
+        if not hold_stocks:
+            logger.warning("scheduler_sync_and_update: holdings 빈 리스트 — 동기화 건너뜀")
+            return
+
         # 2. hold_stocks 동기화
         async with self._get_conn() as db:
             # 먼저 모든 종목의 is_hold를 0으로 초기화 (현재 보유 중인 것만 1로 만들기 위해)
@@ -392,6 +396,10 @@ class MyStockService:
         - DB에 있고 실제 보유 아닌 종목: is_watch=false면 삭제, true면 is_hold=0 유지
         - 실제 보유하나 DB에 없는 종목: 추가 (현재가 기준 기준가/매도가 초기화)
         """
+        if not holdings:
+            logger.warning("sync_holdings: holdings 빈 리스트 — 데이터 손실 방지를 위해 중단")
+            return False
+
         # 1. 기존 DB 종목 코드 파악
         async with self._get_conn() as db:
             db.row_factory = aiosqlite.Row
