@@ -7,7 +7,7 @@ account_history 일일 기록 Job
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -76,7 +76,7 @@ def _save(record_date: str, summary: dict, accounts: dict) -> None:
 @job_registry.register("write_account_history")
 async def write_account_history_job(_payload: dict) -> None:
     """매일 23:50 계좌 요약을 account_history에 기록. 휴장일은 생략."""
-    record_date = datetime.now(tz=timezone.utc).date().isoformat()
+    record_date = datetime.now(tz=UTC).date().isoformat()
     logger.info(f"[account-history-job] ===== 시작 ===== record_date={record_date}")
 
     # 오늘 시장 개장일 여부 확인
