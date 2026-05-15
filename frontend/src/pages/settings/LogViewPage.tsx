@@ -88,7 +88,6 @@ const LogViewPage: React.FC = () => {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, lines, level, fileIndex]);
 
   const handleDownload = () => {

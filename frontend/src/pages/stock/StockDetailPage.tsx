@@ -361,7 +361,7 @@ export default function StockDetailPage() {
                   
                   {/* 1. 기업 설명 카드 */}
                   <SectionCard title="기업 설명" icon={FileText}>
-                    <p className="text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 border border-gray-100 rounded text-[11px] h-full min-h-[100px]">
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 border border-gray-100 rounded text-xs h-full min-h-[100px]">
                       {info.company_summary || '기업 개요 정보가 없습니다.'}
                     </p>
                   </SectionCard>

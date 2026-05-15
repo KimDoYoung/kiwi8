@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS stk_info (
   main_products TEXT,                    -- 주요제품
   representative_name TEXT,              -- 대표자명
   homepage TEXT,                         -- 홈페이지
-  location TEXT                          -- 지역  
+  location TEXT,                         -- 지역
   created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP                    -- 생성 시각
 );
 -- ---------------------------------------------------------------
@@ -308,7 +308,9 @@ CREATE TABLE IF NOT EXISTS kind_stk_info (
     settlement_month TEXT,                 -- 결산월
     representative_name TEXT,              -- 대표자명
     homepage TEXT,                         -- 홈페이지
-    location TEXT                          -- 지역
+    location TEXT,                          -- 지역
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
 );
 
 -- 종목코드로 조회하거나 조인하는 경우가 많으므로 인덱스 생성
