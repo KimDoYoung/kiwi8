@@ -316,6 +316,49 @@ CREATE INDEX IF NOT EXISTS idx_stock_code ON kind_stk_info(stock_code);
 -- (선택) 회사명 검색을 위한 인덱스
 CREATE INDEX IF NOT EXISTS idx_corp_name ON kind_stk_info(corp_name);
 
+
+  CREATE TABLE IF NOT EXISTS account_history (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_date     TEXT    NOT NULL UNIQUE,          -- YYYY-MM-DD
+
+      -- 전체 요약
+      total_asset     INTEGER NOT NULL DEFAULT 0,       -- 전체자산
+      total_buy       INTEGER NOT NULL DEFAULT 0,       -- 전체매입금액
+      total_pnl       INTEGER NOT NULL DEFAULT 0,       -- 전체평가손익
+      total_rate      TEXT    NOT NULL DEFAULT '0.00%', -- 전체수익률
+
+      -- KIS (한국투자증권)
+      kis_acct_no     TEXT,
+      kis_total_asset INTEGER NOT NULL DEFAULT 0,
+      kis_buy_amt     INTEGER NOT NULL DEFAULT 0,
+      kis_eval_pnl    INTEGER NOT NULL DEFAULT 0,
+      kis_rate        TEXT    NOT NULL DEFAULT '0.00%',
+      kis_ord_avail   INTEGER NOT NULL DEFAULT 0,
+      kis_hold_cnt    INTEGER NOT NULL DEFAULT 0,
+
+      -- LS (LS증권)
+      ls_acct_no      TEXT,
+      ls_total_asset  INTEGER NOT NULL DEFAULT 0,
+      ls_buy_amt      INTEGER NOT NULL DEFAULT 0,
+      ls_eval_pnl     INTEGER NOT NULL DEFAULT 0,
+      ls_rate         TEXT    NOT NULL DEFAULT '0.00%',
+      ls_ord_avail    INTEGER NOT NULL DEFAULT 0,
+      ls_hold_cnt     INTEGER NOT NULL DEFAULT 0,
+
+      -- 키움증권
+      kiwoom_acct_no      TEXT,
+      kiwoom_total_asset  INTEGER NOT NULL DEFAULT 0,
+      kiwoom_buy_amt      INTEGER NOT NULL DEFAULT 0,
+      kiwoom_eval_pnl     INTEGER NOT NULL DEFAULT 0,
+      kiwoom_rate         TEXT    NOT NULL DEFAULT '0.00%',
+      kiwoom_ord_avail    INTEGER NOT NULL DEFAULT 0,
+      kiwoom_hold_cnt     INTEGER NOT NULL DEFAULT 0,
+
+      created_at      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_account_history_date ON account_history (record_date);
+
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;
 
