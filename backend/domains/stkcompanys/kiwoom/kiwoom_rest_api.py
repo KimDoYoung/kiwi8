@@ -203,7 +203,7 @@ class KiwoomRestApi(StockApi):
             response_headers = self._extract_kiwoom_headers(response.headers)
             logger.debug(f"응답 헤더: {response_headers}")
             response_data = await response.json()
-            logger.debug(f"응답 데이터: {response_data}")
+            # logger.debug(f"응답 데이터: {response_data}")
 
             # return_code가 문자열 '0' 또는 숫자 0이 아닌 경우 오류로 처리
             return_code = response_data.get('return_code')
