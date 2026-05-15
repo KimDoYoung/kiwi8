@@ -53,7 +53,11 @@ class StkInfoService:
             company_class_name=row[11],
             order_warning=row[12],
             nxt_enable=row[13],
-            created_at=row[14]
+            main_products=row[14] if len(row) > 14 else None,
+            representative_name=row[15] if len(row) > 15 else None,
+            homepage=row[16] if len(row) > 16 else None,
+            location=row[17] if len(row) > 17 else None,
+            created_at=row[18] if len(row) > 18 else None,
         )
 
     async def create(self, stk_info: StkInfoCreate) -> StkInfo:
@@ -122,7 +126,7 @@ class StkInfoService:
             cur.execute("""
                 SELECT stk_cd, stk_nm, list_count, audit_info, reg_day, last_price, state,
                        market_code, market_name, up_name, up_size_name, company_class_name,
-                       order_warning, nxt_enable, created_at
+                       order_warning, nxt_enable, main_products, representative_name, homepage, location, created_at
                 FROM stk_info
                 WHERE stk_cd = ?
             """, (code,))
@@ -227,7 +231,7 @@ class StkInfoService:
         query = """
             SELECT stk_cd, stk_nm, list_count, audit_info, reg_day, last_price, state,
                    market_code, market_name, up_name, up_size_name, company_class_name,
-                   order_warning, nxt_enable, created_at
+                   order_warning, nxt_enable, main_products, representative_name, homepage, location, created_at
             FROM stk_info
         """
         params = []

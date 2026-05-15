@@ -41,6 +41,10 @@ class StkInfo:
     company_class_name: str | None = None # 회사분류 (코스닥만 존재)
     order_warning: str | None = None      # 투자유의종목여부: 0 해당없음, 2 정리매매, 3 단기과열, 4 투자위험, 5 투자경과, 1 ETF투자주의요망
     nxt_enable: str | None = None         # NXT 가능여부 (Y/N)
+    main_products: str | None = None      # 주요제품 (KIND)
+    representative_name: str | None = None # 대표자명 (KIND)
+    homepage: str | None = None           # 홈페이지 (KIND)
+    location: str | None = None           # 지역 (KIND)
     created_at: str | None = None         # 생성 시각 (DB에서 자동 설정)
 
 class StkInfoCreate(BaseModel):
@@ -64,6 +68,10 @@ class StkInfoCreate(BaseModel):
     company_class_name: str | None = Field(None, description="회사분류 (코스닥만 존재)")
     order_warning: str | None = Field(None, description="투자유의종목여부", example="0")
     nxt_enable: str | None = Field(None, description="NXT 가능여부 (Y/N)", example="Y")
+    main_products: str | None = Field(None, description="주요제품")
+    representative_name: str | None = Field(None, description="대표자명")
+    homepage: str | None = Field(None, description="홈페이지")
+    location: str | None = Field(None, description="지역")
 
 class StkInfoUpdate(BaseModel):
     """종목 기본정보 수정 요청 모델
@@ -85,6 +93,10 @@ class StkInfoUpdate(BaseModel):
     company_class_name: str | None = Field(None, description="회사분류 (코스닥만 존재)")
     order_warning: str | None = Field(None, description="투자유의종목여부")
     nxt_enable: str | None = Field(None, description="NXT 가능여부 (Y/N)")
+    main_products: str | None = Field(None, description="주요제품")
+    representative_name: str | None = Field(None, description="대표자명")
+    homepage: str | None = Field(None, description="홈페이지")
+    location: str | None = Field(None, description="지역")
 
 class StkInfoResponse(BaseModel):
     """종목 기본정보 응답 모델
@@ -107,6 +119,10 @@ class StkInfoResponse(BaseModel):
     company_class_name: str | None = Field(None, description="회사분류 (코스닥만 존재)")
     order_warning: str | None = Field(None, description="투자유의종목여부", example="0")
     nxt_enable: str | None = Field(None, description="NXT 가능여부 (Y/N)", example="Y")
+    main_products: str | None = Field(None, description="주요제품")
+    representative_name: str | None = Field(None, description="대표자명")
+    homepage: str | None = Field(None, description="홈페이지")
+    location: str | None = Field(None, description="지역")
     created_at: str | None = Field(None, description="생성 시각", example="2024-08-24 14:30:00")
 
 class StkInfoFilter(BaseModel):

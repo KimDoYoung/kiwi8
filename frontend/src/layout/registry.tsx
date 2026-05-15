@@ -12,6 +12,7 @@ import StkDiaryList from '@/pages/diary/StkDiaryList'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import LogViewPage from '@/pages/settings/LogViewPage'
 import StockDetailPage from '@/pages/stock/StockDetailPage'
+import StockFindPage from '@/pages/stock/StockFindPage'
 import MyStockPage from '@/pages/stock/MyStockPage'
 import ThemePage from '@/pages/stock/ThemePage'
 import SchedulerPage from '@/pages/manage/SchedulerPage'
@@ -28,7 +29,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '1104': ExecutionHistoryPage,
   // [1200 시장 분석]
   '1201': StockDetailPage,
-  '1202': PlaceholderPage,
+  '1202': StockFindPage,
   '1203': MyStockPage,
   '1204': ThemePage,
   // [1300 주문 센터]

@@ -1,5 +1,14 @@
 
+import asyncio
+import os
+import sqlite3
+from datetime import datetime
+
+import pandas as pd
+import requests
+
 from backend.api.common.validators import validate_market_type
+from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.infrahub.cache_keys import CacheKey
 from backend.domains.models.stk_info_model import (
@@ -18,6 +27,109 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
 from backend.utils.kiwi_utils import get_current_timestamp, is_time_exceeded, to_str
 
 logger = get_logger(__name__)
+
+_KIND_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do"
+_KIND_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Referer": "https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage",
+}
+_KIND_PAYLOAD = {"method": "download", "pageIndex": "1", "currentPageSize": "5000"}
+_KIND_COL_MAP = {
+    "회사명": "corp_name", "시장구분": "market_type", "종목코드": "stock_code",
+    "업종": "industry", "주요제품": "main_products", "상장일": "listing_date",
+    "결산월": "settlement_month", "대표자명": "representative_name",
+    "홈페이지": "homepage", "지역": "location",
+}
+
+
+def _kind_stk_info_fill_sync():
+    """KIND Excel 다운로드 → kind_stk_info INSERT → stk_info 4개 컬럼 UPDATE (동기)"""
+    today = datetime.now().strftime("%Y_%m_%d")
+    xls_path = os.path.join(config.DATA_FOLDER, f"kind_stk_info_{today}.xls")
+
+    # 다운로드
+    logger.info(f"KIND Excel 다운로드 → {xls_path}")
+    resp = requests.post(_KIND_URL, data=_KIND_PAYLOAD, headers=_KIND_HEADERS, timeout=30)
+    if resp.status_code != 200:
+        logger.error(f"KIND 다운로드 실패: HTTP {resp.status_code}")
+        return
+
+    os.makedirs(config.DATA_FOLDER, exist_ok=True)
+    with open(xls_path, "wb") as f:
+        f.write(resp.content)
+    logger.info(f"KIND Excel 저장: {len(resp.content):,} bytes")
+
+    # 파싱
+    try:
+        df = pd.read_html(xls_path, encoding="euc-kr")[0]
+    except Exception as e:
+        logger.warning(f"read_html 실패({e}), xlrd 시도")
+        try:
+            df = pd.read_excel(xls_path, engine="xlrd")
+        except Exception as e2:
+            logger.error(f"KIND Excel 파싱 실패: {e2}")
+            return
+
+    df = df.rename(columns=_KIND_COL_MAP)
+
+    def normalize_code(x):
+        s = str(x).strip() if pd.notna(x) else ""
+        return "" if s in ("", "nan") else (s.zfill(6) if s.isdigit() else s)
+
+    if "stock_code" in df.columns:
+        df["stock_code"] = df["stock_code"].apply(normalize_code)
+
+    def clean(val):
+        s = str(val) if pd.notna(val) else ""
+        return "" if s == "nan" else s
+
+    rows = [
+        (
+            clean(row.get("corp_name")), clean(row.get("market_type")),
+            clean(row.get("stock_code")), clean(row.get("industry")),
+            clean(row.get("main_products")), clean(row.get("listing_date")),
+            clean(row.get("settlement_month")), clean(row.get("representative_name")),
+            clean(row.get("homepage")), clean(row.get("location")),
+        )
+        for _, row in df.iterrows()
+    ]
+    rows = [r for r in rows if r[2]]  # stock_code 없는 행 제거
+
+    with sqlite3.connect(config.DB_PATH) as conn:
+        conn.execute("DELETE FROM kind_stk_info")
+        conn.executemany(
+            """INSERT INTO kind_stk_info
+               (corp_name, market_type, stock_code, industry, main_products,
+                listing_date, settlement_month, representative_name, homepage, location)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            rows,
+        )
+
+        # stk_info에 4개 컬럼 없으면 추가
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(stk_info)")
+        existing_cols = {r[1] for r in cur.fetchall()}
+        for col in ("main_products", "representative_name", "homepage", "location"):
+            if col not in existing_cols:
+                conn.execute(f"ALTER TABLE stk_info ADD COLUMN {col} TEXT")
+                logger.info(f"ALTER TABLE stk_info ADD COLUMN {col}")
+
+        cur.execute("""
+            UPDATE stk_info SET
+                main_products       = (SELECT k.main_products       FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1),
+                representative_name = (SELECT k.representative_name FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1),
+                homepage            = (SELECT k.homepage            FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1),
+                location            = (SELECT k.location            FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1)
+            WHERE stk_cd IN (SELECT stock_code FROM kind_stk_info)
+        """)
+        conn.commit()
+
+    logger.info(f"kind_stk_info {len(rows)}건 insert, stk_info {cur.rowcount}건 업데이트 완료")
+
+
+async def kind_stk_info_fill():
+    """KIND stk_info 채우기 (비동기 래퍼)"""
+    await asyncio.to_thread(_kind_stk_info_fill_sync)
 
 async def stk_info_fill(force:bool=False):
     """ 
@@ -84,10 +196,16 @@ async def stk_info_fill(force:bool=False):
             
             # 타임스탬프 업데이트
             await settings_service.set(
-                SettingsKey.LAST_STK_INFO_FILL, 
+                SettingsKey.LAST_STK_INFO_FILL,
                 get_current_timestamp()
             )
             logger.info("LAST_STK_INFO_FILL 타임스탬프 업데이트 완료")
+
+    # KIND Excel → kind_stk_info → stk_info 4개 컬럼 채우기
+    try:
+        await kind_stk_info_fill()
+    except Exception as e:
+        logger.error(f"KIND stk_info 채우기 실패: {e}")
 
 async def get_stock_name(stk_code: str) -> str:
     ''' stk_code로 stk_name을 구한다. stk_info테이블에서 구하고 없으면 api로 구함'''

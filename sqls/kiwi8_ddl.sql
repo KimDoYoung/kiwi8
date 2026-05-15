@@ -154,6 +154,10 @@ CREATE TABLE IF NOT EXISTS stk_info (
   order_warning       TEXT CHECK (order_warning IN ('0','1','2','3','4','5')), 
   -- 투자유의종목여부: 0 해당없음, 2 정리매매, 3 단기과열, 4 투자위험, 5 투자경과, 1 ETF투자주의요망
   nxt_enable          TEXT CHECK (nxt_enable IN ('Y','N')),                  -- NXT 가능여부 (Y/N)
+  main_products TEXT,                    -- 주요제품
+  representative_name TEXT,              -- 대표자명
+  homepage TEXT,                         -- 홈페이지
+  location TEXT                          -- 지역  
   created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP                    -- 생성 시각
 );
 -- ---------------------------------------------------------------
@@ -292,7 +296,25 @@ CREATE TABLE IF NOT EXISTS stk_options (
 );
 CREATE INDEX IF NOT EXISTS idx_stk_options_stk_cd ON stk_options(stk_cd);
 
+-- kind_stk_info
+CREATE TABLE IF NOT EXISTS kind_stk_info (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- 고유 식별자 (자동 증가)
+    corp_name TEXT NOT NULL,               -- 회사명
+    market_type TEXT,                      -- 시장구분
+    stock_code TEXT NOT NULL,              -- 종목코드
+    industry TEXT,                         -- 업종
+    main_products TEXT,                    -- 주요제품
+    listing_date DATE,                     -- 상장일
+    settlement_month TEXT,                 -- 결산월
+    representative_name TEXT,              -- 대표자명
+    homepage TEXT,                         -- 홈페이지
+    location TEXT                          -- 지역
+);
 
+-- 종목코드로 조회하거나 조인하는 경우가 많으므로 인덱스 생성
+CREATE INDEX IF NOT EXISTS idx_stock_code ON kind_stk_info(stock_code);
+-- (선택) 회사명 검색을 위한 인덱스
+CREATE INDEX IF NOT EXISTS idx_corp_name ON kind_stk_info(corp_name);
 
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;

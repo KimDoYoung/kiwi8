@@ -281,3 +281,36 @@ async def find_stock(request: KiwoomRequest):
             status_code=500,
             api_info={"api_id": "stock_find", "description": "종목 검색"}
         )
+
+
+@router.get("/stk-info-list", response_model=KiwoomResponse)
+async def get_stk_info_list():
+    """stk_info 전체 목록 조회 (전종목 탐색용)"""
+    try:
+        service = get_service("stk_info")
+        items = await service.list_all()
+        data = [
+            {
+                "stk_cd": s.stk_cd,
+                "stk_nm": s.stk_nm,
+                "market_code": s.market_code,
+                "market_name": s.market_name,
+                "up_name": s.up_name,
+                "up_size_name": s.up_size_name,
+                "audit_info": s.audit_info,
+                "reg_day": s.reg_day,
+                "last_price": s.last_price,
+                "state": s.state,
+                "nxt_enable": s.nxt_enable,
+                "order_warning": s.order_warning,
+                "main_products": s.main_products,
+                "representative_name": s.representative_name,
+                "homepage": s.homepage,
+                "location": s.location,
+            }
+            for s in items
+        ]
+        return KiwoomApiHelper.create_success_response(data={"list": data, "count": len(data)})
+    except Exception as e:
+        logger.error(f"stk_info 목록 조회 오류: {e!s}")
+        return KiwoomApiHelper.create_error_response(error_code="500", error_message=str(e))

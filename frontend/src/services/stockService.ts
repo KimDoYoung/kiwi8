@@ -126,3 +126,27 @@ export const fetchThemeNames = async (): Promise<{ name: string }[]> => {
   return response.data.data
 }
 
+export interface StkInfoItem {
+  stk_cd: string
+  stk_nm: string | null
+  market_code: string | null
+  market_name: string | null
+  up_name: string | null
+  up_size_name: string | null
+  audit_info: string | null
+  reg_day: string | null
+  last_price: string | null
+  state: string | null
+  nxt_enable: string | null
+  order_warning: string | null
+  main_products: string | null
+  representative_name: string | null
+  homepage: string | null
+  location: string | null
+}
+
+export const fetchStkInfoList = async (): Promise<StkInfoItem[]> => {
+  const response = await api.get('/api/v1/stock/stk-info-list')
+  return response.data.data.list
+}
+
