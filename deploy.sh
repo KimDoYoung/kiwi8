@@ -189,6 +189,15 @@ confirm_deploy() {
     fi
 }
 
+# ── 체크 전용 모드 ──────────────────────────────────────────────────────────
+check_only() {
+    header "Kiwi8 사전 검증 (--check 모드, 배포 없음)"
+    check_backend
+    check_frontend_build
+    echo ""
+    info "모든 검사를 통과했습니다. 커밋 후 ./deploy.sh 로 배포하세요."
+}
+
 # ── 배포 ──────────────────────────────────────────────────────────────────
 main() {
     header "Kiwi8 배포 시작 → $SSH_HOST"
@@ -258,4 +267,8 @@ EOF
     fi
 }
 
-main "$@"
+case "${1:-}" in
+    --check|-c) check_only ;;
+    "")         main "$@" ;;
+    *)          error "알 수 없는 옵션: $1"; echo "사용법: $0 [--check]"; exit 1 ;;
+esac

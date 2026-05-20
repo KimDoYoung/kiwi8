@@ -21,7 +21,7 @@ interface FilterRowProps {
   handleToggle: (field: keyof ThemeFilterState, isOver: boolean) => void
   step?: number
   unit?: string
-  inputRef?: RefObject<HTMLInputElement>
+  inputRef?: RefObject<HTMLInputElement | null>
 }
 
 const FilterRow = ({
