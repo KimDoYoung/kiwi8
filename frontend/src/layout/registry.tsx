@@ -52,9 +52,8 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   // [8200 시스템 엔진]
   '8201': PlaceholderPage,
   '8202': SchedulerPage,
-  // [9100 시스템 설정]
-  '9101': SettingsPage,
-  '9102': LogViewPage,
+  '8203': SettingsPage,
+  '8204': LogViewPage,
 }
 
 export default registry

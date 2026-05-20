@@ -332,7 +332,7 @@ export default function MyStockPage() {
     <div className="flex flex-col h-full bg-gray-50 p-4">
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-800">나의 종목 관리</h1>
+          <h1 className="text-xl font-bold text-gray-800">관심/보유 종목</h1>
           <Button size="sm" variant="outline" className="h-[26px] px-2" onClick={openStockFindModal}>
             <Search className="w-4 h-4" />
           </Button>

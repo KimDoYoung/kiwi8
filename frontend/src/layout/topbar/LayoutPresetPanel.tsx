@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { LayoutTemplate, Save, Trash2, FolderOpen } from 'lucide-react'
+import { LayoutTemplate, Save, Trash2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLayoutStore } from '@/store/layoutStore'
 import {
@@ -77,7 +77,7 @@ export default function LayoutPresetPanel() {
       <Popover>
         <PopoverTrigger
           className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors data-[popup-open]:text-blue-600 data-[popup-open]:bg-blue-50"
-          title="레이아웃 프리셋"
+          title="화면 배치"
         >
           <LayoutTemplate size={15} />
         </PopoverTrigger>
@@ -85,33 +85,32 @@ export default function LayoutPresetPanel() {
         <PopoverContent align="end" className="w-64 p-0">
           {/* 헤더 */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-            <span className="text-xs font-semibold text-gray-600">레이아웃 프리셋</span>
+            <span className="text-xs font-semibold text-gray-600">화면 배치 레이아웃</span>
             <button
               onClick={() => setSaveDialogOpen(true)}
               className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
             >
               <Save size={12} />
-              현재 저장
+              현재 배치 저장
             </button>
           </div>
 
           {/* 프리셋 목록 */}
           <div className="max-h-64 overflow-y-auto py-1">
             {presets.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-4">저장된 프리셋이 없습니다</p>
+              <p className="text-xs text-gray-400 text-center py-4">저장된 화면배치 레이아웃 없습니다</p>
             ) : (
               presets.map((preset) => (
                 <div
                   key={preset.id}
                   className="flex items-center gap-1 px-3 py-1.5 hover:bg-gray-50 group"
                 >
-                  <span className="flex-1 text-sm text-gray-700 truncate">{preset.name}</span>
                   <button
                     onClick={() => handleLoad(preset)}
-                    title="불러오기"
-                    className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                    title="클릭하여 적용"
+                    className="flex-1 text-left text-sm text-gray-700 truncate hover:text-blue-600 transition-colors"
                   >
-                    <FolderOpen size={13} />
+                    {preset.name}
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(preset.id)}
@@ -131,7 +130,7 @@ export default function LayoutPresetPanel() {
       <Dialog open={saveDialogOpen} onOpenChange={(o) => { setSaveDialogOpen(o); if (!o) setPresetName('') }}>
         <DialogContent showCloseButton className="sm:max-w-xs">
           <DialogHeader>
-            <DialogTitle>레이아웃 저장</DialogTitle>
+            <DialogTitle>화면배치 레이아웃 저장</DialogTitle>
           </DialogHeader>
 
           <div>
