@@ -14,6 +14,7 @@ import { fmt, toNum, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import { ThreeCheckButton } from '@/shared/components/ThreeCheckButton'
 import { BizTypeFilterButton } from '@/shared/components/BizTypeFilterButton'
 import { MarketBadge, CompanySizeBadge, NXTBadge } from '@/shared/components/StockBadges'
 import { RefreshCw, RotateCcw, Heart } from 'lucide-react'
@@ -71,7 +72,7 @@ export default function StockFindPage() {
 
   const [keyword, setKeyword] = useState('')
   const [marketFilter, setMarketFilter] = useState<'ALL' | '거래소' | '코스닥'>('ALL')
-  const [sizeFilter, setSizeFilter] = useState<'ALL' | '대형주' | '중형주' | '소형주'>('ALL')
+  const [sizeFilter, setSizeFilter] = useState<string[]>([])
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
 
   const sectors = useMemo(() => {
@@ -91,7 +92,8 @@ export default function StockFindPage() {
       )
     }
     if (marketFilter !== 'ALL') list = list.filter(s => s.market_name === marketFilter)
-    if (sizeFilter !== 'ALL') list = list.filter(s => s.up_size_name === sizeFilter)
+    if (sizeFilter.length > 0 && sizeFilter.length < 3)
+      list = list.filter(s => sizeFilter.includes(s.up_size_name ?? ''))
     if (sectorFilters.length > 0) list = list.filter(s => s.up_name != null && sectorFilters.includes(s.up_name))
     return list
   }, [data, keyword, marketFilter, sizeFilter, sectorFilters])
@@ -280,16 +282,16 @@ export default function StockFindPage() {
             className="h-[26px] bg-white"
             itemClassName="h-[24px] text-xs px-3"
           />
-          <GroupRadioButton
+          <ThreeCheckButton
             options={[
-              { label: '소형', value: '소형주', className: 'data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-700' },
-              { label: '全', value: 'ALL', className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800' },
-              { label: '대형', value: '대형주', className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700' },
+              { label: '대형', value: '대형주', activeClassName: 'bg-blue-100 text-blue-700' },
+              { label: '중형', value: '중형주', activeClassName: 'bg-green-100 text-green-700' },
+              { label: '소형', value: '소형주', activeClassName: 'bg-yellow-100 text-yellow-700' },
             ]}
             value={sizeFilter}
-            onValueChange={(v) => setSizeFilter(v as typeof sizeFilter)}
-            className="h-[26px] bg-white"
-            itemClassName="h-[24px] text-xs px-3"
+            onValueChange={setSizeFilter}
+            className="h-[26px] border-gray-200"
+            itemClassName="h-[24px] text-xs px-2"
           />
           <BizTypeFilterButton
             sectors={sectors}

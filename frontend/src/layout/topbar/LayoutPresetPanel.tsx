@@ -23,6 +23,7 @@ import {
 } from '@/shared/components/ui/popover'
 
 export default function LayoutPresetPanel() {
+  const [popoverOpen, setPopoverOpen] = useState(false)
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [presetName, setPresetName] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -67,6 +68,7 @@ export default function LayoutPresetPanel() {
 
   const handleLoad = (preset: LayoutPreset) => {
     loadPreset(preset.layout_json)
+    setPopoverOpen(false)
   }
 
   // 이름이 기존 프리셋과 겹치는지 확인 (덮어쓰기 안내용)
@@ -74,7 +76,7 @@ export default function LayoutPresetPanel() {
 
   return (
     <>
-      <Popover>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger
           className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors data-[popup-open]:text-blue-600 data-[popup-open]:bg-blue-50"
           title="화면 배치"

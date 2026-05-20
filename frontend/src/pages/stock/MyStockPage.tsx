@@ -19,6 +19,7 @@ import { toNum, fmt, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
+import { ThreeCheckButton } from '@/shared/components/ThreeCheckButton'
 import { StockFilterButton } from '@/shared/components/StockFilterButton'
 import type { StockOption } from '@/shared/components/StocksSelectBox'
 import { PricePositionBar } from '@/shared/components/PricePositionBar'
@@ -44,7 +45,7 @@ export default function MyStockPage() {
 
   const [stockFilter, setStockFilter] = useState<'hold' | 'all' | 'watch'>('all')
   const [marketFilter, setMarketFilter] = useState<'ALL' | 'KOSPI' | 'KOSDAQ'>('ALL')
-  const [sizeFilter, setSizeFilter] = useState<'ALL' | 'LARGE' | 'MEDIUM' | 'SMALL'>('ALL')
+  const [sizeFilter, setSizeFilter] = useState<string[]>([])
   const [filterCodes, setFilterCodes] = useState<string[]>([])
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
@@ -117,9 +118,11 @@ export default function MyStockPage() {
     if (marketFilter === 'KOSPI') list = list.filter(s => s.spec_data?.['시장명'] === '코스피')
     else if (marketFilter === 'KOSDAQ') list = list.filter(s => s.spec_data?.['시장명'] === '코스닥')
 
-    if (sizeFilter === 'LARGE') list = list.filter(s => s.spec_data?.['회사크기분류'] === '대형주')
-    else if (sizeFilter === 'MEDIUM') list = list.filter(s => s.spec_data?.['회사크기분류'] === '중형주')
-    else if (sizeFilter === 'SMALL') list = list.filter(s => s.spec_data?.['회사크기분류'] === '소형주')
+    if (sizeFilter.length > 0 && sizeFilter.length < 3) {
+      const sizeMap: Record<string, string> = { LARGE: '대형주', MEDIUM: '중형주', SMALL: '소형주' }
+      const labels = sizeFilter.map(k => sizeMap[k]).filter(Boolean)
+      list = list.filter(s => labels.includes(s.spec_data?.['회사크기분류']))
+    }
 
     if (filterCodes.length > 0) list = list.filter(s => filterCodes.includes(s.stk_cd))
     return list
@@ -330,8 +333,8 @@ export default function MyStockPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 p-4">
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           <h1 className="text-xl font-bold text-gray-800">관심/보유 종목</h1>
           <Button size="sm" variant="outline" className="h-[26px] px-2" onClick={openStockFindModal}>
             <Search className="w-4 h-4" />
@@ -375,20 +378,20 @@ export default function MyStockPage() {
             className="h-[26px] bg-white"
             itemClassName="h-[24px] text-xs px-3"
           />
-          <GroupRadioButton
+          <ThreeCheckButton
             options={[
-              { label: '소형', value: 'SMALL', className: 'data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-700' },
-              { label: '全', value: 'ALL', className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800' },
-              { label: '대형', value: 'LARGE', className: 'data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700' },
+              { label: '대형', value: 'LARGE', activeClassName: 'bg-blue-100 text-blue-700' },
+              { label: '중형', value: 'MEDIUM', activeClassName: 'bg-green-100 text-green-700' },
+              { label: '소형', value: 'SMALL', activeClassName: 'bg-yellow-100 text-yellow-700' },
             ]}
             value={sizeFilter}
-            onValueChange={(v) => setSizeFilter(v as typeof sizeFilter)}
-            className="h-[26px] bg-white"
-            itemClassName="h-[24px] text-xs px-3"
+            onValueChange={setSizeFilter}
+            className="h-[26px] border-gray-200"
+            itemClassName="h-[24px] text-xs px-2"
           />
 
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="warning" size="sm" onClick={() => fillAllSpecMutation.mutate()} disabled={fillAllSpecMutation.isPending}>
             <Info className={`w-4 h-4 mr-2 ${fillAllSpecMutation.isPending ? 'animate-pulse' : ''}`} />
             전체 Spec 갱신

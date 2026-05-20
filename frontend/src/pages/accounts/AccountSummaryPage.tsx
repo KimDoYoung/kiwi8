@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { getMarketStatus } from '@/services/stockService'
+import RefreshButton from '@/shared/components/RefreshButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
     Wallet,
@@ -7,7 +9,6 @@ import {
     TrendingDown,
     PieChart as PieChartIcon,
     BarChart3,
-    RefreshCw,
     Building2,
     Banknote,
     Store,
@@ -59,6 +60,12 @@ export default function AccountSummaryPage() {
             const res = await api.get('/api/v1/stkcompany/summary')
             return res.data
         }
+    })
+
+    const { data: marketStatus } = useQuery({
+        queryKey: ['marketStatus'],
+        queryFn: getMarketStatus,
+        refetchInterval: 60_000,
     })
 
     if (isLoading) {
@@ -142,14 +149,12 @@ export default function AccountSummaryPage() {
                     <h1 className="text-lg font-bold text-slate-800">통합 계좌 요약</h1>
                     <span className="text-xs text-slate-400 font-mono ml-1">[1101]</span>
                 </div>
-                <button
-                    onClick={() => refetch()}
-                    disabled={isFetching}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors disabled:opacity-50"
-                >
-                    <RefreshCw className={cn("w-3.5 h-3.5", isFetching && "animate-spin")} />
-                    새로고침
-                </button>
+                <RefreshButton
+                    onRefresh={() => refetch()}
+                    intervalSeconds={300}
+                    isLoading={isFetching}
+                    enabled={marketStatus?.is_open}
+                />
             </div>
 
             <div className="p-6 space-y-8">
