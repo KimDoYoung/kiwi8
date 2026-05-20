@@ -359,7 +359,7 @@ export default function ThemePage() {
         {/* 테마별 보기 */}
         <div className="flex items-center space-x-2 shrink-0">
           <Switch id="theme-mode" checked={themeMode} onCheckedChange={handleThemeModeChange} />
-          <Label htmlFor="theme-mode" className="text-xs font-medium cursor-pointer whitespace-nowrap">테마별 보기</Label>
+          <Label htmlFor="theme-mode" className="text-base font-medium cursor-pointer whitespace-nowrap">테마별 보기</Label>
         </div>
 
         {/* 검색창 */}
@@ -387,7 +387,7 @@ export default function ThemePage() {
         <div className="flex items-center gap-2">
           <Popover open={isFilterPanelOpen} onOpenChange={setIsFilterPanelOpen}>
             <PopoverTrigger>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-medium border-gray-300">
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-base font-medium border-gray-300 text-[14px]">
                 <Settings2 size={14} />
                 검색 조건
               </Button>

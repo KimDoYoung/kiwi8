@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-import backend.jobs.judal_data_collect  # noqa: F401 — job_registry 등록 활성화
+import backend.domains.market.market_service  # noqa: F401 — job_registry 등록 활성화
+import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router

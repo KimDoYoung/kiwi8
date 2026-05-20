@@ -114,6 +114,9 @@ class KScheduler:
         self._con.row_factory = sqlite3.Row
         self._prepare_schema()
         self._hostname_pid = f"{socket.gethostname()}:{os.getpid()}"
+        # 이전 프로세스의 stale lock 제거
+        self._con.execute("DELETE FROM kscheduler_lock")
+        self._con.commit()
 
     # --- DB helpers ---
     def _prepare_schema(self):
@@ -284,7 +287,10 @@ class KScheduler:
         # 메인 루프
         try:
             while not self._stop.is_set():
-                await self._tick()
+                try:
+                    await self._tick()
+                except Exception as e:
+                    logger.error(f"[스케줄러] tick 오류: {e}", exc_info=True)
                 await asyncio.sleep(self.poll_sec)
         finally:
             # 종료 절차
@@ -329,6 +335,8 @@ class KScheduler:
             self._running_jobs[job.name] = self._running_jobs.get(job.name, 0) + 1
             try:
                 await self._run_job(job, payload)
+            except Exception as e:
+                logger.error(f"[스케줄러] worker 예외 — job={job.name}: {e}", exc_info=True)
             finally:
                 self._running_jobs[job.name] -= 1
                 self._queue.task_done()
