@@ -17,7 +17,7 @@ import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import { ThreeCheckButton } from '@/shared/components/ThreeCheckButton'
 import { BizTypeFilterButton } from '@/shared/components/BizTypeFilterButton'
 import { MarketBadge, CompanySizeBadge, NXTBadge } from '@/shared/components/StockBadges'
-import { RefreshCw, RotateCcw, Heart } from 'lucide-react'
+import { RotateCcw, Heart } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 
@@ -35,7 +35,7 @@ export default function StockFindPage() {
     staleTime: 1000 * 60 * 10,
   })
 
-  const { data, isLoading, isFetching, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['stkInfoList'],
     queryFn: fetchStkInfoList,
     staleTime: 1000 * 60 * 30,
@@ -262,8 +262,7 @@ export default function StockFindPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 p-4">
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap mb-3">
           <h1 className="text-xl font-bold text-gray-800">全 종목 탐색</h1>
           <Input
             className="h-[26px] w-44 text-xs"
@@ -307,11 +306,6 @@ export default function StockFindPage() {
             초기화
           </Button>
           <span className="text-xs text-gray-500 font-mono">{filteredData.length.toLocaleString()}개</span>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-          {isFetching ? '로딩중...' : '새로고침'}
-        </Button>
       </div>
 
       <div className="flex-1 bg-white rounded-lg shadow-sm border overflow-hidden ag-theme-alpine">

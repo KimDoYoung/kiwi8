@@ -3,11 +3,25 @@
  */
 import React from 'react'
 import { toNum, fmt, colorStyle } from '@/lib/utils'
+import RefreshButton from '@/shared/components/RefreshButton'
 
 /** 손익금액 셀 */
 export function ProfitCell({ value }: { value: number }) {
   const n = toNum(value)
   return <span style={colorStyle(n)}>{fmt(n)}</span>
+}
+
+/** 전일대비 셀 — 금액 (비율) 한 줄 우정렬, 양수=빨강/음수=파랑, + 기호 생략, % 없음 */
+export function PrevDayCell({ value, rate }: { value: number; rate: number }) {
+  const color = value > 0 ? '#ef4444' : value < 0 ? '#3b82f6' : undefined
+  const fmtAmt = value < 0 ? `-${fmt(Math.abs(value))}` : fmt(value)
+  const fmtRate = value < 0 ? `-${Math.abs(rate).toFixed(2)}` : `${rate.toFixed(2)}`
+  return (
+    <span style={{ color, fontWeight: 600, display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: '3px' }}>
+      <span>{fmtAmt}</span>
+      <span style={{ fontSize: '10px', opacity: 0.85 }}>({fmtRate})</span>
+    </span>
+  )
 }
 
 /** 손익율 셀 (% 기호 없음, 헤더에 표시) */
@@ -73,7 +87,9 @@ export function AccountHeader({
   손익 = 0,
   onCsv,
   onRefresh,
-  isRefreshing = false,
+  isLoading = false,
+  intervalSeconds = 300,
+  enabled,
   children,
 }: {
   title: string
@@ -86,7 +102,9 @@ export function AccountHeader({
   손익?: number
   onCsv: () => void
   onRefresh: () => void
-  isRefreshing?: boolean
+  isLoading?: boolean
+  intervalSeconds?: number
+  enabled?: boolean
   children?: React.ReactNode
 }) {
   return (
@@ -131,17 +149,12 @@ export function AccountHeader({
         CSV저장
       </button>
       <span className="mx-1" />
-      <button
-        onClick={onRefresh}
-        disabled={isRefreshing}
-        className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-          isRefreshing
-            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-            : 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
-        }`}
-      >
-        {isRefreshing ? '로딩중...' : '새로고침'}
-      </button>
+      <RefreshButton
+        onRefresh={onRefresh}
+        intervalSeconds={intervalSeconds}
+        isLoading={isLoading}
+        enabled={enabled}
+      />
     </div>
   )
 }

@@ -9,13 +9,14 @@ import { useLayoutStore } from '@/store/layoutStore'
 import api from '@/lib/api'
 import { toNum, fmt, numComparator, exportCsv } from '@/lib/utils'
 import {
-    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader,
+    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader, PrevDayCell,
 } from './AccountGridComponents'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
+import { getMarketStatus } from '@/services/stockService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
 import { StockFilterButton } from '@/shared/components/StockFilterButton'
@@ -34,7 +35,6 @@ export default function KisAccountPage() {
     const setStock = useStockDetailStore((s) => s.setStock)
     const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
     const [isSimpleView, setIsSimpleView] = useState(false)
-    const [isRefreshing, setIsRefreshing] = useState(false)
     const [filterCodes, setFilterCodes] = useState<string[]>([])
 
     const { data: menus } = useQuery({
@@ -43,10 +43,16 @@ export default function KisAccountPage() {
         staleTime: 1000 * 60 * 10,
     })
 
-    const { data, isLoading, error, refetch } = useQuery({
+    const { data, isLoading, error, refetch, isFetching } = useQuery({
         queryKey: ['stkcompany', 'kis', 'account'],
         queryFn: fetchKisAccount,
         staleTime: 1000 * 30,
+    })
+
+    const { data: marketStatus } = useQuery({
+        queryKey: ['marketStatus'],
+        queryFn: getMarketStatus,
+        refetchInterval: 60_000,
     })
 
     const rawStocks = useMemo<Record<string, unknown>[]>(() => data?.data?.output1 ?? [], [data])
@@ -122,8 +128,8 @@ export default function KisAccountPage() {
             },
             { field: '상품명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
             {
-                field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn',
-                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                field: '전일대비', headerName: '전일대비', width: 130, simple: true,
+                cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <PrevDayCell value={toNum(p.value)} rate={toNum(p.data?.전일대비율)} />,
                 comparator: numComparator,
                 simple: true,
             },
@@ -240,8 +246,9 @@ export default function KisAccountPage() {
                 title="KIS 계좌현황" screenNo="2101" count={filteredStocks.length}
                 예수금={예수금} 평가금액={평가금액} 손익={손익}
                 onCsv={() => exportCsv(gridRef, 'KIS_계좌현황.csv')}
-                onRefresh={async () => { setIsRefreshing(true); await refetch(); setIsRefreshing(false); }}
-                isRefreshing={isRefreshing}
+                onRefresh={() => refetch()}
+                isLoading={isFetching}
+                enabled={marketStatus?.is_open}
             >
                 <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
                     <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>

@@ -9,13 +9,14 @@ import { useLayoutStore } from '@/store/layoutStore'
 import api from '@/lib/api'
 import { toNum, fmt, numComparator, exportCsv } from '@/lib/utils'
 import {
-    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader,
+    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader, PrevDayCell,
 } from './AccountGridComponents'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { TrendBadge } from '@/shared/components/TrendBadge'
 import { fetchMenuTree } from '@/services/menuService'
+import { getMarketStatus } from '@/services/stockService'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
 import { StockFilterButton } from '@/shared/components/StockFilterButton'
@@ -40,15 +41,20 @@ export default function KiwoomAccountPage() {
         staleTime: 1000 * 60 * 10,
     })
 
-    const { data, isLoading, error, refetch } = useQuery({
+    const { data, isLoading, error, refetch, isFetching } = useQuery({
         queryKey: ['stkcompany', 'kiwoom', 'account'],
         queryFn: fetchKiwoomAccount,
         staleTime: 1000 * 30,
     })
 
+    const { data: marketStatus } = useQuery({
+        queryKey: ['marketStatus'],
+        queryFn: getMarketStatus,
+        refetchInterval: 60_000,
+    })
+
     const [profitFilter, setProfitFilter] = useState('all')
     const [isSimpleView, setIsSimpleView] = useState(false)
-    const [isRefreshing, setIsRefreshing] = useState(false)
     const [filterCodes, setFilterCodes] = useState<string[]>([])
 
     const rawStocks = useMemo<Record<string, unknown>[]>(() => data?.data?.종목별계좌평가현황 ?? [], [data])
@@ -119,8 +125,8 @@ export default function KiwoomAccountPage() {
             },
             { field: '종목명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
             {
-                field: '전일대비', headerName: '전일대비', width: 100, type: 'numericColumn', simple: true,
-                cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
+                field: '전일대비', headerName: '전일대비', width: 130, simple: true,
+                cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <PrevDayCell value={toNum(p.value)} rate={toNum(p.data?.전일대비율)} />,
                 comparator: numComparator,
             },
             {
@@ -231,8 +237,9 @@ export default function KiwoomAccountPage() {
                 title="키움 계좌현황" screenNo="4101" count={stocks.length}
                 예수금={예수금} 평가금액={평가금액} 손익={손익}
                 onCsv={() => exportCsv(gridRef, '키움_계좌현황.csv')}
-                onRefresh={async () => { setIsRefreshing(true); await refetch(); setIsRefreshing(false); }}
-                isRefreshing={isRefreshing}
+                onRefresh={() => refetch()}
+                isLoading={isFetching}
+                enabled={marketStatus?.is_open}
             >
                 <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
                     <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>
