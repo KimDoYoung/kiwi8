@@ -14,6 +14,10 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHel
 class SettingValueBody(BaseModel):
     value: str
 
+class ChangePasswordBody(BaseModel):
+    current_password: str
+    new_password: str
+
 # APIRouter 인스턴스 생성
 router = APIRouter()
 logger = get_logger(__name__)
@@ -42,6 +46,25 @@ async def update_stk_info(force: bool = False):
             error_code="STK_INFO_UPDATE_ERROR",
             error_message=f"stk_info 테이블 업데이트 중 오류가 발생했습니다: {e!s}"
         )
+
+@router.post("/change-password")
+async def change_password(body: ChangePasswordBody):
+    """비밀번호 변경 (현재 비밀번호 검증 후 변경)"""
+    settings_service = get_service("settings")
+    saved_pw = await settings_service.get(SettingsKey.USER_PW)
+    if saved_pw != body.current_password:
+        return KiwoomApiHelper.create_error_response(
+            error_code="WRONG_PASSWORD",
+            error_message="현재 비밀번호가 올바르지 않습니다."
+        )
+    if not body.new_password:
+        return KiwoomApiHelper.create_error_response(
+            error_code="EMPTY_PASSWORD",
+            error_message="새 비밀번호를 입력해주세요."
+        )
+    await settings_service.set(SettingsKey.USER_PW, body.new_password)
+    logger.info("비밀번호 변경 완료")
+    return KiwoomApiHelper.create_success_response(data={"message": "비밀번호가 변경되었습니다."})
 
 @router.put("/{setting_key}")
 async def update_setting(setting_key: str, body: SettingValueBody):

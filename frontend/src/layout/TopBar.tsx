@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { LogOut, Settings, Search, PenLine, Home } from 'lucide-react'
+import ChangePasswordModal from '@/shared/components/ChangePasswordModal'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useLayoutStore } from '@/store/layoutStore'
@@ -15,6 +16,7 @@ export default function TopBar() {
   const { openByScreenNo } = useLayoutStore()
   const { openStockFindModal, openDiaryEditModal } = useModalStore()
   const screenRef = useRef<ScreenInputPanelHandle>(null)
+  const [pwModalOpen, setPwModalOpen] = useState(false)
 
   useGlobalHotkeys({
     Escape: (e) => {
@@ -46,6 +48,7 @@ export default function TopBar() {
   }
 
   return (
+    <>
     <header className="h-12 bg-blue-100 border-b border-green-200 flex items-center px-3 shrink-0 z-10 gap-2">
 
       {/* 1) Logo Area */}
@@ -87,7 +90,13 @@ export default function TopBar() {
 
       {/* 4) User Area */}
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-sm text-gray-600">{username}</span>
+        <button
+          onClick={() => setPwModalOpen(true)}
+          title="비밀번호 변경"
+          className="text-sm text-gray-600 hover:text-primary hover:underline transition-colors cursor-pointer"
+        >
+          {username}
+        </button>
         
         <button
           onClick={openStockFindModal}
@@ -115,5 +124,10 @@ export default function TopBar() {
       </div>
 
     </header>
+
+    {pwModalOpen && (
+      <ChangePasswordModal username={username ?? ''} onClose={() => setPwModalOpen(false)} />
+    )}
+    </>
   )
 }

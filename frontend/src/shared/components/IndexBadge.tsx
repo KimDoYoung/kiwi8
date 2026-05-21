@@ -24,7 +24,7 @@ const IndexBadge: React.FC<IndexBadgeProps> = ({ name, value, change, percentage
 
   // GEMINI.md 지침: 상승/수익(text-red-600), 하락/손실(text-blue-600)
   const colorClass = isPositive ? 'text-red-600' : isNegative ? 'text-blue-600' : 'text-gray-600';
-  const bgColorClass = isPositive ? 'bg-red-50' : isNegative ? 'bg-blue-50' : 'bg-gray-50';
+  const bgColorClass = isPositive ? 'bg-yellow-50' : isNegative ? 'bg-blue-50' : 'bg-gray-50';
   const percentagePrefix = numericPercentage > 0 ? '+' : numericPercentage < 0 ? '-' : '';
 
   return (
