@@ -24,6 +24,7 @@ interface ChartFormatterParams {
     value: number | number[];
     percent?: number;
     axisValue?: string;
+    dataIndex?: number;
     data?: unknown;
 }
 
@@ -112,25 +113,25 @@ export default function AccountSummaryPage() {
     const barOption = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         grid: { left: '3%', right: '4%', bottom: '10%', top: '5%', containLabel: true },
-        legend: { data: ['매입금액'], bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
-        xAxis: { type: 'category', data: accountList.map(acc => acc.증권사명), axisLabel: { fontSize: 11 } },
+        legend: { data: ['평가손익'], bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
+        xAxis: { type: 'category', data: accountList.map(acc => `${acc.증권사명}(${acc.수익률 ?? '-'})`), axisLabel: { fontSize: 11 } },
         yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
         series: [
             {
                 name: '매입금액',
                 type: 'bar',
-                color: '#cbd5e1',
                 data: accountList.map(acc => ({
                     value: acc.매입금액,
                     itemStyle: {
                         color: acc.id === 'kis' ? '#80624c' : acc.id === 'ls' ? '#003378' : '#e4007f'
                     }
                 })),
-                label: { show: false }
+                label: { show: false },
             },
             {
                 name: '평가손익',
                 type: 'bar',
+                color: '#cbd5e1',
                 data: accountList.map(acc => ({
                     value: acc.평가손익,
                     itemStyle: { color: '#cbd5e1' }
