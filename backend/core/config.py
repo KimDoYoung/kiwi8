@@ -49,6 +49,8 @@ class Config:
         self.REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
         self.REFRESH_TOKEN_NAME = os.getenv('REFRESH_TOKEN_NAME', 'kiwi8_refresh_token')
         
+        self.SCHEDULER_ENABLED: bool = os.getenv('SCHEDULER_ENABLED', 'true').lower() == 'true'
+
         self.DATA_FOLDER = self.BASE_DIR + '/data'
         self.FILE_FOLDER = self.BASE_DIR + '/files'
 

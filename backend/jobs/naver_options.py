@@ -253,9 +253,14 @@ def collect_naver_options() -> int:
             logger.info(f"[naver_options] {stk_cd}: 어제 게시물 없음 — 스킵")
             continue
 
+        session = _make_session()
         parts: list[str] = []
         for idx, post in enumerate(posts, 1):
-            parts.append(f"[{idx}] {post['title']}")
+            body = _fetch_detail(post['href'], session)
+            if body:
+                parts.append(f"[{idx}] {post['title']}\n{body}")
+            else:
+                parts.append(f"[{idx}] {post['title']}")
 
         options_text = '\n\n'.join(parts)
         try:

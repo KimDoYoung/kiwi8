@@ -130,51 +130,54 @@ async def startup_event():
 
     logger.info(f'DB 파일 경로: {db_path}')
     logger.info(f'Log 파일 경로: {config.LOG_FILE}')
-    logger.info('scheduler 시작함...')
     global scheduler
-    scheduler = KScheduler(db_path=db_path, poll_sec=1)
-    
-    # 지수 가져오기 작업 등록 (5분마다)
-    from backend.domains.kscheduler.k_scheduler import Job
-    scheduler.upsert_job(Job(
-        name="fetch_market_jisu",
-        func_name="fetch_market_jisu",
-        schedule_type="interval",
-        schedule_expr="seconds=300",
-        enabled=True
-    ))
+    if config.SCHEDULER_ENABLED:
+        logger.info('scheduler 시작함...')
+        scheduler = KScheduler(db_path=db_path, poll_sec=1)
 
-    scheduler.upsert_job(Job(
-        name="scrap_judal",
-        func_name="scrap_judal",
-        schedule_type="cron",
-        schedule_expr="0 1 * * *",
-        enabled=True,
-        timeout_sec=2400,
-        overlap_policy="skip",
-    ))
+        # 지수 가져오기 작업 등록 (5분마다)
+        from backend.domains.kscheduler.k_scheduler import Job
+        scheduler.upsert_job(Job(
+            name="fetch_market_jisu",
+            func_name="fetch_market_jisu",
+            schedule_type="interval",
+            schedule_expr="seconds=300",
+            enabled=True
+        ))
 
-    scheduler.upsert_job(Job(
-        name="scrap_naver_options",
-        func_name="scrap_naver_options",
-        schedule_type="cron",
-        schedule_expr="0 2 * * *",
-        enabled=True,
-        timeout_sec=3600,
-        overlap_policy="skip",
-    ))
+        scheduler.upsert_job(Job(
+            name="scrap_judal",
+            func_name="scrap_judal",
+            schedule_type="cron",
+            schedule_expr="0 1 * * *",
+            enabled=True,
+            timeout_sec=2400,
+            overlap_policy="skip",
+        ))
 
-    scheduler.upsert_job(Job(
-        name="write_account_history",
-        func_name="write_account_history",
-        schedule_type="cron",
-        schedule_expr="50 23 * * *",
-        enabled=True,
-        timeout_sec=120,
-        overlap_policy="skip",
-    ))
+        scheduler.upsert_job(Job(
+            name="scrap_naver_options",
+            func_name="scrap_naver_options",
+            schedule_type="cron",
+            schedule_expr="0 2 * * *",
+            enabled=True,
+            timeout_sec=3600,
+            overlap_policy="skip",
+        ))
 
-    asyncio.create_task(scheduler.start(worker_count=4))
+        scheduler.upsert_job(Job(
+            name="write_account_history",
+            func_name="write_account_history",
+            schedule_type="cron",
+            schedule_expr="50 23 * * *",
+            enabled=True,
+            timeout_sec=120,
+            overlap_policy="skip",
+        ))
+
+        asyncio.create_task(scheduler.start(worker_count=4))
+    else:
+        logger.info('SCHEDULER_ENABLED=false → 스케줄러 비활성화 (dev 모드)')
     logger.info('---------------------------------')
     logger.info('Startup 프로세스 종료')
     logger.info('---------------------------------')

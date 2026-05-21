@@ -280,7 +280,17 @@ class KScheduler:
         if not j["next_run_at"]:
             self._update_next_run(job, self._compute_next(job))
 
+    def _reset_stale_next_runs(self):
+        """재시작 시 과거 next_run_at → 다음 미래 시각으로 리셋 (즉시실행 방지)"""
+        now = utcnow()
+        for job in self._fetch_jobs():
+            if job.next_run_at and job.next_run_at <= now:
+                next_t = self._compute_next(job, now)
+                self._update_next_run(job, next_t)
+                logger.info(f"[스케줄러] '{job.name}' next_run_at 리셋 → {next_t}")
+
     async def start(self, worker_count: int = 4):
+        self._reset_stale_next_runs()
         # 워커 생성
         for _ in range(worker_count):
             self._workers.append(asyncio.create_task(self._worker()))
