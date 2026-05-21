@@ -37,6 +37,7 @@ export interface SchedulerStats {
   once_jobs?: number
   runs_24h: number
   active_locks: number
+  scheduler_running: number
 }
 
 export interface SchedulerActionResponse {

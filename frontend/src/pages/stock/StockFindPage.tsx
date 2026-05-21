@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
 import type { ColDef, ICellRendererParams } from 'ag-grid-community'
@@ -71,6 +71,7 @@ export default function StockFindPage() {
   })
 
   const [keyword, setKeyword] = useState('')
+  const [resetSignal, setResetSignal] = useState(0)
   const [marketFilter, setMarketFilter] = useState<'ALL' | '거래소' | '코스닥'>('ALL')
   const [sizeFilter, setSizeFilter] = useState<string[]>([])
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
@@ -264,12 +265,7 @@ export default function StockFindPage() {
     <div className="flex flex-col h-full bg-gray-50 p-4">
       <div className="flex items-center gap-2 flex-wrap mb-3">
           <h1 className="text-xl font-bold text-gray-800">全 종목 탐색</h1>
-          <Input
-            className="h-[26px] w-44 text-xs"
-            placeholder="종목명/코드/주요제품/대표자"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
+          <SearchInput onSearch={setKeyword} resetSignal={resetSignal} />
           <GroupRadioButton
             options={[
               { label: '코스닥', value: '코스닥', className: 'data-[state=on]:bg-pink-100 data-[state=on]:text-pink-700' },
@@ -300,7 +296,7 @@ export default function StockFindPage() {
           <Button
             variant="warning"
             size="sm"
-            onClick={() => { setKeyword(''); setMarketFilter('ALL'); setSizeFilter('ALL'); setSectorFilters([]) }}
+            onClick={() => { setKeyword(''); setResetSignal(s => s + 1); setMarketFilter('ALL'); setSizeFilter([]); setSectorFilters([]) }}
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             초기화
@@ -322,5 +318,19 @@ export default function StockFindPage() {
         />
       </div>
     </div>
+  )
+}
+
+function SearchInput({ onSearch, resetSignal }: { onSearch: (kw: string) => void; resetSignal: number }) {
+  const [value, setValue] = useState('')
+  useEffect(() => { setValue('') }, [resetSignal])
+  return (
+    <Input
+      className="h-[26px] w-44 text-xs"
+      placeholder="종목명/코드/주요제품/대표자"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') onSearch(value) }}
+    />
   )
 }

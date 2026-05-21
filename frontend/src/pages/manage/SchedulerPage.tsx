@@ -80,6 +80,14 @@ export default function SchedulerPage() {
         </button>
       </div>
 
+      {/* 스케줄러 비활성 배너 */}
+      {stats && !stats.scheduler_running && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 text-sm font-medium">
+          <AlertCircle size={18} className="text-amber-500 shrink-0" />
+          스케줄러가 비활성화 상태입니다 (SCHEDULER_ENABLED=false). 작업이 실행되지 않습니다.
+        </div>
+      )}
+
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard 
@@ -121,7 +129,12 @@ export default function SchedulerPage() {
             {jobs?.map((job) => (
               <tr key={job.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
-                  {job.enabled ? (
+                  {!stats?.scheduler_running ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      Paused
+                    </span>
+                  ) : job.enabled ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                       Running

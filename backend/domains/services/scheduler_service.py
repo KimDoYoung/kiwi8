@@ -558,5 +558,8 @@ class SchedulerService:
             # 활성 락 수
             cur.execute("SELECT COUNT(*) FROM kscheduler_lock")
             stats['active_locks'] = cur.fetchone()[0]
-            
+
+            from backend.core.config import config
+            stats['scheduler_running'] = 1 if config.SCHEDULER_ENABLED else 0
+
             return stats

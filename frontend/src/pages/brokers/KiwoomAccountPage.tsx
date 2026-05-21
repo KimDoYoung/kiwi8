@@ -259,7 +259,7 @@ export default function KiwoomAccountPage() {
                         {
                             label: '全',
                             value: 'all',
-                            className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-400'
+                            className: 'data-[state=on]:bg-gray-200 data-[state=on]:text-gray-800 data-[state=on]:border-gray-300'
                         },
                         {
                             label: '+',
