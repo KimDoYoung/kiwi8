@@ -460,6 +460,7 @@ class PrevPriceCache:
             dates = [d for d, _ in sorted_data]
             prices = [p for _, p in sorted_data]
 
+        await asyncio.sleep(random.uniform(0.4, 1.2))
         return prices, dates
 
     async def _fetch_from_kis(self, stk_cd: str) -> tuple[list[float], list[str]]:

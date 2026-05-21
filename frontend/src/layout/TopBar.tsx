@@ -106,12 +106,6 @@ export default function TopBar() {
         </button>
 
         <button
-          title="설정"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          <Settings size={15} />
-        </button>
-        <button
           onClick={handleLogout}
           title="로그아웃"
           className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"

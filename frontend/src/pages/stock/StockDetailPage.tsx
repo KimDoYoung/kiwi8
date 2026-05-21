@@ -1,15 +1,15 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useModalStore } from '@/store/modalStore'
 import api from '@/lib/api'
-import { toNum, fmt } from '@/lib/utils'
+import { toNum, fmt, formatDate } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
-import { type LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search, LineChart } from 'lucide-react'
-import { findStock, type StockSearchItem } from '@/services/stockService'
-import { InputWithIcon } from '@/shared/components/InputWithIcon'
+import { type LucideIcon, RefreshCw, TrendingUp, Minus, Info, BarChart3, PieChart, FileText, Search, LineChart, Book, BookCheck } from 'lucide-react'
+import StockSearchBar from '@/shared/components/StockSearchBar'
 import CandleChart from '@/shared/components/charts/CandleChart'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 
 async function fetchStockInfo(stk_cd: string | null) {
   if (!stk_cd) return null
@@ -43,81 +43,28 @@ async function fetchCandleData(stk_cd: string | null) {
   return res.data
 }
 
-/** 종목 검색 바 컴포넌트 */
-function StockSearchBar() {
-  const [keyword, setKeyword] = useState('')
-  const [results, setResults] = useState<StockSearchItem[]>([])
-  const [showResults, setShowResults] = useState(false)
-  const setStock = useStockDetailStore((s) => s.setStock)
-  const containerRef = useRef<HTMLDivElement>(null)
+const CARD_KEYS = ['기업설명', '기업정보', '시세정보', '가격범위', '투자지표', '자본및주식', '주가추이'] as const
+type CardKey = typeof CARD_KEYS[number]
+const CARD_LABELS: Record<CardKey, string> = {
+  '기업설명': '기업 설명',
+  '기업정보': '기업 정보',
+  '시세정보': '시세 정보',
+  '가격범위': '가격 범위',
+  '투자지표': '투자 지표',
+  '자본및주식': '자본 및 주식',
+  '주가추이': '최근 2개월 주가 추이',
+}
+const SETTING_KEY = 'stock_detail_visible_cards'
 
-  const handleSearch = async () => {
-    if (!keyword.trim()) return
-    
-    // 6자리 숫자면 바로 종목코드로 인식 시도
-    if (/^\d{6}$/.test(keyword.trim())) {
-      setStock(keyword.trim())
-      setKeyword('')
-      setResults([])
-      setShowResults(false)
-      return
+function parseVisibleCards(value: string | null | undefined): CardKey[] {
+  try {
+    if (value) {
+      const parsed = JSON.parse(value) as CardKey[]
+      const valid = parsed.filter(k => (CARD_KEYS as readonly string[]).includes(k))
+      if (valid.length > 0) return valid
     }
-
-    try {
-      const data = await findStock(keyword)
-      setResults(data)
-      setShowResults(true)
-    } catch (err) {
-      console.error('Stock search failed:', err)
-    }
-  }
-
-  const handleSelect = (item: StockSearchItem) => {
-    setStock(item.stk_cd, item.stk_nm)
-    setKeyword('')
-    setResults([])
-    setShowResults(false)
-  }
-
-  // 외부 클릭 시 검색 결과 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowResults(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  return (
-    <div className="relative flex items-center w-72" ref={containerRef}>
-      <InputWithIcon
-        value={keyword}
-        onChange={setKeyword}
-        onIconClick={handleSearch}
-        placeholder="종목명 또는 코드 입력"
-        className="h-8 text-xs bg-white"
-      />
-      {showResults && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto top-full">
-          {results.map((item) => (
-            <div
-              key={item.stk_cd}
-              onClick={() => handleSelect(item)}
-              className="flex justify-between items-center px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-50 last:border-0"
-            >
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-gray-800">{item.stk_nm}</span>
-                <span className="text-[10px] text-gray-500">{item.market_name} | {item.up_name}</span>
-              </div>
-              <span className="text-xs font-mono text-blue-600 font-bold">{item.stk_cd}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  } catch {}
+  return [...CARD_KEYS]
 }
 
 /** 뱃지 컴포넌트 */
@@ -154,14 +101,6 @@ function SectionCard({ title, icon: Icon, children, className = '' }: { title: s
   )
 }
 
-/** 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD) */
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  const clean = String(dateStr).replace(/[^0-9]/g, '')
-  if (clean.length !== 8) return dateStr
-  return `${clean.substring(0, 4)}-${clean.substring(4, 6)}-${clean.substring(6, 8)}`
-}
-
 /** 부호 및 퍼센트 포맷팅 (중복 부호 방지) */
 function formatChange(value: string | number, rate: string | number) {
   const v = String(value || '')
@@ -180,6 +119,37 @@ function formatChange(value: string | number, rate: string | number) {
 export default function StockDetailPage() {
   const { stk_cd, stk_nm } = useStockDetailStore()
   const openOrderModal = useModalStore((s) => s.openOrderModal)
+  const [visibleCards, setVisibleCards] = useState<CardKey[]>([...CARD_KEYS])
+  const [cardPanelOpen, setCardPanelOpen] = useState(false)
+
+  const { data: cardSetting } = useQuery({
+    queryKey: ['settings', SETTING_KEY],
+    queryFn: () => api.get(`/api/v1/settings/${SETTING_KEY}`).then(r => r.data),
+    staleTime: Infinity,
+  })
+
+  useEffect(() => {
+    if (cardSetting?.value) {
+      setVisibleCards(parseVisibleCards(cardSetting.value))
+    }
+  }, [cardSetting])
+
+  const saveMutation = useMutation({
+    mutationFn: (cards: CardKey[]) =>
+      api.put(`/api/v1/settings/${SETTING_KEY}`, { value: JSON.stringify(cards) }),
+    onSuccess: () => setCardPanelOpen(false),
+  })
+
+  const toggleCard = (key: CardKey) => {
+    setVisibleCards(prev => {
+      if (prev.includes(key) && prev.length === 1) return prev
+      return prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    })
+  }
+
+  const handleSaveCards = () => saveMutation.mutate(visibleCards)
+
+  const isFiltered = visibleCards.length < CARD_KEYS.length
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['stock', 'info', stk_cd],
@@ -193,7 +163,8 @@ export default function StockDetailPage() {
     queryKey: ['stock', 'chart', stk_cd],
     queryFn: () => fetchCandleData(stk_cd),
     enabled: !!stk_cd,
-    staleTime: 1000 * 60 * 5, // 차트는 5분 정도 캐싱
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   })
 
   const info = data?.data || {}
@@ -276,7 +247,11 @@ export default function StockDetailPage() {
 
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
-                      <Badge className="bg-orange-50 text-orange-700 border-orange-200">
+                      <Badge className={
+                        (info.감리구분 && info.감리구분 !== '정상')
+                          ? 'bg-orange-50 text-orange-700 border-orange-200'
+                          : 'bg-green-50 text-green-700 border-green-200'
+                      }>
                         감리: {info.감리구분 || '정상'}
                       </Badge>
                       {info.NXT가능여부 === 'Y' ? (
@@ -296,6 +271,51 @@ export default function StockDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                  <Popover open={cardPanelOpen} onOpenChange={setCardPanelOpen}>
+                    <PopoverTrigger
+                      className={`p-1.5 rounded border transition-colors ${
+                        isFiltered
+                          ? 'text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100'
+                          : 'text-gray-500 bg-white border-gray-200 hover:bg-gray-100'
+                      }`}
+                      title={isFiltered ? `카드 표시 설정 (${visibleCards.length}/${CARD_KEYS.length})` : '카드 표시 설정'}
+                    >
+                      {isFiltered ? <BookCheck size={14} /> : <Book size={14} />}
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-64 p-2">
+                      <p className="text-xs font-semibold text-gray-600 mb-2 px-1">표시할 카드 선택</p>
+                      <div className="grid grid-cols-2 gap-x-1">
+                      {CARD_KEYS.map(key => {
+                        const checked = visibleCards.includes(key)
+                        const isLast = checked && visibleCards.length === 1
+                        return (
+                          <label
+                            key={key}
+                            className={`flex items-center gap-1.5 px-1 py-1 rounded ${isLast ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleCard(key)}
+                              disabled={isLast}
+                              className="rounded"
+                            />
+                            <span className="text-xs text-gray-700">{CARD_LABELS[key]}</span>
+                          </label>
+                        )
+                      })}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <button
+                          onClick={handleSaveCards}
+                          disabled={saveMutation.isPending}
+                          className="w-full py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded transition-colors"
+                        >
+                          {saveMutation.isPending ? '저장 중...' : '저장'}
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <button
                     onClick={() => refetch()}
                     className="p-1.5 hover:bg-gray-100 rounded text-gray-500 border border-gray-200 bg-white transition-colors"
@@ -359,118 +379,125 @@ export default function StockDetailPage() {
               <div className="flex-1 overflow-auto p-3">
                 <div className="flex flex-wrap gap-3">
                   
-                  {/* 1. 기업 설명 카드 */}
-                  <SectionCard title="기업 설명" icon={FileText}>
-                    <p className="text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 border border-gray-100 rounded text-xs h-full min-h-[100px]">
-                      {info.company_summary || '기업 개요 정보가 없습니다.'}
-                    </p>
-                  </SectionCard>
-
-                  {/* 2. 기업 정보 카드 (지표 부분) */}
-                  <SectionCard title="기업 정보" icon={Info}>
-                    <div className="flex flex-col gap-0.5">
-                      {renderInfoRow('시장/업종', `${info.시장명}/${info.업종명}`)}
-                      {renderInfoRow('기업규모', info.회사크기분류)}
-                      {renderInfoRow('상장일', formatDate(info.상장일))}
-                      {renderInfoRow('종목상태', info.종목상태)}
-                      {renderInfoRow('감리구분', info.감리구분)}
-                      {renderInfoRow('NXT가능', info.NXT가능여부)}
-                    </div>
-                  </SectionCard>
-
-                  {/* 3. 시세 정보 카드 */}
-                  <SectionCard title="시세 정보" icon={TrendingUp}>
-                    <div className="grid grid-cols-2 gap-x-8">
-                      <div>
-                        <div className="flex justify-between items-center py-1.5 border-b border-gray-100 mb-1">
-                          <span className="text-gray-500 font-bold">현재가</span>
-                          <span className={`text-lg font-black ${priceClass(info.전일대비)}`}>
-                            {fmt(Math.abs(toNum(info.현재가)))}
-                          </span>
-                        </div>
-                        {renderInfoRow('전일대비', formatChange(info.전일대비, info.등락율), { className: priceClass(info.전일대비) })}
-                        {renderInfoRow('거래량', info.거래량, { isNum: true })}
-                        {renderInfoRow('거래대비', info.거래대비, { unit: '%' })}
-                      </div>
-                      <div>
-                        {renderInfoRow('시가', info.시가, { isPrice: true })}
-                        {renderInfoRow('고가', info.고가, { isPrice: true, className: 'text-red-600' })}
-                        {renderInfoRow('저가', info.저가, { isPrice: true, className: 'text-blue-600' })}
-                        {renderInfoRow('기준가', info.기준가, { isPrice: true })}
-                      </div>
-                    </div>
-                  </SectionCard>
-
-                  {/* 4. 가격 범위 카드 */}
-                  <SectionCard title="가격 범위" icon={Minus}>
-                    <div className="grid grid-cols-2 gap-x-8">
-                      <div>
-                        {renderInfoRow('상한가', info.상한가, { isPrice: true, className: 'text-red-600' })}
-                        {renderInfoRow('하한가', info.하한가, { isPrice: true, className: 'text-blue-600' })}
-                        {renderInfoRow('대용가', info.대용가, { isPrice: true })}
-                        {renderInfoRow('신용비율', info.신용비율, { unit: '%' })}
-                      </div>
-                      <div>
-                        {renderInfoRow('연중최고', info.연중최고, { isPrice: true, className: 'text-red-600' })}
-                        {renderInfoRow('연중최저', info.연중최저, { isPrice: true, className: 'text-blue-600' })}
-                        {renderInfoRow('250최고', info['250최고'], { isPrice: true })}
-                        {renderInfoRow('250최저', info['250최저'], { isPrice: true })}
-                      </div>
-                    </div>
-                  </SectionCard>
-
-                  {/* 5. 투자 지표 카드 */}
-                  <SectionCard title="투자 지표" icon={BarChart3}>
-                    <div className="grid grid-cols-2 gap-x-8">
-                      <div>
-                        {renderInfoRow('PER', info.PER, { unit: '배' })}
-                        {renderInfoRow('PBR', info.PBR, { unit: '배' })}
-                        {renderInfoRow('ROE', info.ROE, { unit: '%' })}
-                        {renderInfoRow('EV/EBITDA', info.EV, { unit: '배' })}
-                      </div>
-                      <div>
-                        {renderInfoRow('EPS', info.EPS, { isNum: true, unit: '원' })}
-                        {renderInfoRow('BPS', info.BPS, { isNum: true, unit: '원' })}
-                        {renderInfoRow('액면가', info.액면가, { isPrice: true })}
-                        {renderInfoRow('결산월', info.결산월, { unit: '월' })}
-                      </div>
-                    </div>
-                  </SectionCard>
-
-                  {/* 6. 자본 및 주식 카드 */}
-                  <SectionCard title="자본 및 주식" icon={PieChart}>
-                    <div className="grid grid-cols-2 gap-x-8">
-                      <div>
-                        {renderInfoRow('시가총액', marketCapFormatted, { className: 'text-gray-800' })}
-                        {renderInfoRow('자본금', `${(toNum(info.자본금) / 100).toFixed(1)}억`)}
-                        {renderInfoRow('상장주식', info.상장주식, { isNum: true, unit: '천주' })}
-                      </div>
-                      <div>
-                        {renderInfoRow('유통주식', info.유통주식, { isNum: true, unit: '천주' })}
-                        {renderInfoRow('유통비율', info.유통비율, { unit: '%' })}
-                        {renderInfoRow('외인소진', info.외인소진률, { unit: '%' })}
-                      </div>
-                    </div>
-                  </SectionCard>
-
-                  {/* 7. 캔들 차트 (전체 너비 사용) */}
-                  <div className="w-full mt-2">
-                    <SectionCard title="최근 2개월 주가 추이" icon={LineChart}>
-                      {isChartLoading ? (
-                        <div className="h-64 flex items-center justify-center text-gray-400">
-                          <RefreshCw size={24} className="animate-spin mr-2" />
-                          차트 데이터를 불러오는 중...
-                        </div>
-                      ) : candleList.length > 0 ? (
-                        <CandleChart data={candleList} height={350} />
-                      ) : (
-                        <div className="h-64 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-200 rounded">
-                          <BarChart3 size={48} className="mb-2 opacity-20" />
-                          <p>차트 데이터가 없습니다.</p>
-                        </div>
-                      )}
+                  {visibleCards.includes('기업설명') && (
+                    <SectionCard title="기업 설명" icon={FileText}>
+                      <p className="text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 border border-gray-100 rounded text-xs h-full min-h-[100px]">
+                        {info.company_summary || '기업 개요 정보가 없습니다.'}
+                      </p>
                     </SectionCard>
-                  </div>
+                  )}
+
+                  {visibleCards.includes('기업정보') && (
+                    <SectionCard title="기업 정보" icon={Info}>
+                      <div className="flex flex-col gap-0.5">
+                        {renderInfoRow('시장/업종', `${info.시장명}/${info.업종명}`)}
+                        {renderInfoRow('기업규모', info.회사크기분류)}
+                        {renderInfoRow('상장일', formatDate(info.상장일, false))}
+                        {renderInfoRow('종목상태', info.종목상태)}
+                        {renderInfoRow('감리구분', info.감리구분)}
+                        {renderInfoRow('NXT가능', info.NXT가능여부)}
+                      </div>
+                    </SectionCard>
+                  )}
+
+                  {visibleCards.includes('시세정보') && (
+                    <SectionCard title="시세 정보" icon={TrendingUp}>
+                      <div className="grid grid-cols-2 gap-x-8">
+                        <div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-gray-100 mb-1">
+                            <span className="text-gray-500 font-bold">현재가</span>
+                            <span className={`text-lg font-black ${priceClass(info.전일대비)}`}>
+                              {fmt(Math.abs(toNum(info.현재가)))}
+                            </span>
+                          </div>
+                          {renderInfoRow('전일대비', formatChange(info.전일대비, info.등락율), { className: priceClass(info.전일대비) })}
+                          {renderInfoRow('거래량', info.거래량, { isNum: true })}
+                          {renderInfoRow('거래대비', info.거래대비, { unit: '%' })}
+                        </div>
+                        <div>
+                          {renderInfoRow('시가', info.시가, { isPrice: true })}
+                          {renderInfoRow('고가', info.고가, { isPrice: true, className: 'text-red-600' })}
+                          {renderInfoRow('저가', info.저가, { isPrice: true, className: 'text-blue-600' })}
+                          {renderInfoRow('기준가', info.기준가, { isPrice: true })}
+                        </div>
+                      </div>
+                    </SectionCard>
+                  )}
+
+                  {visibleCards.includes('가격범위') && (
+                    <SectionCard title="가격 범위" icon={Minus}>
+                      <div className="grid grid-cols-2 gap-x-8">
+                        <div>
+                          {renderInfoRow('상한가', info.상한가, { isPrice: true, className: 'text-red-600' })}
+                          {renderInfoRow('하한가', info.하한가, { isPrice: true, className: 'text-blue-600' })}
+                          {renderInfoRow('대용가', info.대용가, { isPrice: true })}
+                          {renderInfoRow('신용비율', info.신용비율, { unit: '%' })}
+                        </div>
+                        <div>
+                          {renderInfoRow('연중최고', info.연중최고, { isPrice: true, className: 'text-red-600' })}
+                          {renderInfoRow('연중최저', info.연중최저, { isPrice: true, className: 'text-blue-600' })}
+                          {renderInfoRow('250최고', info['250최고'], { isPrice: true })}
+                          {renderInfoRow('250최저', info['250최저'], { isPrice: true })}
+                        </div>
+                      </div>
+                    </SectionCard>
+                  )}
+
+                  {visibleCards.includes('투자지표') && (
+                    <SectionCard title="투자 지표" icon={BarChart3}>
+                      <div className="grid grid-cols-2 gap-x-8">
+                        <div>
+                          {renderInfoRow('PER', info.PER, { unit: '배' })}
+                          {renderInfoRow('PBR', info.PBR, { unit: '배' })}
+                          {renderInfoRow('ROE', info.ROE, { unit: '%' })}
+                          {renderInfoRow('EV/EBITDA', info.EV, { unit: '배' })}
+                        </div>
+                        <div>
+                          {renderInfoRow('EPS', info.EPS, { isNum: true, unit: '원' })}
+                          {renderInfoRow('BPS', info.BPS, { isNum: true, unit: '원' })}
+                          {renderInfoRow('액면가', info.액면가, { isPrice: true })}
+                          {renderInfoRow('결산월', info.결산월, { unit: '월' })}
+                        </div>
+                      </div>
+                    </SectionCard>
+                  )}
+
+                  {visibleCards.includes('자본및주식') && (
+                    <SectionCard title="자본 및 주식" icon={PieChart}>
+                      <div className="grid grid-cols-2 gap-x-8">
+                        <div>
+                          {renderInfoRow('시가총액', marketCapFormatted, { className: 'text-gray-800' })}
+                          {renderInfoRow('자본금', `${(toNum(info.자본금) / 100).toFixed(1)}억`)}
+                          {renderInfoRow('상장주식', info.상장주식, { isNum: true, unit: '천주' })}
+                        </div>
+                        <div>
+                          {renderInfoRow('유통주식', info.유통주식, { isNum: true, unit: '천주' })}
+                          {renderInfoRow('유통비율', info.유통비율, { unit: '%' })}
+                          {renderInfoRow('외인소진', info.외인소진률, { unit: '%' })}
+                        </div>
+                      </div>
+                    </SectionCard>
+                  )}
+
+                  {visibleCards.includes('주가추이') && (
+                    <div className="w-full mt-2">
+                      <SectionCard title="최근 2개월 주가 추이" icon={LineChart}>
+                        {isChartLoading ? (
+                          <div className="h-64 flex items-center justify-center text-gray-400">
+                            <RefreshCw size={24} className="animate-spin mr-2" />
+                            차트 데이터를 불러오는 중...
+                          </div>
+                        ) : candleList.length > 0 ? (
+                          <CandleChart data={candleList} height={350} />
+                        ) : (
+                          <div className="h-64 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-200 rounded">
+                            <BarChart3 size={48} className="mb-2 opacity-20" />
+                            <p>차트 데이터가 없습니다.</p>
+                          </div>
+                        )}
+                      </SectionCard>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

@@ -20,6 +20,7 @@ export default function SettingsPage() {
     const [isTokenLoading, setIsTokenLoading] = useState(false)
     const [isCacheLoading, setIsCacheLoading] = useState(false)
     const [selectedTokenBrokers, setSelectedTokenBrokers] = useState<string[]>(['kiwoom', 'kis', 'ls'])
+    const [allSettings, setAllSettings] = useState<SettingItem[]>([])
     
     // 상태 메시지 관리를 위한 state
     const [tokenStatus, setTokenStatus] = useState<StatusMessage>(null)
@@ -32,14 +33,13 @@ export default function SettingsPage() {
 
     const fetchSettings = async () => {
         try {
-            const res = await api.get('/api/v1/settings')
-            const settings = res.data
-            const lastFill = settings.find((s: SettingItem) => s.name === "마지막으로 stk_info를 채운 시각")
-            if (lastFill) {
-                setLastStkFill(lastFill.value)
-            }
+            const res = await api.get('/api/v1/settings/list')
+            const settings: SettingItem[] = Array.isArray(res.data) ? res.data : []
+            setAllSettings(settings)
+            const lastFill = settings.find((s) => s.name === "마지막으로 stk_info를 채운 시각")
+            if (lastFill) setLastStkFill(lastFill.value)
         } catch (error) {
-            console.error('Failed to fetch settings:', error)
+            console.error('[SettingsPage] fetchSettings 실패:', error)
         }
     }
 
@@ -151,9 +151,6 @@ export default function SettingsPage() {
                         Kiwi8 시스템의 핵심 구성 요소를 관리하고 데이터를 동기화합니다.
                     </p>
                 </div>
-                <div className="text-muted-foreground font-mono text-xs">
-                    v0.0.1
-                </div>
             </header>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -256,6 +253,45 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* 설정 테이블 */}
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <div>
+                        <CardTitle className="flex items-center gap-2">
+                            <Database className="w-5 h-5 text-primary" />
+                            Settings 테이블
+                        </CardTitle>
+                        <CardDescription>현재 DB에 저장된 모든 설정값</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={fetchSettings}>
+                        <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                        새로고침
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    {allSettings.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">설정값이 없습니다.</p>
+                    ) : (
+                        <table className="w-full text-sm border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-200 bg-gray-50">
+                                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/3">Key</th>
+                                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {allSettings.map((s) => (
+                                    <tr key={s.name} className="hover:bg-gray-50">
+                                        <td className="px-3 py-2 font-mono text-xs text-gray-600 align-top">{s.name}</td>
+                                        <td className="px-3 py-2 font-mono text-xs text-gray-800 break-all">{s.value}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     )
 }

@@ -1,5 +1,6 @@
 
 from fastapi import APIRouter
+from pydantic import BaseModel
 
 from backend.api.common.stock_functions import stk_info_fill
 from backend.core.logger import get_logger
@@ -9,24 +10,20 @@ from backend.domains.services.dependency import get_service
 from backend.domains.services.settings_keys import SettingsKey
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper
 
+
+class SettingValueBody(BaseModel):
+    value: str
+
 # APIRouter 인스턴스 생성
 router = APIRouter()
 logger = get_logger(__name__)
 
-@router.get("/", response_model=list[SettingInfo])
+@router.get("/list")
 async def get_all_settings():
     """모든 설정값 목록 조회"""
     settings_service = get_service("settings")
-    return await settings_service.list_all()
-
-@router.get("/{setting_key}")
-async def get_setting(setting_key: str):
-    """특정 설정값 조회"""
-    settings_service = get_service("settings")
-    value = await settings_service.get(setting_key)
-    if value is None:
-        return KiwoomApiHelper.create_error_response(error_code="SETTING_NOT_FOUND", error_message=f"설정값을 찾을 수 없습니다: {setting_key}")
-    return {"key": setting_key, "value": value, "exists": True}
+    items = await settings_service.list_all()
+    return [{"name": s.name, "value": s.value} for s in items]
 
 @router.put("/stk_info")
 async def update_stk_info(force: bool = False):
@@ -45,6 +42,22 @@ async def update_stk_info(force: bool = False):
             error_code="STK_INFO_UPDATE_ERROR",
             error_message=f"stk_info 테이블 업데이트 중 오류가 발생했습니다: {e!s}"
         )
+
+@router.put("/{setting_key}")
+async def update_setting(setting_key: str, body: SettingValueBody):
+    """특정 설정값 저장"""
+    settings_service = get_service("settings")
+    await settings_service.set(setting_key, body.value)
+    return {"key": setting_key, "value": body.value}
+
+@router.get("/{setting_key}")
+async def get_setting(setting_key: str):
+    """특정 설정값 조회"""
+    settings_service = get_service("settings")
+    value = await settings_service.get(setting_key)
+    if value is None:
+        return KiwoomApiHelper.create_error_response(error_code="SETTING_NOT_FOUND", error_message=f"설정값을 찾을 수 없습니다: {setting_key}")
+    return {"key": setting_key, "value": value, "exists": True}
 
 @router.delete("/cache")
 async def delete_all_cache():

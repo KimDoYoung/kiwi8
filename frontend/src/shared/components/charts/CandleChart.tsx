@@ -97,27 +97,36 @@ const CandleChart: React.FC<CandleChartProps> = ({ data,  height = 400 }) => {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' },
+        confine: true,
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         borderWidth: 1,
         borderColor: '#ddd',
         padding: 10,
         textStyle: { fontSize: 12, color: '#333' },
         formatter: (params: TooltipParam[]) => {
-          let res = `<div style="border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:5px;font-weight:bold">${params[0].name}</div>`;
-          params.forEach((item: TooltipParam) => {
-            if (item.seriesName === '캔들차트') {
-              const d = item.data;
-              const isUp = d[2] >= d[1];
-              const color = isUp ? '#ef4444' : '#3b82f6';
-              res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>시가:</span> <span style="font-family:monospace">${d[1].toLocaleString()}</span></div>`;
-              res += `<div style="display:flex;justify-content:space-between;gap:20px;color:${color}"><span>종가:</span> <b style="font-family:monospace">${d[2].toLocaleString()}</b></div>`;
-              res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>고가:</span> <span style="font-family:monospace;color:#ef4444">${d[4].toLocaleString()}</span></div>`;
-              res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>저가:</span> <span style="font-family:monospace;color:#3b82f6">${d[3].toLocaleString()}</span></div>`;
-            } else if (item.value !== null) {
-              res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>${item.marker} ${item.seriesName}:</span> <span style="font-family:monospace">${item.value.toLocaleString()}</span></div>`;
-            }
-          });
-          return res;
+          try {
+            let res = `<div style="border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:5px;font-weight:bold">${params[0]?.name ?? ''}</div>`;
+            params.forEach((item: TooltipParam) => {
+              if (item.seriesName === '캔들차트') {
+                const d = item.data;
+                if (!d) return;
+                console.log('[CandleChart tooltip] candlestick data:', d);
+                const open = d[1], close = d[2], low = d[3], high = d[4];
+                const isUp = (close ?? 0) >= (open ?? 0);
+                const color = isUp ? '#ef4444' : '#3b82f6';
+                res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>시가:</span> <span style="font-family:monospace">${open?.toLocaleString() ?? '-'}</span></div>`;
+                res += `<div style="display:flex;justify-content:space-between;gap:20px;color:${color}"><span>종가:</span> <b style="font-family:monospace">${close?.toLocaleString() ?? '-'}</b></div>`;
+                res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>고가:</span> <span style="font-family:monospace;color:#ef4444">${high?.toLocaleString() ?? '-'}</span></div>`;
+                res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>저가:</span> <span style="font-family:monospace;color:#3b82f6">${low?.toLocaleString() ?? '-'}</span></div>`;
+              } else if (item.value != null) {
+                res += `<div style="display:flex;justify-content:space-between;gap:20px"><span>${item.marker} ${item.seriesName}:</span> <span style="font-family:monospace">${Number(item.value).toLocaleString()}</span></div>`;
+              }
+            });
+            return res;
+          } catch (e) {
+            console.error('[CandleChart tooltip] formatter error:', e, params);
+            return '';
+          }
         }
       },
       grid: [
@@ -154,10 +163,11 @@ const CandleChart: React.FC<CandleChartProps> = ({ data,  height = 400 }) => {
   return (
     <div className="w-full h-full min-h-[380px]">
       {data && data.length > 0 ? (
-        <ReactECharts 
-          option={chartOptions} 
-          style={{ height: height, width: '100%' }} 
-          notMerge={true}
+        <ReactECharts
+          option={chartOptions}
+          style={{ height: height, width: '100%' }}
+          notMerge={false}
+          lazyUpdate={true}
         />
       ) : (
         <div className="flex items-center justify-center h-full text-gray-400 border border-dashed border-gray-200 rounded-lg">데이터가 없습니다.</div>

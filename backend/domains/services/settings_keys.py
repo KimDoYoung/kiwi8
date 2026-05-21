@@ -18,3 +18,4 @@ class SettingsKey(str, Enum):
     USER_ID = "user_id"
     USER_PW = "user_pw"
     LAST_STK_INFO_FILL = "마지막으로 stk_info를 채운 시각"
+    STOCK_DETAIL_VISIBLE_CARDS = "stock_detail_visible_cards"

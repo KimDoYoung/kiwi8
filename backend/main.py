@@ -41,8 +41,26 @@ def create_app() -> FastAPI:
     kiwi8_app = FastAPI(title='Kiwi8 - 주식관리', version='0.0.1')
     add_middlewares(kiwi8_app)
     add_routes(kiwi8_app)
-    add_static_files(kiwi8_app)
+    dist_path = add_static_files(kiwi8_app)
     add_exception_handlers(kiwi8_app)
+
+    if dist_path:
+        index_file = os.path.join(dist_path, 'index.html')
+        from fastapi.responses import JSONResponse as _JSONResponse
+        from starlette.exceptions import HTTPException as _StarletteHTTPException
+
+        @kiwi8_app.exception_handler(_StarletteHTTPException)
+        async def spa_404_handler(request, exc: _StarletteHTTPException):
+            if exc.status_code == 404:
+                path = request.url.path
+                if '/api/' in path:
+                    return _JSONResponse({'detail': 'Not Found'}, status_code=404)
+                rel = path.lstrip('/')
+                file_path = os.path.join(dist_path, rel)
+                if os.path.isfile(file_path):
+                    return FileResponse(file_path)
+                return FileResponse(index_file)
+            return _JSONResponse({'detail': getattr(exc, 'detail', str(exc))}, status_code=exc.status_code)
 
     # 루트 앱에 /kiwi8로 마운트
     root_app = FastAPI()
@@ -55,21 +73,11 @@ def add_static_files(app: FastAPI):
     """React 빌드 결과물 서빙 개선"""
     dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
     dist_path = os.path.abspath(dist_path)
-    
-    if os.path.exists(dist_path):
-        # 1. /assets 경로는 항상 마운트
-        app.mount('/assets', StaticFiles(directory=os.path.join(dist_path, 'assets')), name='assets')
 
-        @app.get('/{full_path:path}', include_in_schema=False)
-        async def serve_spa(full_path: str):
-            # favicon.ico, images/xxx.png 등 실제 파일이 존재하는지 확인
-            file_path = os.path.join(dist_path, full_path)
-            if os.path.isfile(file_path):
-                return FileResponse(file_path)
-            
-            # 파일이 없으면 index.html 반환 (SPA 라우팅 지원)
-            index_file = os.path.join(dist_path, 'index.html')
-            return FileResponse(index_file)
+    if os.path.exists(dist_path):
+        app.mount('/assets', StaticFiles(directory=os.path.join(dist_path, 'assets')), name='assets')
+        return dist_path
+    return None
 
 
 def add_middlewares(app: FastAPI):
