@@ -1,14 +1,28 @@
-import { useState, useRef, type KeyboardEvent } from 'react'
+import { useState, useRef, forwardRef, useImperativeHandle, type KeyboardEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLayoutStore } from '@/store/layoutStore'
 import { fetchMenuTree } from '@/services/menuService'
-import LayoutPresetPanel from './LayoutPresetPanel'
+import LayoutPresetPanel, { type LayoutPresetPanelHandle } from './LayoutPresetPanel'
 
-export default function ScreenInputPanel() {
+export interface ScreenInputPanelHandle {
+  focusInput: () => void
+  openLayoutPanel: () => void
+}
+
+const ScreenInputPanel = forwardRef<ScreenInputPanelHandle>(function ScreenInputPanel(_, ref) {
   const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
   const [value, setValue] = useState('')
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const layoutRef = useRef<LayoutPresetPanelHandle>(null)
+
+  useImperativeHandle(ref, () => ({
+    focusInput: () => {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    },
+    openLayoutPanel: () => layoutRef.current?.openPanel(),
+  }))
 
   const { data: menus = [] } = useQuery({
     queryKey: ['menus'],
@@ -56,7 +70,9 @@ export default function ScreenInputPanel() {
             : 'border-gray-200 focus:ring-2 focus:ring-blue-400'
           }`}
       />
-      <LayoutPresetPanel />
+      <LayoutPresetPanel ref={layoutRef} />
     </div>
   )
-}
+})
+
+export default ScreenInputPanel

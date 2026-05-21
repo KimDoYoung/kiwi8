@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { LogOut, Settings, Search, PenLine, Home } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
@@ -6,12 +7,27 @@ import { useModalStore } from '@/store/modalStore'
 import { fetchMenuTree } from '@/services/menuService'
 import api from '@/lib/api'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
-import ScreenInputPanel from './topbar/ScreenInputPanel'
+import ScreenInputPanel, { type ScreenInputPanelHandle } from './topbar/ScreenInputPanel'
+import { useGlobalHotkeys } from '@/hooks/useGlobalHotkeys'
 
 export default function TopBar() {
   const { username, logout } = useAuthStore()
   const { openByScreenNo } = useLayoutStore()
   const { openStockFindModal, openDiaryEditModal } = useModalStore()
+  const screenRef = useRef<ScreenInputPanelHandle>(null)
+
+  useGlobalHotkeys({
+    Escape: (e) => {
+      const active = document.activeElement
+      if (active?.closest('[role="dialog"]') || active?.closest('.ag-cell')) return
+      e.preventDefault()
+      screenRef.current?.focusInput()
+    },
+    F9: (e) => {
+      e.preventDefault()
+      screenRef.current?.openLayoutPanel()
+    },
+  })
 
   const { data: menus = [] } = useQuery({
     queryKey: ['menus'],
@@ -58,7 +74,7 @@ export default function TopBar() {
       <span className="h-5 w-px bg-gray-200 shrink-0" />
 
       {/* 2) Screen Control Area */}
-      <ScreenInputPanel />
+      <ScreenInputPanel ref={screenRef} />
 
       {/* 구분선 */}
       <span className="h-5 w-px bg-gray-200 shrink-0" />
