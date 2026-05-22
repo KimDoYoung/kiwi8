@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from backend.api.common.stock_functions import stk_info_fill
 from backend.core.logger import get_logger
 from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
-from backend.domains.models.settings_model import SettingInfo
 from backend.domains.services.dependency import get_service
 from backend.domains.services.settings_keys import SettingsKey
 from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper
