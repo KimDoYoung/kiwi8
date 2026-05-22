@@ -19,6 +19,7 @@ export default function SettingsPage() {
     const [isStkLoading, setIsStkLoading] = useState(false)
     const [isTokenLoading, setIsTokenLoading] = useState(false)
     const [isCacheLoading, setIsCacheLoading] = useState(false)
+    const [isSettingsLoading, setIsSettingsLoading] = useState(false)
     const [selectedTokenBrokers, setSelectedTokenBrokers] = useState<string[]>(['kiwoom', 'kis', 'ls'])
     const [allSettings, setAllSettings] = useState<SettingItem[]>([])
     
@@ -32,6 +33,7 @@ export default function SettingsPage() {
     }, [])
 
     const fetchSettings = async () => {
+        setIsSettingsLoading(true)
         try {
             const res = await api.get('/api/v1/settings/list')
             const settings: SettingItem[] = Array.isArray(res.data) ? res.data : []
@@ -40,6 +42,8 @@ export default function SettingsPage() {
             if (lastFill) setLastStkFill(lastFill.value)
         } catch (error) {
             console.error('[SettingsPage] fetchSettings 실패:', error)
+        } finally {
+            setIsSettingsLoading(false)
         }
     }
 
@@ -264,9 +268,9 @@ export default function SettingsPage() {
                         </CardTitle>
                         <CardDescription>현재 DB에 저장된 모든 설정값</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={fetchSettings}>
-                        <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                        새로고침
+                    <Button variant="outline" size="sm" onClick={fetchSettings} disabled={isSettingsLoading}>
+                        <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isSettingsLoading ? 'animate-spin' : ''}`} />
+                        {isSettingsLoading ? '로딩중...' : '새로고침'}
                     </Button>
                 </CardHeader>
                 <CardContent>

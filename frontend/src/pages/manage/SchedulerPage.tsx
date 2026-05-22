@@ -19,7 +19,7 @@ import { format } from 'date-fns'
 export default function SchedulerPage() {
   const queryClient = useQueryClient()
 
-  const { data: jobs, isLoading: isJobsLoading } = useQuery({
+  const { data: jobs, isLoading: isJobsLoading, isFetching: isJobsFetching } = useQuery({
     queryKey: ['schedulerJobs'],
     queryFn: getSchedulerJobs,
     refetchInterval: 10000 // 10초마다 자동 갱신
@@ -71,12 +71,13 @@ export default function SchedulerPage() {
           <h1 className="text-2xl font-bold text-gray-900">K-스케줄러 설정</h1>
           <p className="text-gray-500">시스템 자동화 작업 관리 및 모니터링</p>
         </div>
-        <button 
+        <button
           onClick={() => queryClient.invalidateQueries({ queryKey: ['schedulerJobs'] })}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+          disabled={isJobsFetching}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
         >
-          <RefreshCcw size={18} />
-          새로고침
+          <RefreshCcw size={18} className={isJobsFetching ? 'animate-spin' : ''} />
+          {isJobsFetching ? '로딩중...' : '새로고침'}
         </button>
       </div>
 
