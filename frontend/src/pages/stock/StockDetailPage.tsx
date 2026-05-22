@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useModalStore } from '@/store/modalStore'

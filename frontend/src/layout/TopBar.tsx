@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { LogOut, Settings, Search, PenLine, Home } from 'lucide-react'
+import { LogOut, Search, PenLine, Home } from 'lucide-react'
 import ChangePasswordModal from '@/shared/components/ChangePasswordModal'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'

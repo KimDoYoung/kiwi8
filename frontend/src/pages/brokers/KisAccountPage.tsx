@@ -131,7 +131,6 @@ export default function KisAccountPage() {
                 field: '전일대비', headerName: '전일대비', width: 130, simple: true,
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <PrevDayCell value={toNum(p.value)} rate={toNum(p.data?.전일대비율)} />,
                 comparator: numComparator,
-                simple: true,
             },
             {
                 field: '매입평균가격', headerName: '매입평단', width: 100, type: 'numericColumn',

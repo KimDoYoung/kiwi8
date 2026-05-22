@@ -221,7 +221,7 @@ export default function TotalBalancePage() {
                 예수금={0} 평가금액={totalEval} 손익={totalProfit}
                 onCsv={() => exportCsv(gridRef, '통합_실시간_잔고.csv')}
                 onRefresh={async () => { setIsRefreshing(true); await refetch(); setIsRefreshing(false); }}
-                isRefreshing={isRefreshing}
+                isLoading={isRefreshing}
             >
                 <div className="flex items-center gap-2 mr-4 bg-white px-3 py-1 rounded-md border border-gray-200 h-[26px]">
                     <Label htmlFor="simple-view" className="text-xs text-gray-600 cursor-pointer">간단히</Label>

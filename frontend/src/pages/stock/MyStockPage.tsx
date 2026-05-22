@@ -121,7 +121,7 @@ export default function MyStockPage() {
     if (sizeFilter.length > 0 && sizeFilter.length < 3) {
       const sizeMap: Record<string, string> = { LARGE: '대형주', MEDIUM: '중형주', SMALL: '소형주' }
       const labels = sizeFilter.map(k => sizeMap[k]).filter(Boolean)
-      list = list.filter(s => labels.includes(s.spec_data?.['회사크기분류']))
+      list = list.filter(s => labels.includes(s.spec_data?.['회사크기분류'] as string))
     }
 
     if (filterCodes.length > 0) list = list.filter(s => filterCodes.includes(s.stk_cd))
