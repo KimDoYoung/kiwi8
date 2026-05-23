@@ -13,3 +13,5 @@ node_modules/
 .aider*
 .coverage
 kiwi7/
+graphify-out/
+
