@@ -17,6 +17,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // 일지 이미지 정적 파일
+      '/kiwi8/files': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+      },
       // API 요청은 백엔드로 전달
       '/kiwi8/api': {
         target: 'http://localhost:8003',

@@ -24,7 +24,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         root = request.scope.get('root_path', '')
 
         # 토큰이 필요 없는 URL 경로 정의
-        STATIC_PATHS = ['/public', '/favicon.ico', '/assets']
+        STATIC_PATHS = ['/public', '/favicon.ico', '/assets', '/files']
 
         # root_path를 제거한 실제 경로로 비교
         path = request.url.path

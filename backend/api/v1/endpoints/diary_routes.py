@@ -1,8 +1,14 @@
 """
 주식 일지(stk_diary) 관련 API 엔드포인트
 """
-from fastapi import APIRouter
+import re
+import uuid
+from datetime import datetime
+from pathlib import Path
 
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.models.stk_diary_model import StkDiaryFilter
 from backend.domains.services.dependency import get_service
@@ -15,6 +21,46 @@ from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+_ALLOWED_MIME = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+}
+
+
+def _is_note_empty(note: str) -> bool:
+    if not note:
+        return True
+    return re.sub(r'<[^>]+>', '', note).strip() == ''
+
+
+@router.post("/images")
+async def upload_diary_image(file: UploadFile = File(...)):
+    """일지 이미지 업로드 - BASE_DIR/files/images/yyyy/mm/dd/ 에 저장"""
+    if file.content_type not in _ALLOWED_MIME:
+        raise HTTPException(status_code=400, detail=f"허용되지 않는 파일 형식: {file.content_type}")
+
+    ext = _ALLOWED_MIME[file.content_type]
+    now = datetime.now()
+    yyyy, mm, dd = now.strftime('%Y'), now.strftime('%m'), now.strftime('%d')
+
+    target_dir = Path(config.FILE_FOLDER) / 'images' / yyyy / mm / dd
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = target_dir / filename
+
+    try:
+        file_path.write_bytes(await file.read())
+    except OSError as e:
+        logger.error(f"이미지 저장 실패: {e}")
+        raise HTTPException(status_code=500, detail="이미지 저장 중 오류가 발생했습니다.")
+
+    url = f"/kiwi8/files/images/{yyyy}/{mm}/{dd}/{filename}"
+    logger.info(f"일지 이미지 업로드 완료: {url}")
+    return {"url": url}
 
 @router.post("/", response_model=KiwoomResponse)
 async def create_diary(request: KiwoomRequest):
@@ -43,7 +89,7 @@ async def create_diary(request: KiwoomRequest):
                 api_info={"api_id": "diary_create", "description": "주식 일지 생성"}
             )
         
-        if not note or not note.strip():
+        if _is_note_empty(note):
             return KiwoomApiHelper.create_error_response(
                 error_code="EMPTY_NOTE",
                 error_message="일지 내용을 입력해주세요.",
@@ -259,13 +305,13 @@ async def update_diary(diary_id: int, request: KiwoomRequest):
             update_data.stk_cd = stk_cd
             
         if note is not None:
-            if not note.strip():
+            if _is_note_empty(note):
                 return KiwoomApiHelper.create_error_response(
                     error_code="EMPTY_NOTE",
                     error_message="일지 내용을 입력해주세요.",
                     api_info={"api_id": "diary_update", "description": "주식 일지 수정"}
                 )
-            update_data.note = note.strip()
+            update_data.note = note
         
         # 데이터 업데이트
         updated_diary = await service.update(diary_id, update_data)

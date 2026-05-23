@@ -74,6 +74,11 @@ def add_static_files(app: FastAPI):
     dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
     dist_path = os.path.abspath(dist_path)
 
+    # 일지 이미지 정적 파일 서빙 (항상 마운트)
+    images_path = os.path.join(config.FILE_FOLDER, 'images')
+    os.makedirs(images_path, exist_ok=True)
+    app.mount('/files/images', StaticFiles(directory=images_path), name='files_images')
+
     if os.path.exists(dist_path):
         app.mount('/assets', StaticFiles(directory=os.path.join(dist_path, 'assets')), name='assets')
         return dist_path
