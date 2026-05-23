@@ -1,0 +1,14 @@
+.agent/
+.aider.tags.cache.v4
+.claude
+.github
+.venv
+.vscode
+code_samples/
+data/
+kiwi7/
+*.xls
+dist/
+build/
+node_modules/
+
