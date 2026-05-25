@@ -9,6 +9,7 @@ import KiwoomAccountPage from '@/pages/brokers/KiwoomAccountPage'
 import KisAccountPage from '@/pages/brokers/KisAccountPage'
 import LsAccountPage from '@/pages/brokers/LsAccountPage'
 import StkDiaryList from '@/pages/diary/StkDiaryList'
+import StkWordsPage from '@/pages/words/StkWordsPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import LogViewPage from '@/pages/settings/LogViewPage'
 import StockDetailPage from '@/pages/stock/StockDetailPage'
@@ -49,6 +50,7 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '4102': PlaceholderPage,
   // [8100 투자 기록]
   '8101': StkDiaryList,
+  '8102': StkWordsPage,
   // [8200 시스템 엔진]
   '8201': PlaceholderPage,
   '8202': SchedulerPage,

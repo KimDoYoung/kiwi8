@@ -12,6 +12,7 @@ import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
+from backend.api.v1.endpoints.words_routes import router as words_router
 from backend.api.v1.endpoints.home_routes import router as home_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
 from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
@@ -116,6 +117,7 @@ def add_routes(app: FastAPI):
     app.include_router(mystock_router, prefix='/api/v1/mystock', tags=['mystock'])
     app.include_router(trend_router, prefix='/api/v1/trend', tags=['trend'])
     app.include_router(diary_router, prefix='/api/v1/diary', tags=['diary'])
+    app.include_router(words_router, prefix='/api/v1/words', tags=['words'])
     app.include_router(scheduler_router, prefix='/api/v1/scheduler', tags=['scheduler'])
     app.include_router(menus_router, prefix='/api/v1/menus', tags=['menus'])
     app.include_router(layout_preset_router, prefix='/api/v1/layout-presets', tags=['layout-presets'])

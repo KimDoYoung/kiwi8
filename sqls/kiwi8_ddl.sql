@@ -319,47 +319,69 @@ CREATE INDEX IF NOT EXISTS idx_kind_stk_info_stock_code ON kind_stk_info(stock_c
 CREATE INDEX IF NOT EXISTS idx_corp_name ON kind_stk_info(corp_name);
 
 
-  CREATE TABLE IF NOT EXISTS account_history (
-      id              INTEGER PRIMARY KEY AUTOINCREMENT,
-      record_date     TEXT    NOT NULL UNIQUE,          -- YYYY-MM-DD
+CREATE TABLE IF NOT EXISTS account_history (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    record_date     TEXT    NOT NULL UNIQUE,          -- YYYY-MM-DD
 
-      -- 전체 요약
-      total_asset     INTEGER NOT NULL DEFAULT 0,       -- 전체자산
-      total_buy       INTEGER NOT NULL DEFAULT 0,       -- 전체매입금액
-      total_pnl       INTEGER NOT NULL DEFAULT 0,       -- 전체평가손익
-      total_rate      TEXT    NOT NULL DEFAULT '0.00%', -- 전체수익률
+    -- 전체 요약
+    total_asset     INTEGER NOT NULL DEFAULT 0,       -- 전체자산
+    total_buy       INTEGER NOT NULL DEFAULT 0,       -- 전체매입금액
+    total_pnl       INTEGER NOT NULL DEFAULT 0,       -- 전체평가손익
+    total_rate      TEXT    NOT NULL DEFAULT '0.00%', -- 전체수익률
 
-      -- KIS (한국투자증권)
-      kis_acct_no     TEXT,
-      kis_total_asset INTEGER NOT NULL DEFAULT 0,
-      kis_buy_amt     INTEGER NOT NULL DEFAULT 0,
-      kis_eval_pnl    INTEGER NOT NULL DEFAULT 0,
-      kis_rate        TEXT    NOT NULL DEFAULT '0.00%',
-      kis_ord_avail   INTEGER NOT NULL DEFAULT 0,
-      kis_hold_cnt    INTEGER NOT NULL DEFAULT 0,
+    -- KIS (한국투자증권)
+    kis_acct_no     TEXT,
+    kis_total_asset INTEGER NOT NULL DEFAULT 0,
+    kis_buy_amt     INTEGER NOT NULL DEFAULT 0,
+    kis_eval_pnl    INTEGER NOT NULL DEFAULT 0,
+    kis_rate        TEXT    NOT NULL DEFAULT '0.00%',
+    kis_ord_avail   INTEGER NOT NULL DEFAULT 0,
+    kis_hold_cnt    INTEGER NOT NULL DEFAULT 0,
 
-      -- LS (LS증권)
-      ls_acct_no      TEXT,
-      ls_total_asset  INTEGER NOT NULL DEFAULT 0,
-      ls_buy_amt      INTEGER NOT NULL DEFAULT 0,
-      ls_eval_pnl     INTEGER NOT NULL DEFAULT 0,
-      ls_rate         TEXT    NOT NULL DEFAULT '0.00%',
-      ls_ord_avail    INTEGER NOT NULL DEFAULT 0,
-      ls_hold_cnt     INTEGER NOT NULL DEFAULT 0,
+    -- LS (LS증권)
+    ls_acct_no      TEXT,
+    ls_total_asset  INTEGER NOT NULL DEFAULT 0,
+    ls_buy_amt      INTEGER NOT NULL DEFAULT 0,
+    ls_eval_pnl     INTEGER NOT NULL DEFAULT 0,
+    ls_rate         TEXT    NOT NULL DEFAULT '0.00%',
+    ls_ord_avail    INTEGER NOT NULL DEFAULT 0,
+    ls_hold_cnt     INTEGER NOT NULL DEFAULT 0,
 
-      -- 키움증권
-      kiwoom_acct_no      TEXT,
-      kiwoom_total_asset  INTEGER NOT NULL DEFAULT 0,
-      kiwoom_buy_amt      INTEGER NOT NULL DEFAULT 0,
-      kiwoom_eval_pnl     INTEGER NOT NULL DEFAULT 0,
-      kiwoom_rate         TEXT    NOT NULL DEFAULT '0.00%',
-      kiwoom_ord_avail    INTEGER NOT NULL DEFAULT 0,
-      kiwoom_hold_cnt     INTEGER NOT NULL DEFAULT 0,
+    -- 키움증권
+    kiwoom_acct_no      TEXT,
+    kiwoom_total_asset  INTEGER NOT NULL DEFAULT 0,
+    kiwoom_buy_amt      INTEGER NOT NULL DEFAULT 0,
+    kiwoom_eval_pnl     INTEGER NOT NULL DEFAULT 0,
+    kiwoom_rate         TEXT    NOT NULL DEFAULT '0.00%',
+    kiwoom_ord_avail    INTEGER NOT NULL DEFAULT 0,
+    kiwoom_hold_cnt     INTEGER NOT NULL DEFAULT 0,
 
-      created_at      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
-  );
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
 
-  CREATE INDEX IF NOT EXISTS idx_account_history_date ON account_history (record_date);
+CREATE INDEX IF NOT EXISTS idx_account_history_date ON account_history (record_date);
+
+-- 경제 용어
+CREATE TABLE IF NOT EXISTS stk_words (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    word TEXT NOT NULL UNIQUE,
+    brief TEXT NOT NULL,                  -- 필수 입력으로 변경 (글자 수 제한은 없지만 비어있지 않도록)
+    detail TEXT,
+    is_active INTEGER DEFAULT 1,          -- 소프트 딜리트(Soft Delete)용 flag (0: 삭제됨, 1: 노출)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 수정 시간 자동 갱신용
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 용어(word)로 검색하는 경우가 많으므로 인덱스 추가 (UNIQUE 제약조건으로 이미 자동 생성되지만 명시적 확인)
+CREATE INDEX IF NOT EXISTS idx_stk_words_word ON stk_words(word);
+
+-- 수정 시간(updated_at)을 자동으로 업데이트하기 위한 트리거(Trigger) 생성
+CREATE TRIGGER IF NOT EXISTS trg_stk_words_updated_at
+AFTER UPDATE ON stk_words
+FOR EACH ROW
+BEGIN
+    UPDATE stk_words SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+END;
 
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;
@@ -431,7 +453,8 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 
 -- [8100 투자 기록] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(31, 3, '8101', '매매 일지', '/manage/diary', 1);
+(31, 3, '8101', '매매 일지', '/manage/diary', 1),
+(31, 3, '8102', '경제 용어', '/manage/stk-words', 2);
 
 -- [8200 시스템 엔진] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 

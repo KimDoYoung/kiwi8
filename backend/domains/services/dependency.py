@@ -33,6 +33,7 @@ def get_service(name: str):
     from backend.domains.services.stk_diary_service import StkDiaryService
     from backend.domains.services.stk_info_service import StkInfoService
     from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
+    from backend.domains.services.stk_words_service import StkWordsService
     from backend.domains.services.tokens_service import TokensService
     
     # 서비스 클래스 매핑
@@ -43,6 +44,7 @@ def get_service(name: str):
         'stk_diary': StkDiaryService,
         'stk_info': StkInfoService,
         'stk_trade_history': StkTradeHistoryService,
+        'stk_words': StkWordsService,
         'tokens': TokensService,
         'cache_manager': CacheManager,
         'menus': MenusService,
