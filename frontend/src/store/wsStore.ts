@@ -32,7 +32,10 @@ export interface NewsItem {
   receivedAt: number
 }
 
-export type MarketTimeInfo = Record<string, unknown>
+export interface JifEvent {
+  jangubun: string
+  jstatus: string
+}
 
 export interface WsMessage {
   broker: 'kiwoom' | 'kis' | 'ls'
@@ -45,7 +48,7 @@ interface WsState {
   latestCcnl: Record<string, StockCcnl>
   orderEvents: OrderCcnl[]
   newsItems: NewsItem[]
-  marketTimeInfo: MarketTimeInfo | null
+  marketStatus: Record<string, JifEvent>
   rawLog: { ts: string; text: string }[]
   totalCount: number
   setConnected: (v: boolean) => void
@@ -58,7 +61,7 @@ export const useWsStore = create<WsState>((set) => ({
   latestCcnl: {},
   orderEvents: [],
   newsItems: [],
-  marketTimeInfo: null,
+  marketStatus: {},
   rawLog: [],
   totalCount: 0,
 
@@ -92,7 +95,10 @@ export const useWsStore = create<WsState>((set) => ({
       }
       set((s) => ({ newsItems: [item, ...s.newsItems].slice(0, 50) }))
     } else if (type === 'market_time') {
-      set({ marketTimeInfo: data as MarketTimeInfo })
+      const jif = data as unknown as JifEvent
+      if (jif.jangubun) {
+        set((s) => ({ marketStatus: { ...s.marketStatus, [jif.jangubun]: jif } }))
+      }
     }
   },
 }))

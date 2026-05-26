@@ -44,7 +44,7 @@ class LsWsClient:
         'K3_': ('1', '2'),
         'OK_': ('1', '2'),
         'NWS': ('3', '4'),
-        'JIF': ('1', '2'),
+        'JIF': ('3', '4'),
     }
 
     def __init__(self, token_manager: LsTokenManager = None):

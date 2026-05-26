@@ -193,6 +193,8 @@ class WsManager:
                 await self.ls_ws.connect()
                 await self.ls_ws.subscribe('NWS001', 'NWS')
                 logger.info("[LS WS] 뉴스(NWS) 구독 완료")
+                await self.ls_ws.subscribe('0', 'JIF')
+                logger.info("[LS WS] 장운영정보(JIF) 구독 완료")
                 delay = 10
                 await self.ls_ws.receive_messages()
             except Exception as e:

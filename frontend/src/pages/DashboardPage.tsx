@@ -1,5 +1,66 @@
 import { useWsStore } from '@/store/wsStore'
 
+const JANGUBUN: Record<string, string> = {
+  '1': '코스피', '2': '코스닥', '5': '선물/옵션', '6': 'NXT',
+  '8': 'KRX야간', '9': '미국주식', 'A': '중국오전', 'B': '중국오후',
+  'C': '홍콩오전', 'D': '홍콩오후', 'E': '일본오전', 'F': '일본오후',
+}
+const JSTATUS: Record<string, string> = {
+  // 공통
+  '11': '장전동시호가개시',
+  '21': '장시작',
+  '22': '장개시10초전',
+  '23': '장개시1분전',
+  '24': '장개시5분전',
+  '25': '장개시10분전',
+  '31': '장후동시호가개시',
+  '41': '장마감',
+  '42': '장마감10초전',
+  '43': '장마감1분전',
+  '44': '장마감5분전',
+  '51': '시간외종가매매개시',
+  '52': '시간외종가종료·단일가개시',
+  '53': '사용안함',
+  '54': '시간외단일가매매종료',
+  '55': '프리마켓개시',
+  'A2': '프리마켓개시10초전',
+  'A3': '프리마켓개시1분전',
+  'A4': '프리마켓개시5분전',
+  'A5': '프리마켓개시10분전',
+  '56': '에프터마켓개시',
+  'B2': '에프터마켓개시10초전',
+  'B3': '에프터마켓개시1분전',
+  'B4': '에프터마켓개시5분전',
+  'B5': '에프터마켓개시10분전',
+  '57': '프리마켓마감',
+  'C2': '프리마켓마감10초전',
+  'C3': '프리마켓마감1분전',
+  'C4': '프리마켓마감5분전',
+  '58': '에프터마켓마감',
+  'D2': '에프터마켓마감10초전',
+  'D3': '에프터마켓마감1분전',
+  'D4': '에프터마켓마감5분전',
+  // KOSPI/KOSDAQ (jangubun 1,2)
+  '61': '서킷브레이크1단계발동',
+  '62': '서킷브레이크1단계해제',
+  '63': '서킷브레이크1단계동시호가종료',
+  '64': '사이드카매도발동',
+  '65': '사이드카매도해제',
+  '66': '사이드카매수발동',
+  '67': '사이드카매수해제',
+  '68': '서킷브레이크2단계발동',
+  '69': '서킷브레이크3단계·장종료',
+  '70': '서킷브레이크2단계해제',
+  '71': '서킷브레이크2단계동시호가종료',
+  // 선물/옵션 전용 (jangubun 5)
+  '72': '3단계상한가예정',
+  '73': '3단계하한가예정',
+  '74': '2단계상한가확대',
+  '75': '2단계하한가확대',
+  '76': '3단계상한가확대',
+  '77': '3단계하한가확대',
+}
+
 const BrokerBadge = ({ broker }: { broker: string }) => {
   const styles: Record<string, string> = {
     kiwoom: 'bg-amber-100 text-amber-700 border-amber-300',
@@ -30,8 +91,9 @@ const SectionTitle = ({ color, children, count }: { color: string; children: Rea
 )
 
 const DashboardPage = () => {
-  const { connected, newsItems, marketTimeInfo, orderEvents, latestCcnl, rawLog, totalCount } = useWsStore()
+  const { connected, newsItems, marketStatus, orderEvents, latestCcnl, rawLog, totalCount } = useWsStore()
   const ccnlList = Object.values(latestCcnl)
+  const marketList = Object.values(marketStatus)
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 space-y-5">
@@ -77,38 +139,25 @@ const DashboardPage = () => {
 
       {/* 장운영정보 */}
       <section>
-        <SectionTitle color="bg-teal-400">장운영정보 · LS JIF</SectionTitle>
-        {marketTimeInfo ? (
+        <SectionTitle color="bg-teal-400" count={marketList.length}>장운영정보 · LS JIF</SectionTitle>
+        {marketList.length === 0 ? (
+          <Card className="p-5 text-center text-slate-400 text-sm">수신 대기 중...</Card>
+        ) : (
           <Card className="p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { k: 's_time',   label: '장시작' },
-                { k: 'e_time',   label: '장종료' },
-                { k: 'dshmin',   label: '동시호가' },
-                { k: 'cts_date', label: '기준일' },
-              ].map(({ k, label }) => (
-                <div key={k} className="bg-teal-50 rounded-xl px-3 py-2.5 border border-teal-100">
-                  <div className="text-[10px] text-teal-500 mb-1 font-medium">{label}</div>
-                  <div className="text-sm font-mono font-bold text-teal-700">
-                    {marketTimeInfo[k] !== undefined ? String(marketTimeInfo[k]) : '—'}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {marketList.map((m) => (
+                <div key={m.jangubun} className="bg-teal-50 rounded-xl px-3 py-2.5 border border-teal-100">
+                  <div className="text-[10px] text-teal-500 mb-1 font-medium">
+                    {JANGUBUN[m.jangubun] ?? m.jangubun}
                   </div>
+                  <div className="text-sm font-mono font-bold text-teal-700">
+                    {JSTATUS[m.jstatus] ?? m.jstatus}
+                  </div>
+                  <div className="text-[10px] text-teal-400 font-mono mt-0.5">{m.jangubun}/{m.jstatus}</div>
                 </div>
               ))}
             </div>
-            {Object.keys(marketTimeInfo).filter(k => !['s_time','e_time','dshmin','cts_date'].includes(k)).length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(marketTimeInfo)
-                  .filter(([k]) => !['s_time','e_time','dshmin','cts_date'].includes(k))
-                  .map(([k, v]) => (
-                    <span key={k} className="text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-mono text-slate-500">
-                      <span className="text-slate-400">{k}:</span> {String(v)}
-                    </span>
-                  ))}
-              </div>
-            )}
           </Card>
-        ) : (
-          <Card className="p-5 text-center text-slate-400 text-sm">수신 대기 중...</Card>
         )}
       </section>
 
