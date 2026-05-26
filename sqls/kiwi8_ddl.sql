@@ -361,6 +361,24 @@ CREATE TABLE IF NOT EXISTS account_history (
 
 CREATE INDEX IF NOT EXISTS idx_account_history_date ON account_history (record_date);
 
+-- ---------------------------------------------------------------
+-- stk_news : LS WS로 수신한 뉴스 (종목 관련 뉴스만 저장)
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS stk_news (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    news_id     TEXT    NOT NULL UNIQUE,          -- realkey (24자리, t3102 sNewsno로 사용)
+    news_code   TEXT,                              -- LS code 필드 (단일 종목 코드)
+    stock_codes TEXT,                              -- 관련 종목 목록 (콤마 구분)
+    title       TEXT    NOT NULL,                  -- 뉴스 제목
+    content     TEXT,                              -- 뉴스 본문 (t3102 sBody 조합, NULL이면 미조회)
+    news_time   TEXT,                              -- 뉴스 시각 HHMMSS
+    news_date   TEXT,                              -- 뉴스 날짜 YYYYMMDD
+    category_id TEXT,                              -- LS categoryid
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_stk_news_date  ON stk_news(news_date, news_time);
+CREATE INDEX IF NOT EXISTS idx_stk_news_code  ON stk_news(news_code);
+
 -- 경제 용어
 CREATE TABLE IF NOT EXISTS stk_words (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -426,7 +444,7 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 (12, 3, '1202', '全종목 탐색', '/stock/find', 2),
 (12, 3, '1203', '관심종목', '/stock/mystock', 3),
 (12, 3, '1204', '테마별 분석', '/stock/theme', 4),
-(12, 3, '1205', '증권사 통합 의견', '/stock/opinion', 5);
+(12, 3, '1205', '증권 뉴스', '/stock/news', 5);
 
 -- [1300 주문 센터] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 

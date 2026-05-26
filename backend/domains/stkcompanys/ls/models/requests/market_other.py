@@ -1517,7 +1517,7 @@ MARKET_OTHER_REQUESTS = {
     't3102': {
         'tr_cd': 't3102',
         'title': '뉴스본문',
-'url': '/stock/market-data',
+'url': '/stock/investinfo',
         'blocks': {
             't3102InBlock': {
                 'fields': [{'key': 'sNewsno', 'name': '뉴스번호', 'type': 'string', 'length': 24, 'required': True}],

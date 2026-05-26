@@ -27,6 +27,7 @@ from backend.api.v1.endpoints.stkcompany.kiwoom_routes import router as kiwoom_r
 from backend.api.v1.endpoints.stkcompany.ls_routes import router as ls_router
 from backend.api.v1.endpoints.stock_routes import router as stock_router
 from backend.api.v1.endpoints.trend_routes import router as trend_router
+from backend.api.v1.endpoints.news_routes import router as news_router
 from backend.api.v1.endpoints.words_routes import router as words_router
 from backend.core.config import config
 from backend.core.exception_handler import add_exception_handlers
@@ -121,6 +122,7 @@ def add_routes(app: FastAPI):
     app.include_router(trend_router, prefix='/api/v1/trend', tags=['trend'])
     app.include_router(diary_router, prefix='/api/v1/diary', tags=['diary'])
     app.include_router(words_router, prefix='/api/v1/words', tags=['words'])
+    app.include_router(news_router, prefix='/api/v1/news', tags=['news'])
     app.include_router(scheduler_router, prefix='/api/v1/scheduler', tags=['scheduler'])
     app.include_router(menus_router, prefix='/api/v1/menus', tags=['menus'])
     app.include_router(layout_preset_router, prefix='/api/v1/layout-presets', tags=['layout-presets'])

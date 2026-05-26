@@ -23,6 +23,7 @@ export interface OrderCcnl {
 }
 
 export interface NewsItem {
+  news_id: string
   news_code: string
   title: string
   time: string

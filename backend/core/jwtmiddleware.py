@@ -32,6 +32,10 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
 
         OPEN_PATHS = ['/login', '/logout', '/health', '/docs', '/redoc', '/openapi.json', '/api/auth/refresh']
 
+        if request.scope.get('type') == 'websocket':
+            response = await call_next(request)
+            return response
+
         if path in OPEN_PATHS or any(path.startswith(p) for p in STATIC_PATHS):
             response = await call_next(request)
             return response

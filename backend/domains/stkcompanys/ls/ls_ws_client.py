@@ -33,10 +33,24 @@ class LsWsClient:
         'JIF': '장운영정보',
     }
 
+    # tr_type 값: subscribe / unsubscribe
+    TR_TYPE_MAP: dict[str, tuple[str, str]] = {
+        'SC0': ('1', '2'),
+        'SC1': ('1', '2'),
+        'SC2': ('1', '2'),
+        'SC3': ('1', '2'),
+        'S3_': ('1', '2'),
+        'H1_': ('1', '2'),
+        'K3_': ('1', '2'),
+        'OK_': ('1', '2'),
+        'NWS': ('3', '4'),
+        'JIF': ('1', '2'),
+    }
+
     def __init__(self, token_manager: LsTokenManager = None):
         self.token_manager = token_manager
         self.uri = config.LS_WS_URL
-        # 실전 환경만 사용
+        self.token: str | None = None
 
         self.websocket = None
         self.connected = False
@@ -44,59 +58,20 @@ class LsWsClient:
         self.handlers: dict[str, Callable] = {}
 
     async def connect(self):
-        """WebSocket 연결"""
+        """WebSocket 연결 (LS는 별도 login 메시지 없음 — 구독 메시지마다 token 포함)"""
         try:
-            # 토큰 획득
-            token = await self.token_manager.get_token()
-            if not token:
+            self.token = await self.token_manager.get_token()
+            if not self.token:
                 raise LsApiException("토큰 획득 실패")
 
-            # WebSocket 연결
             self.websocket = await websockets.connect(self.uri, ping_interval=None)
             self.connected = True
             logger.info(f"[LS] WebSocket 연결 성공: {self.uri}")
-
-            # 로그인 메시지 전송
-            await self._send_login(token)
 
         except Exception as e:
             logger.error(f"[LS] WebSocket 연결 오류: {e}")
             self.connected = False
             raise LsApiException(f"WebSocket 연결 실패: {e}")
-
-    async def _send_login(self, token: str):
-        """로그인 메시지 전송"""
-        login_msg = {
-            'header': {
-                'token': token,
-                'tr_type': '1',
-            },
-            'body': {}
-        }
-        await self.send_message(login_msg)
-        logger.info("[LS] WebSocket 로그인 메시지 전송")
-
-    async def wait_login(self, timeout: float = 10.0) -> bool:
-        """로그인 응답 수신 후 성공 여부 반환"""
-        try:
-            raw = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
-            data = json.loads(raw)
-            body = data.get('body', {})
-            rsp_cd = str(body.get('rsp_cd', '-1'))
-            rsp_msg = body.get('rsp_msg', '')
-            # LS는 '0' 또는 '0000' 모두 성공
-            if rsp_cd.lstrip('0') == '' or rsp_cd == '0':
-                logger.info(f"[LS] 로그인 성공: {rsp_msg}")
-                return True
-            else:
-                logger.error(f"[LS] 로그인 실패: rsp_cd={rsp_cd}, msg={rsp_msg}")
-                return False
-        except asyncio.TimeoutError:
-            logger.warning("[LS] 로그인 응답 타임아웃 (10초)")
-            return False
-        except Exception as e:
-            logger.error(f"[LS] 로그인 응답 오류: {e}")
-            return False
 
     async def disconnect(self):
         """WebSocket 연결 해제"""
@@ -116,41 +91,42 @@ class LsWsClient:
             await self.websocket.send(msg_str)
             logger.debug(f"[LS] 메시지 전송: {msg_str[:100]}...")
 
-    async def subscribe(self, stock_code: str, tr_type: str = 'S3_'):
+    async def subscribe(self, tr_key: str, tr_type: str = 'S3_'):
         """실시간 데이터 구독
 
         Args:
-            stock_code: 종목코드 (6자리)
-            tr_type: TR 타입
-                - S3_: 주식체결
-                - H1_: 주식호가잔량
-                - SC0: 주식주문체결
+            tr_key: TR 키 (종목코드 또는 'NWS001' 등)
+            tr_type: TR 타입 (S3_, NWS, SC1 등)
         """
+        sub_type, _ = self.TR_TYPE_MAP.get(tr_type, ('1', '2'))
         message = {
             'header': {
-                'tr_type': '1',   # 1: 등록
-                'tr_cd': tr_type,
+                'token': self.token,
+                'tr_type': sub_type,
             },
             'body': {
-                'tr_key': stock_code,
+                'tr_cd': tr_type,
+                'tr_key': tr_key,
             }
         }
         await self.send_message(message)
-        logger.info(f"[LS] 실시간 구독: {tr_type}({self.TR_TYPES.get(tr_type, '')}) - {stock_code}")
+        logger.info(f"[LS] 실시간 구독: {tr_type}({self.TR_TYPES.get(tr_type, '')}) - {tr_key}")
 
-    async def unsubscribe(self, stock_code: str, tr_type: str = 'S3_'):
+    async def unsubscribe(self, tr_key: str, tr_type: str = 'S3_'):
         """실시간 데이터 구독 해제"""
+        _, unsub_type = self.TR_TYPE_MAP.get(tr_type, ('1', '2'))
         message = {
             'header': {
-                'tr_type': '2',   # 2: 해제
-                'tr_cd': tr_type,
+                'token': self.token,
+                'tr_type': unsub_type,
             },
             'body': {
-                'tr_key': stock_code,
+                'tr_cd': tr_type,
+                'tr_key': tr_key,
             }
         }
         await self.send_message(message)
-        logger.info(f"[LS] 실시간 해제: {tr_type} - {stock_code}")
+        logger.info(f"[LS] 실시간 해제: {tr_type} - {tr_key}")
 
     def add_handler(self, tr_type: str, handler: Callable):
         """메시지 핸들러 등록
@@ -191,7 +167,7 @@ class LsWsClient:
 
     async def _handle_message(self, data: dict):
         """JSON 메시지 처리"""
-        header = data.get('header', {})
+        header = data.get('header') or {}
         tr_cd = header.get('tr_cd', '')
 
         # PING 응답
@@ -200,14 +176,14 @@ class LsWsClient:
             return
 
         # 등록/해제 응답
-        body = data.get('body', {})
+        body = data.get('body') or {}
         if 'rsp_cd' in body:
-            rsp_cd = body.get('rsp_cd')
+            rsp_cd = str(body.get('rsp_cd', ''))
             rsp_msg = body.get('rsp_msg', '')
-            if rsp_cd == '0':
-                logger.info(f"[LS] 구독 성공: {rsp_msg}")
+            if rsp_cd.lstrip('0') == '' or rsp_cd == '0':
+                logger.info(f"[LS] 구독 성공: tr_cd={tr_cd} msg={rsp_msg}")
             else:
-                logger.warning(f"[LS] 구독 실패: {rsp_msg}")
+                logger.warning(f"[LS] 구독 실패: tr_cd={tr_cd} rsp_cd={rsp_cd} msg={rsp_msg}")
             return
 
         # 실시간 데이터 처리
@@ -280,11 +256,25 @@ class LsWsClient:
 
     def _parse_news(self, body: dict) -> dict:
         """뉴스 데이터 파싱"""
+        logger.info(f"[LS NWS] 원본 body: {body}")
+        raw_code = body.get('code', '')
+        # code 필드 12자리 초과 = 종목코드 묶음 (12자리씩 연결)
+        if len(raw_code) > 12:
+            news_code = ''
+            stock_codes = ','.join(
+                c.lstrip('0') or '0'
+                for i in range(0, len(raw_code), 12)
+                if (c := raw_code[i:i+12])
+            )
+        else:
+            news_code = raw_code
+            stock_codes = ''
         return {
-            'news_code': body.get('newscd', ''),
+            'news_id': body.get('realkey', ''),
+            'news_code': news_code,
             'title': body.get('title', ''),
-            'time': body.get('ntime', ''),
-            'stock_codes': body.get('shcode', ''),
+            'time': body.get('time', ''),
+            'stock_codes': stock_codes,
         }
 
     def _parse_order_ccnl(self, body: dict) -> dict:

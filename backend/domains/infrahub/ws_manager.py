@@ -10,6 +10,7 @@ from fastapi import WebSocket
 
 from backend.core.config import config
 from backend.core.logger import get_logger
+from backend.domains.services.stk_news_service import stk_news_service
 from backend.domains.stkcompanys.kiwoom.kiwoom_ws_client import KiwoomWsClient
 from backend.domains.stkcompanys.kis.kis_ws_client import KisWsClient
 from backend.domains.stkcompanys.ls.ls_ws_client import LsWsClient
@@ -124,7 +125,16 @@ class WsManager:
             await self.broadcast({'broker': 'ls', 'type': 'stock_ccnl', 'data': d.get('parsed', {})})
 
         async def ls_news_handler(d: dict):
-            await self.broadcast({'broker': 'ls', 'type': 'news', 'data': d.get('parsed', {})})
+            raw = d.get('raw', {})
+            parsed = d.get('parsed', {})
+            logger.info(f"[LS NWS] raw body keys={list(raw.keys())} parsed={parsed}")
+            # 주식 무관 뉴스(code 없음) 제외
+            if not parsed.get('news_code') and not parsed.get('stock_codes'):
+                logger.info(f"[LS NWS] 필터링됨 (stock_codes/news_code 모두 비어있음) raw={raw}")
+                return
+            save_data = {**parsed, 'date': raw.get('date', ''), 'category_id': raw.get('categoryid', '')}
+            asyncio.create_task(stk_news_service.save_news(save_data))
+            await self.broadcast({'broker': 'ls', 'type': 'news', 'data': parsed})
 
         async def ls_market_time_handler(d: dict):
             await self.broadcast({'broker': 'ls', 'type': 'market_time', 'data': d.get('raw', {})})
@@ -141,40 +151,57 @@ class WsManager:
         ]
 
     async def _run_kiwoom(self):
-        try:
-            await self.kiwoom_ws.connect()
-            await self.kiwoom_ws.receive_messages()
-        except Exception as e:
-            logger.error(f"[Kiwoom WS] 오류: {e}")
+        delay = 10
+        while self._running:
+            try:
+                await self.kiwoom_ws.connect()
+                delay = 10
+                await self.kiwoom_ws.receive_messages()
+            except Exception as e:
+                logger.error(f"[Kiwoom WS] 오류: {e}")
+            if not self._running:
+                break
+            logger.info(f"[Kiwoom WS] {delay}초 후 재연결...")
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 300)
 
     async def _run_kis(self):
-        try:
-            await self.kis_ws.connect()
-            # H0STCNI0 tr_key는 HTS ID (12자) — config에 KIS_HTS_ID 설정 필요
-            if config.KIS_HTS_ID:
-                await self.kis_ws.subscribe(config.KIS_HTS_ID, 'H0STCNI0')
-                logger.info(f"[KIS WS] 계좌체결통보 구독: HTS_ID={config.KIS_HTS_ID}")
-            else:
-                logger.warning("[KIS WS] KIS_HTS_ID 미설정 — H0STCNI0 구독 생략 (연결만 유지)")
-            await self.kis_ws.receive_messages()
-        except Exception as e:
-            logger.error(f"[KIS WS] 오류: {e}")
+        delay = 10
+        while self._running:
+            try:
+                await self.kis_ws.connect()
+                if config.KIS_HTS_ID:
+                    await self.kis_ws.subscribe(config.KIS_HTS_ID, 'H0STCNI0')
+                    logger.info(f"[KIS WS] 계좌체결통보 구독: HTS_ID={config.KIS_HTS_ID}")
+                else:
+                    logger.warning("[KIS WS] KIS_HTS_ID 미설정 — H0STCNI0 구독 생략")
+                delay = 10
+                await self.kis_ws.receive_messages()
+            except Exception as e:
+                logger.error(f"[KIS WS] 오류: {e}")
+            if not self._running:
+                break
+            logger.info(f"[KIS WS] {delay}초 후 재연결...")
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 300)
 
     async def _run_ls(self):
-        try:
-            await self.ls_ws.connect()
-            # 로그인 응답 확인 후 구독
-            login_ok = await self.ls_ws.wait_login()
-            if login_ok:
-                # JIF는 REST API 전용 — WS 구독 불가
-                # NWS: 전체 뉴스 구독 (tr_key 빈 문자열)
-                await self.ls_ws.subscribe('', 'NWS')
+        delay = 10
+        while self._running:
+            try:
+                self.ls_ws.connected = False
+                await self.ls_ws.connect()
+                await self.ls_ws.subscribe('NWS001', 'NWS')
                 logger.info("[LS WS] 뉴스(NWS) 구독 완료")
-            else:
-                logger.error("[LS WS] 로그인 실패 — 구독 생략")
-            await self.ls_ws.receive_messages()
-        except Exception as e:
-            logger.error(f"[LS WS] 오류: {e}")
+                delay = 10
+                await self.ls_ws.receive_messages()
+            except Exception as e:
+                logger.error(f"[LS WS] 오류: {e}")
+            if not self._running:
+                break
+            logger.info(f"[LS WS] {delay}초 후 재연결 시도...")
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 300)
 
     async def stop(self):
         self._running = False

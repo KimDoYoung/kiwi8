@@ -207,8 +207,8 @@ const DashboardPage = () => {
           {newsItems.length === 0 ? (
             <div className="p-5 text-center text-slate-400 text-sm">수신 대기 중...</div>
           ) : (
-            newsItems.map((n, i) => (
-              <div key={i} className="px-4 py-3 hover:bg-slate-50 transition-colors flex items-start gap-3">
+            newsItems.slice(0, 7).map((n) => (
+              <div key={n.news_id} className="px-4 py-3 hover:bg-slate-50 transition-colors flex items-start gap-3">
                 <span className="text-[10px] font-mono text-slate-400 whitespace-nowrap pt-px">
                   {n.time?.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3') ?? ''}
                 </span>

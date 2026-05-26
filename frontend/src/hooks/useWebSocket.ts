@@ -58,7 +58,14 @@ export function useWebSocket() {
     return () => {
       unmounted = true
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-      if (wsRef.current) wsRef.current.close()
+      if (wsRef.current) {
+        const ws = wsRef.current
+        ws.onopen = null
+        ws.onmessage = null
+        ws.onclose = null
+        ws.onerror = null
+        ws.close()
+      }
     }
   }, [])
 }
