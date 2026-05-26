@@ -63,7 +63,7 @@ function parseVisibleCards(value: string | null | undefined): CardKey[] {
       const valid = parsed.filter(k => (CARD_KEYS as readonly string[]).includes(k))
       if (valid.length > 0) return valid
     }
-  } catch {}
+  } catch { /* ignore JSON parse error */ }
   return [...CARD_KEYS]
 }
 
@@ -130,6 +130,7 @@ export default function StockDetailPage() {
 
   useEffect(() => {
     if (cardSetting?.value) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisibleCards(parseVisibleCards(cardSetting.value))
     }
   }, [cardSetting])

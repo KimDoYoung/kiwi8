@@ -323,6 +323,7 @@ export default function StockFindPage() {
 
 function SearchInput({ onSearch, resetSignal }: { onSearch: (kw: string) => void; resetSignal: number }) {
   const [value, setValue] = useState('')
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setValue('') }, [resetSignal])
   return (
     <Input

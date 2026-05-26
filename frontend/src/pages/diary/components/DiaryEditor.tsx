@@ -38,7 +38,6 @@ const DiaryEditor = forwardRef<DiaryEditorHandle, DiaryEditorProps>(
     },
     ref,
   ) {
-    const initialValueRef = useRef(value)
     const editorRef = useRef<ReturnType<typeof useEditor>>(null)
 
     const editor = useEditor({
@@ -49,7 +48,7 @@ const DiaryEditor = forwardRef<DiaryEditorHandle, DiaryEditorProps>(
         TextStyle,
         Color,
       ],
-      content: initialValueRef.current,
+      content: value,
       onUpdate({ editor }) {
         onChange(editor.getHTML())
       },

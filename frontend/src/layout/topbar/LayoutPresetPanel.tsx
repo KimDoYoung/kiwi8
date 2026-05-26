@@ -50,6 +50,7 @@ const LayoutPresetPanel = forwardRef<LayoutPresetPanelHandle>(function LayoutPre
   // Popover 열릴 때 첫 항목 선택 + content 포커스
   useEffect(() => {
     if (popoverOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedIdx(0)
       setTimeout(() => contentRef.current?.focus(), 50)
     }

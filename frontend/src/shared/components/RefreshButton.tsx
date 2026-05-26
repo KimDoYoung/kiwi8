@@ -23,6 +23,7 @@ export default function RefreshButton({
     if (isLoading || enabled === false) return
     if (remaining <= 0) {
       onRefresh()
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRemaining(intervalSeconds)
       return
     }

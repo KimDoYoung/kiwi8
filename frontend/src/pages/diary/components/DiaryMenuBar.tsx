@@ -89,7 +89,7 @@ export default function DiaryMenuBar({
       <span className="w-px bg-gray-200 mx-1" />
 
       <Popover open={showColors} onOpenChange={setShowColors}>
-        {/* @ts-ignore */}
+        {/* @ts-expect-error: PopoverTrigger asChild type mismatch */}
         <PopoverTrigger asChild>
           <button
             type="button"
