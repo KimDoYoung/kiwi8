@@ -20,6 +20,7 @@ class Config:
         # KIS(한국투자증권) API 관련 키
         self.KIS_ACCT_NO = os.getenv('KIS_ACCT_NO', '')
         self.KIS_ACCT_PRDT_CD = os.getenv('KIS_ACCT_PRDT_CD', '01')  # 계좌상품코드
+        self.KIS_HTS_ID = os.getenv('KIS_HTS_ID', '')  # H0STCNI0 구독용 HTS ID (12자)
         self.KIS_APP_KEY = os.getenv('KIS_APP_KEY', '')
         self.KIS_SECRET_KEY = os.getenv('KIS_SECRET_KEY', '')
         self.KIS_BASE_URL = os.getenv('KIS_BASE_URL', 'https://openapi.koreainvestment.com:9443')

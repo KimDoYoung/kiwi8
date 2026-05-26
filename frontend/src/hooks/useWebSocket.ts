@@ -11,6 +11,7 @@ export function useWebSocket() {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const setConnected = useWsStore((s) => s.setConnected)
   const handleMessage = useWsStore((s) => s.handleMessage)
+  const pushRaw = useWsStore((s) => s.pushRaw)
 
   useEffect(() => {
     let unmounted = false
@@ -28,6 +29,7 @@ export function useWebSocket() {
       }
 
       ws.onmessage = (event) => {
+        pushRaw(event.data)
         try {
           const msg: WsMessage = JSON.parse(event.data)
           handleMessage(msg)

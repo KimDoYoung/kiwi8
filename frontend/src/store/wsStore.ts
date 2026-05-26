@@ -45,8 +45,11 @@ interface WsState {
   orderEvents: OrderCcnl[]
   newsItems: NewsItem[]
   marketTimeInfo: MarketTimeInfo | null
+  rawLog: { ts: string; text: string }[]
+  totalCount: number
   setConnected: (v: boolean) => void
   handleMessage: (msg: WsMessage) => void
+  pushRaw: (text: string) => void
 }
 
 export const useWsStore = create<WsState>((set) => ({
@@ -55,8 +58,18 @@ export const useWsStore = create<WsState>((set) => ({
   orderEvents: [],
   newsItems: [],
   marketTimeInfo: null,
+  rawLog: [],
+  totalCount: 0,
 
   setConnected: (v) => set({ connected: v }),
+
+  pushRaw: (text) => set((s) => ({
+    totalCount: s.totalCount + 1,
+    rawLog: [
+      { ts: new Date().toLocaleTimeString('ko-KR', { hour12: false }), text },
+      ...s.rawLog,
+    ].slice(0, 20),
+  })),
 
   handleMessage: (msg) => {
     const { broker, type, data } = msg

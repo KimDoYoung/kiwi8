@@ -150,9 +150,12 @@ class WsManager:
     async def _run_kis(self):
         try:
             await self.kis_ws.connect()
-            # 계좌체결통보 구독 (종목코드 대신 계좌번호 사용)
-            if config.KIS_ACCT_NO:
-                await self.kis_ws.subscribe(config.KIS_ACCT_NO, 'H0STCNI0')
+            # H0STCNI0 tr_key는 HTS ID (12자) — config에 KIS_HTS_ID 설정 필요
+            if config.KIS_HTS_ID:
+                await self.kis_ws.subscribe(config.KIS_HTS_ID, 'H0STCNI0')
+                logger.info(f"[KIS WS] 계좌체결통보 구독: HTS_ID={config.KIS_HTS_ID}")
+            else:
+                logger.warning("[KIS WS] KIS_HTS_ID 미설정 — H0STCNI0 구독 생략 (연결만 유지)")
             await self.kis_ws.receive_messages()
         except Exception as e:
             logger.error(f"[KIS WS] 오류: {e}")
@@ -160,9 +163,15 @@ class WsManager:
     async def _run_ls(self):
         try:
             await self.ls_ws.connect()
-            # 장운영정보 + 뉴스 구독 (종목코드 불필요)
-            await self.ls_ws.subscribe('0000', 'JIF')
-            await self.ls_ws.subscribe('0000', 'NWS')
+            # 로그인 응답 확인 후 구독
+            login_ok = await self.ls_ws.wait_login()
+            if login_ok:
+                # JIF는 REST API 전용 — WS 구독 불가
+                # NWS: 전체 뉴스 구독 (tr_key 빈 문자열)
+                await self.ls_ws.subscribe('', 'NWS')
+                logger.info("[LS WS] 뉴스(NWS) 구독 완료")
+            else:
+                logger.error("[LS WS] 로그인 실패 — 구독 생략")
             await self.ls_ws.receive_messages()
         except Exception as e:
             logger.error(f"[LS WS] 오류: {e}")

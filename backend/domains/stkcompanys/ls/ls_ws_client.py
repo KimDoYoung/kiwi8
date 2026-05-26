@@ -2,6 +2,7 @@
 LS증권 WebSocket 클라이언트
 실시간 시세, 호가, 체결통보를 수신합니다.
 """
+import asyncio
 import json
 from collections.abc import Callable
 
@@ -68,12 +69,34 @@ class LsWsClient:
         login_msg = {
             'header': {
                 'token': token,
-                'tr_type': '1',  # 1: 등록
+                'tr_type': '1',
             },
             'body': {}
         }
         await self.send_message(login_msg)
         logger.info("[LS] WebSocket 로그인 메시지 전송")
+
+    async def wait_login(self, timeout: float = 10.0) -> bool:
+        """로그인 응답 수신 후 성공 여부 반환"""
+        try:
+            raw = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
+            data = json.loads(raw)
+            body = data.get('body', {})
+            rsp_cd = str(body.get('rsp_cd', '-1'))
+            rsp_msg = body.get('rsp_msg', '')
+            # LS는 '0' 또는 '0000' 모두 성공
+            if rsp_cd.lstrip('0') == '' or rsp_cd == '0':
+                logger.info(f"[LS] 로그인 성공: {rsp_msg}")
+                return True
+            else:
+                logger.error(f"[LS] 로그인 실패: rsp_cd={rsp_cd}, msg={rsp_msg}")
+                return False
+        except asyncio.TimeoutError:
+            logger.warning("[LS] 로그인 응답 타임아웃 (10초)")
+            return False
+        except Exception as e:
+            logger.error(f"[LS] 로그인 응답 오류: {e}")
+            return False
 
     async def disconnect(self):
         """WebSocket 연결 해제"""
