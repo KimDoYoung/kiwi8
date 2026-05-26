@@ -7,13 +7,13 @@ import { getMarketJisu } from '@/services/stockService'
 // ── Panel 2: 외부 링크 ────────────────────────────────────────────────────
 
 const LINKS = [
-  { label: '키움 OpenAPI', url: 'https://openapi.kiwoom.com/guide/apiguide' },
-  { label: 'KIS API', url: 'https://apiportal.koreainvestment.com/apiservice-apiservice' },
-  { label: 'LS증권 API', url: 'https://openapi.ls-sec.co.kr/apiservice' },
-  { label: '네이버 증권', url: 'https://finance.naver.com' },
-  { label: '한국거래소', url: 'https://www.krx.co.kr' },
-  { label: '넥스트레이드', url: 'https://www.nextrade.co.kr' },
-  { label: '환율 정보', url: 'https://finance.naver.com/marketindex/' },
+    { label: 'KIS API', url: 'https://apiportal.koreainvestment.com/apiservice-apiservice' },
+    { label: 'LS증권 API', url: 'https://openapi.ls-sec.co.kr/apiservice' },
+    { label: '키움 OpenAPI', url: 'https://openapi.kiwoom.com/guide/apiguide' },
+    { label: '네이버 증권', url: 'https://finance.naver.com' },
+    { label: '한국거래소', url: 'https://www.krx.co.kr' },
+    { label: '넥스트레이드', url: 'https://www.nextrade.co.kr' },
+    { label: '환율 정보', url: 'https://finance.naver.com/marketindex/' },
 ]
 
 const BADGE_COLORS: Record<string, string> = {

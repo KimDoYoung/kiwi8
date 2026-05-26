@@ -1,0 +1,8 @@
+# .graphifyignore
+node_modules/
+dist/
+*.generated.py
+kiwi7/
+html_samples/
+code_samples/
+scripts/
