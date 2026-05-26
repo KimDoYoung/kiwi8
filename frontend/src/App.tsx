@@ -1,9 +1,11 @@
 import { useAuthStore } from '@/store/authStore'
 import LoginPage from '@/pages/auth/LoginPage'
 import MainLayout from '@/layout/MainLayout'
+import { useWebSocket } from '@/hooks/useWebSocket'
 
 export default function App() {
   const { isLoggedIn, username } = useAuthStore()
+  useWebSocket()
 
   // 한 번도 로그인한 적이 없거나 명시적으로 로그아웃한 경우 (username이 없음)
   if (!isLoggedIn && !username) {

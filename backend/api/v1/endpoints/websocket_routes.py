@@ -1,21 +1,21 @@
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from backend.core.logger import get_logger
+from backend.domains.infrahub.ws_manager import ws_manager
 
 logger = get_logger(__name__)
 
 router = APIRouter()
 
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+
+@router.websocket("/ws/realtime")
+async def ws_realtime(websocket: WebSocket):
     await websocket.accept()
+    await ws_manager.add_client(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
-            logger.info(f"Received data: {data}")
-            await websocket.send_text(f"Message text was: {data}")
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+            await websocket.receive_text()
+    except (WebSocketDisconnect, Exception):
+        pass
     finally:
-        await websocket.close()
-        logger.info("WebSocket connection closed")
+        await ws_manager.remove_client(websocket)

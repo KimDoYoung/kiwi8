@@ -28,6 +28,8 @@ class LsWsClient:
         'H1_': '주식호가잔량',
         'K3_': '주식KOSPI체결',
         'OK_': '주식KOSDAQ호가잔량',
+        'NWS': '뉴스',
+        'JIF': '장운영정보',
     }
 
     def __init__(self, token_manager: LsTokenManager = None):
@@ -208,6 +210,10 @@ class LsWsClient:
             return self._parse_stock_hoga(body)
         elif tr_cd.startswith('SC'):  # 주문체결통보
             return self._parse_order_ccnl(body)
+        elif tr_cd == 'NWS':  # 뉴스
+            return self._parse_news(body)
+        elif tr_cd == 'JIF':  # 장운영정보
+            return body
 
         return body
 
@@ -247,6 +253,15 @@ class LsWsClient:
             ],
             'total_ask': body.get('totofferrem', ''),
             'total_bid': body.get('totbidrem', ''),
+        }
+
+    def _parse_news(self, body: dict) -> dict:
+        """뉴스 데이터 파싱"""
+        return {
+            'news_code': body.get('newscd', ''),
+            'title': body.get('title', ''),
+            'time': body.get('ntime', ''),
+            'stock_codes': body.get('shcode', ''),
         }
 
     def _parse_order_ccnl(self, body: dict) -> dict:

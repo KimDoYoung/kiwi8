@@ -65,24 +65,53 @@ class KiwoomWsClient:
                 elif trnm == 'UNKNOWN':
                     logger.warning('알 수 없는 메시지를 받았습니다:', response)
 
-                else:
-                    if trnm in self.handlers:
-                        data_list = response.get('data', [])
-                        if isinstance(data_list, list):
-                            for data in data_list:
-                                type_ = data['type']
-                                name_ = data['name']
-                                item_ = data['item']
+                elif trnm == 'REAL':
+                    data_list = response.get('data', [])
+                    if isinstance(data_list, list):
+                        for data in data_list:
+                            type_ = data.get('type', '')
+                            if type_ in self.handlers:
                                 await self.handlers[type_](data)
-                        else:
-                            logger.warning(f"response의 데이터가 리스트가 아님 {response}")
+                            else:
+                                logger.debug(f"[Kiwoom] 미등록 타입: {type_}")
                     else:
-                        logger.info(f"실시간 응답 수신: {response}")
+                        logger.warning(f"[Kiwoom] data가 리스트가 아님: {response}")
+
+                else:
+                    logger.info(f"[Kiwoom] 실시간 응답 수신: {response}")
 
             except websockets.ConnectionClosed:
                 logger.warning('키움 웹소켓 서버로부터 연결이 종료되었습니다')
                 self.connected = False
                 await self.websocket.close()
+
+    async def subscribe(self, stock_code: str, tr_type: str = '0B', grp_no: str = '1'):
+        await self.register(grp_no=grp_no, item_list=[stock_code], type_list=[tr_type])
+
+    async def unsubscribe(self, stock_code: str, tr_type: str = '0B', grp_no: str = '1'):
+        await self.unregister(grp_no=grp_no)
+
+    def _parse_stock_ccnl(self, data: dict) -> dict:
+        values = data.get('values', [])
+
+        def v(i):
+            return values[i] if len(values) > i else ''
+
+        return {
+            'stock_code': data.get('item', ''),
+            'time': v(0),         # 체결시간 (20)
+            'price': v(1),        # 현재가 (10)
+            'change': v(2),       # 전일대비 (11)
+            'change_rate': v(3),  # 등락율 (12)
+            'ask_price': v(4),    # 매도호가 (27)
+            'bid_price': v(5),    # 매수호가 (28)
+            'volume': v(6),       # 거래량 (15)
+            'acml_volume': v(7),  # 누적거래량 (13)
+            'acml_amount': v(8),  # 누적거래대금 (14)
+            'open_price': v(9),   # 시가 (16)
+            'high_price': v(10),  # 고가 (17)
+            'low_price': v(11),   # 저가 (18)
+        }
 
     async def register(self, grp_no: str, item_list: list[str], type_list: list[str]):
         message = {

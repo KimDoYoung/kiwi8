@@ -11,6 +11,7 @@ import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
+from backend.api.v1.endpoints.websocket_routes import router as ws_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
@@ -32,6 +33,7 @@ from backend.core.exception_handler import add_exception_handlers
 from backend.core.jwtmiddleware import JWTAuthMiddleware
 from backend.core.kiwi8_db import create_kiwi8_db
 from backend.core.logger import get_logger
+from backend.domains.infrahub.ws_manager import ws_manager
 from backend.domains.kscheduler.k_scheduler import KScheduler
 
 logger = get_logger(__name__)
@@ -103,6 +105,7 @@ def add_middlewares(app: FastAPI):
 def add_routes(app: FastAPI):
     # API 라우터 포함
     app.include_router(home_router)
+    app.include_router(ws_router)
     app.include_router(system_router, prefix='/api/v1/common', tags=['common'])
     app.include_router(settings_router, prefix='/api/v1/settings', tags=['settings'])
     # 증권사 API 라우터
@@ -145,6 +148,8 @@ async def startup_event():
 
     logger.info(f'DB 파일 경로: {db_path}')
     logger.info(f'Log 파일 경로: {config.LOG_FILE}')
+    asyncio.create_task(ws_manager.start())
+
     global scheduler
     if config.SCHEDULER_ENABLED:
         logger.info('scheduler 시작함...')
@@ -203,6 +208,7 @@ async def shutdown_event():
     logger.info('---------------------------------')
     logger.info('Shutdown 프로세스 시작')
     logger.info('---------------------------------')
+    await ws_manager.stop()
     if scheduler:
         scheduler.stop()
     logger.info('---------------------------------')
