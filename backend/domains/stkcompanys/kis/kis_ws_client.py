@@ -6,10 +6,9 @@ import base64
 import json
 from collections.abc import Callable
 
+import websockets
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-
-import websockets
 
 from backend.core.config import config
 from backend.core.exceptions import KisApiException

@@ -20,6 +20,7 @@ class StkHistoryService:
     async def save_execution(self, data: dict, broker: str = 'KIS') -> bool:
         """체결통보 데이터를 stk_trades_history에 저장 (KIS/LS/KIWOOM 공통)"""
         from datetime import datetime
+
         from backend.core.config import config
         ymd = datetime.now().strftime('%Y%m%d')
 

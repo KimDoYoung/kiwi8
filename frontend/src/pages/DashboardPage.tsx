@@ -18,15 +18,6 @@ const Card = ({ children, className = '' }: { children: React.ReactNode; classNa
   </div>
 )
 
-const SectionTitle = ({ color, children, count }: { color: string; children: React.ReactNode; count?: number }) => (
-  <div className="flex items-center gap-2 mb-3">
-    <span className={`w-1 h-4 rounded-full ${color}`} />
-    <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{children}</h2>
-    {count !== undefined && (
-      <span className="ml-auto text-[11px] text-slate-400 font-mono">{count}건</span>
-    )}
-  </div>
-)
 
 /* ── 관심종목 카드 ── */
 function WatchlistSection() {

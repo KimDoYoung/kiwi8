@@ -11,7 +11,6 @@ import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
-from backend.api.v1.endpoints.websocket_routes import router as ws_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
@@ -19,6 +18,7 @@ from backend.api.v1.endpoints.layout_preset_routes import router as layout_prese
 from backend.api.v1.endpoints.market_routes import router as market_router
 from backend.api.v1.endpoints.menus_routes import router as menus_router
 from backend.api.v1.endpoints.mystock_routes import router as mystock_router
+from backend.api.v1.endpoints.news_routes import router as news_router
 from backend.api.v1.endpoints.scheduler_routes import router as scheduler_router
 from backend.api.v1.endpoints.settings_routes import router as settings_router
 from backend.api.v1.endpoints.stkcompany.account_routes import router as stkcompany_account_router
@@ -27,7 +27,7 @@ from backend.api.v1.endpoints.stkcompany.kiwoom_routes import router as kiwoom_r
 from backend.api.v1.endpoints.stkcompany.ls_routes import router as ls_router
 from backend.api.v1.endpoints.stock_routes import router as stock_router
 from backend.api.v1.endpoints.trend_routes import router as trend_router
-from backend.api.v1.endpoints.news_routes import router as news_router
+from backend.api.v1.endpoints.websocket_routes import router as ws_router
 from backend.api.v1.endpoints.words_routes import router as words_router
 from backend.core.config import config
 from backend.core.exception_handler import add_exception_handlers

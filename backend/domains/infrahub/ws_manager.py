@@ -14,8 +14,8 @@ from backend.domains.services.stk_history_service import StkHistoryService
 from backend.domains.services.stk_news_service import stk_news_service
 
 _stk_history_service = StkHistoryService()
-from backend.domains.stkcompanys.kiwoom.kiwoom_ws_client import KiwoomWsClient
 from backend.domains.stkcompanys.kis.kis_ws_client import KisWsClient
+from backend.domains.stkcompanys.kiwoom.kiwoom_ws_client import KiwoomWsClient
 from backend.domains.stkcompanys.ls.ls_ws_client import LsWsClient
 
 logger = get_logger(__name__)
@@ -92,8 +92,8 @@ class WsManager:
         self._running = True
         logger.info("[WsManager] 3개 증권사 WS 연결 시작")
 
-        from backend.domains.stkcompanys.kiwoom import kiwoom_service
         from backend.domains.stkcompanys.kis import kis_service
+        from backend.domains.stkcompanys.kiwoom import kiwoom_service
         from backend.domains.stkcompanys.ls import ls_service
 
         kiwoom_tm = await kiwoom_service.get_token_manager()

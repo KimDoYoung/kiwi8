@@ -2,7 +2,6 @@
 LS증권 WebSocket 클라이언트
 실시간 시세, 호가, 체결통보를 수신합니다.
 """
-import asyncio
 import json
 from collections.abc import Callable
 
