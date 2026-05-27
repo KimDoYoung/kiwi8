@@ -298,6 +298,7 @@ export default function OrderModal() {
                 onClick={() => {
                   form.reset({ ...form.getValues(), qty: 1, price: 0 })
                   setConfirmed(false)
+                  setMessage(null)
                 }}
               >
                 초기화

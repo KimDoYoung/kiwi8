@@ -31,6 +31,7 @@ def get_service(name: str):
     from backend.domains.services.settings_service import SettingsService
     from backend.domains.services.stk_cache_service import StkCacheService
     from backend.domains.services.stk_diary_service import StkDiaryService
+    from backend.domains.services.stk_history_service import StkHistoryService
     from backend.domains.services.stk_info_service import StkInfoService
     from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
     from backend.domains.services.stk_words_service import StkWordsService
@@ -42,6 +43,7 @@ def get_service(name: str):
         'settings': SettingsService,
         'stk_cache': StkCacheService,
         'stk_diary': StkDiaryService,
+        'stk_history': StkHistoryService,
         'stk_info': StkInfoService,
         'stk_trade_history': StkTradeHistoryService,
         'stk_words': StkWordsService,

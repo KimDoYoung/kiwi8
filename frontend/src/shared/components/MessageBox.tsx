@@ -38,6 +38,7 @@ function MessageItem({ message }: { message: Message }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    if (message.duration === 0) return  // persistent: X 클릭 시만 닫힘
     timerRef.current = setTimeout(() => {
       removeMessage(message.id)
     }, message.duration)
@@ -61,13 +62,13 @@ function MessageItem({ message }: { message: Message }) {
         </button>
       </div>
 
-      {/* 카운트다운 바 */}
-      <div
-        className={`absolute bottom-0 left-0 h-1 ${style.bar}`}
-        style={{
-          animation: `countdown ${message.duration}ms linear forwards`,
-        }}
-      />
+      {/* 카운트다운 바 (persistent 아닐 때만) */}
+      {message.duration > 0 && (
+        <div
+          className={`absolute bottom-0 left-0 h-1 ${style.bar}`}
+          style={{ animation: `countdown ${message.duration}ms linear forwards` }}
+        />
+      )}
 
       <style>{`
         @keyframes countdown {

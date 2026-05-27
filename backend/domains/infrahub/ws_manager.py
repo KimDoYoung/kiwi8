@@ -10,7 +10,10 @@ from fastapi import WebSocket
 
 from backend.core.config import config
 from backend.core.logger import get_logger
+from backend.domains.services.stk_history_service import StkHistoryService
 from backend.domains.services.stk_news_service import stk_news_service
+
+_stk_history_service = StkHistoryService()
 from backend.domains.stkcompanys.kiwoom.kiwoom_ws_client import KiwoomWsClient
 from backend.domains.stkcompanys.kis.kis_ws_client import KisWsClient
 from backend.domains.stkcompanys.ls.ls_ws_client import LsWsClient
@@ -101,21 +104,33 @@ class WsManager:
         self.kis_ws = KisWsClient(token_manager=kis_tm)
         self.ls_ws = LsWsClient(token_manager=ls_tm)
 
-        # Kiwoom 핸들러: '0B' 주식체결
+        # Kiwoom 핸들러: '0B' 주식체결 + 계좌체결통보
         async def kiwoom_ccnl_handler(d: dict):
             await self.broadcast({
                 'broker': 'kiwoom',
                 'type': 'stock_ccnl',
                 'data': self.kiwoom_ws._parse_stock_ccnl(d),
             })
+
+        async def kiwoom_order_handler(d: dict):
+            parsed = self.kiwoom_ws._parse_order_ccnl(d)
+            logger.info(f"[Kiwoom] 체결통보 raw={d} parsed={parsed}")
+            if int(parsed.get('ccnl_qty') or 0) > 0 and int(parsed.get('ccnl_price') or 0) > 0:
+                asyncio.create_task(_stk_history_service.save_execution(parsed, broker='KIWOOM'))
+            await self.broadcast({'broker': 'kiwoom', 'type': 'order_ccnl', 'data': parsed})
+
         self.kiwoom_ws.add_handler('0B', kiwoom_ccnl_handler)
+        self.kiwoom_ws.add_handler('체결', kiwoom_order_handler)
 
         # KIS 핸들러: 주식체결 + 계좌체결통보
         async def kis_ccnl_handler(d: dict):
             await self.broadcast({'broker': 'kis', 'type': 'stock_ccnl', 'data': d.get('parsed', {})})
 
         async def kis_order_handler(d: dict):
-            await self.broadcast({'broker': 'kis', 'type': 'order_ccnl', 'data': d.get('parsed', {})})
+            parsed = d.get('parsed', {})
+            if int(parsed.get('ccnl_qty') or 0) > 0 and int(parsed.get('ccnl_price') or 0) > 0:
+                asyncio.create_task(_stk_history_service.save_execution(parsed, broker='KIS'))
+                await self.broadcast({'broker': 'kis', 'type': 'order_ccnl', 'data': parsed})
 
         self.kis_ws.add_handler('H0STCNT0', kis_ccnl_handler)
         self.kis_ws.add_handler('H0STCNI0', kis_order_handler)
@@ -139,9 +154,19 @@ class WsManager:
         async def ls_market_time_handler(d: dict):
             await self.broadcast({'broker': 'ls', 'type': 'market_time', 'data': d.get('raw', {})})
 
+        async def ls_order_handler(d: dict):
+            parsed = d.get('parsed', {})
+            raw = d.get('raw', {})
+            logger.info(f"[LS SC0] 체결통보 raw={raw} parsed={parsed}")
+            if int(parsed.get('ccnl_qty') or 0) > 0 and int(parsed.get('ccnl_price') or 0) > 0:
+                asyncio.create_task(_stk_history_service.save_execution(parsed, broker='LS'))
+                await self.broadcast({'broker': 'ls', 'type': 'order_ccnl', 'data': parsed})
+
         self.ls_ws.add_handler('S3_', ls_ccnl_handler)
         self.ls_ws.add_handler('NWS', ls_news_handler)
         self.ls_ws.add_handler('JIF', ls_market_time_handler)
+        self.ls_ws.add_handler('SC0', ls_order_handler)
+        self.ls_ws.add_handler('SC1', ls_order_handler)  # 시장가 체결통보가 SC1으로 오는 경우 대비
 
         # 3개 브로커 비동기 시작
         self._tasks = [
@@ -155,6 +180,9 @@ class WsManager:
         while self._running:
             try:
                 await self.kiwoom_ws.connect()
+                if config.KIWOOM_ACCT_NO:
+                    await self.kiwoom_ws.subscribe(config.KIWOOM_ACCT_NO, '체결')
+                    logger.info(f"[Kiwoom WS] 계좌체결통보 구독: {config.KIWOOM_ACCT_NO}")
                 delay = 10
                 await self.kiwoom_ws.receive_messages()
             except Exception as e:
@@ -195,6 +223,11 @@ class WsManager:
                 logger.info("[LS WS] 뉴스(NWS) 구독 완료")
                 await self.ls_ws.subscribe('0', 'JIF')
                 logger.info("[LS WS] 장운영정보(JIF) 구독 완료")
+                if config.LS_ACCT_NO:
+                    await self.ls_ws.subscribe(config.LS_ACCT_NO, 'SC0')
+                    logger.info(f"[LS WS] 주식주문체결(SC0) 구독: {config.LS_ACCT_NO}")
+                    await self.ls_ws.subscribe(config.LS_ACCT_NO, 'SC1')
+                    logger.info(f"[LS WS] 주식주문정정/체결(SC1) 구독: {config.LS_ACCT_NO}")
                 delay = 10
                 await self.ls_ws.receive_messages()
             except Exception as e:

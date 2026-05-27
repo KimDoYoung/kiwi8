@@ -82,9 +82,12 @@ class LsRestApi(StockApi):
         url = f'{self.base_url}{url}'
 
       # LS는 요청 본문에 tr_cd와 데이터를 함께 전송
-      body = {f'{tr_cd}InBlock': request.payload}
+      # block 키는 모델 정의에서 가져옴 (t*InBlock vs CSPA*InBlock1 혼재)
+      blocks = api_def.get('blocks', {}) if api_def else {}
+      block_name = next(iter(blocks.keys())) if blocks else f'{tr_cd}InBlock'
+      body = {block_name: request.payload}
 
-      logger.info(f'[LS] {api_info["title"]} 요청 - URL: {url}, TR_CD: {tr_cd}')
+      logger.info(f'[LS] {api_info["title"]} 요청 - URL: {url}, TR_CD: {tr_cd}, Block: {block_name}, Body: {body}')
 
       last_result: LsResponse | None = None
       for attempt in range(2):

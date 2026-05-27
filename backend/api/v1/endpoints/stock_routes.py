@@ -369,3 +369,32 @@ async def get_stock_options(stk_cd: str, limit: int = 10):
     except Exception as e:
         logger.error(f"stk_options 조회 오류 ({stk_cd}): {e!s}")
         return KiwoomApiHelper.create_error_response(error_code="500", error_message=str(e))
+
+
+@router.get("/trades-history", response_model=KiwoomResponse)
+async def get_trades_history(limit: int = 200, ymd: str = '', broker: str = ''):
+    """stk_trades_history 조회 — 체결내역 (최신순)"""
+    try:
+        conditions = []
+        params: list = []
+        if ymd:
+            conditions.append("ymd = ?")
+            params.append(ymd)
+        if broker:
+            conditions.append("broker = ?")
+            params.append(broker)
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        params.append(limit)
+        with sqlite3.connect(config.DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.execute(
+                f"SELECT id, broker, acct_no, order_no, sell_buy, stk_cd, stk_nm, "
+                f"ymd, order_qty, order_price, ccnl_qty, ccnl_price, ccnl_time, note, created_at "
+                f"FROM stk_trades_history {where} ORDER BY id DESC LIMIT ?",
+                params
+            )
+            rows = [dict(row) for row in cur.fetchall()]
+        return KiwoomApiHelper.create_success_response(data={"list": rows, "count": len(rows)})
+    except Exception as e:
+        logger.error(f"trades-history 조회 오류: {e!s}")
+        return KiwoomApiHelper.create_error_response(error_code="500", error_message=str(e))

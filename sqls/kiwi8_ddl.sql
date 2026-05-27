@@ -114,17 +114,29 @@ CREATE TABLE IF NOT EXISTS stk_diary (
 );
 
 -- ---------------------------------------------------------------
--- stk_trades_history : 특정종목에 대한 매매 기록
+-- stk_trades_history : 매매 체결 기록 (KIS WS 체결통보 + 수동 입력)
 -- ---------------------------------------------------------------
+-- drop table if exists stk_trades_history;
 CREATE TABLE IF NOT EXISTS stk_trades_history (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,  -- 고유 ID
-  stk_cd    TEXT    NOT NULL,                     -- 종목코드 (FK)
-  stk_nm    TEXT    NOT NULL,                     -- 종목명
-  ymd       TEXT    NOT NULL,                     -- 거래일 (YYYYMMDD)     
-  note      TEXT    NOT NULL,                      -- 메모
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 생성 시각
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- 수정 시각
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  broker      TEXT    NOT NULL DEFAULT 'KIS',   -- 증권사 KIS|KIWOOM|LS
+  acct_no     TEXT,                              -- 계좌번호
+  order_no    TEXT,                              -- 주문번호
+  sell_buy    TEXT,                              -- '1':매도 '2':매수
+  stk_cd      TEXT    NOT NULL,                  -- 종목코드
+  stk_nm      TEXT,                              -- 종목명
+  ymd         TEXT    NOT NULL,                  -- 거래일 YYYYMMDD
+  order_qty   INTEGER,                           -- 주문수량
+  order_price INTEGER,                           -- 주문가격
+  ccnl_qty    INTEGER,                           -- 체결수량
+  ccnl_price  INTEGER,                           -- 체결가격
+  ccnl_time   TEXT,                              -- 체결시간 HHMMSS
+  note        TEXT,                              -- 메모 (수동 입력용)
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_stk_trades_stk_cd ON stk_trades_history(stk_cd);
+CREATE INDEX IF NOT EXISTS idx_stk_trades_ymd    ON stk_trades_history(ymd);
 -- ---------------------------------------------------------------
 -- stk_cache : 전일종가와 같은 종목에 대한 일시적인 값 기록
 -- ---------------------------------------------------------------

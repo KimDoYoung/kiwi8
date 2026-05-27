@@ -75,10 +75,10 @@ function WatchlistSection() {
 
 /* ── 메인 ── */
 const DashboardPage = () => {
-  const { connected, newsItems, orderEvents } = useWsStore()
+  const { connected, newsItems } = useWsStore()
   const openTab = useLayoutStore((s) => s.openTab)
   const openNewsTab = () => openTab({
-    id: 0, parent_id: null, level: 0, screen_no: '1205',
+    id: 0, parent_id: null, level: 0, screen_no: '1206',
     title: '증권 뉴스', url: null, component: null, icon: null,
     sort_order: 0, is_active: 1, children: [],
   })
@@ -131,46 +131,6 @@ const DashboardPage = () => {
 
       {/* 관심종목 현재가 */}
       <WatchlistSection />
-
-      {/* 계좌체결통보 */}
-      <section>
-        <SectionTitle color="bg-amber-400" count={orderEvents.length}>계좌체결통보 · KIS H0STCNI0</SectionTitle>
-        <Card className="max-h-64 overflow-y-auto">
-          {orderEvents.length === 0 ? (
-            <div className="p-5 text-center text-slate-400 text-sm">수신 대기 중...</div>
-          ) : (
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-white border-b border-slate-100">
-                <tr className="text-slate-400">
-                  <th className="text-left px-3 py-2.5">종목</th>
-                  <th className="text-left px-3 py-2.5">구분</th>
-                  <th className="text-right px-3 py-2.5">체결가</th>
-                  <th className="text-right px-3 py-2.5">수량</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderEvents.map((o, i) => (
-                  <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td className="px-3 py-2 text-slate-700 font-semibold">{o.stock_name || o.stock_code}</td>
-                    <td className="px-3 py-2">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border
-                        ${o.sell_buy === '2'
-                          ? 'bg-rose-50 text-rose-600 border-rose-200'
-                          : 'bg-sky-50 text-sky-600 border-sky-200'}`}>
-                        {o.sell_buy === '2' ? '매수' : '매도'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-slate-700">
-                      {Number(o.ccnl_price).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-slate-400">{o.ccnl_qty}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Card>
-      </section>
 
     </div>
   )

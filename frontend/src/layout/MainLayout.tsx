@@ -5,6 +5,8 @@ import StatusBar from '@/layout/StatusBar'
 import StockFindModal from '@/shared/components/modals/StockFindModal'
 import DiaryEditModal from '@/shared/components/modals/DiaryEditModal'
 import OrderModal from '@/shared/components/modals/OrderModal'
+import MessageBox from '@/shared/components/MessageBox'
+import OrderToastListener from '@/shared/components/OrderToastListener'
 import { fetchMenuTree } from '@/services/menuService'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
@@ -31,6 +33,8 @@ export default function MainLayout() {
       <StockFindModal />
       <DiaryEditModal />
       <OrderModal />
+      <MessageBox />
+      <OrderToastListener />
     </div>
   )
 }

@@ -2,8 +2,12 @@
 KIS(한국투자증권) WebSocket 클라이언트
 실시간 시세, 호가, 체결통보를 수신합니다.
 """
+import base64
 import json
 from collections.abc import Callable
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
 import websockets
 
@@ -38,6 +42,8 @@ class KisWsClient:
 
         # WebSocket 접속용 승인키
         self.approval_key: str | None = None
+        self._aes_key: str | None = None
+        self._aes_iv: str | None = None
 
     async def connect(self):
         """WebSocket 연결"""
@@ -177,6 +183,12 @@ class KisWsClient:
                 msg1 = body.get('msg1', '')
                 if rt_cd == '0':
                     logger.info(f"[KIS] 구독 성공: {msg1}")
+                    # 암호화 키 저장 (H0STCNI0 체결통보용)
+                    output = body.get('output', {})
+                    if output.get('key') and output.get('iv'):
+                        self._aes_key = output['key']
+                        self._aes_iv = output['iv']
+                        logger.info("[KIS] AES 키 저장 완료")
                 else:
                     logger.warning(f"[KIS] 구독 실패: {msg1}")
 
@@ -195,6 +207,17 @@ class KisWsClient:
         data_count = int(parts[2])
         data = parts[3]
 
+        # 암호화된 경우 복호화
+        if encrypted == '1' and self._aes_key and self._aes_iv:
+            try:
+                data = self._decrypt(data)
+            except Exception as e:
+                logger.error(f"[KIS] AES 복호화 실패: {e}")
+                return
+        elif encrypted == '1':
+            logger.warning(f"[KIS] {tr_id} 암호화 데이터인데 AES 키 없음 — 구독 응답 먼저 확인 필요")
+            return
+
         # 핸들러 호출
         if tr_id in self.handlers:
             parsed_data = self._parse_realtime_data(tr_id, data)
@@ -208,6 +231,13 @@ class KisWsClient:
         else:
             logger.debug(f"[KIS] 미등록 TR: {tr_id}")
 
+    def _decrypt(self, cipher_text: str) -> str:
+        key = self._aes_key.encode('utf-8')
+        iv = self._aes_iv.encode('utf-8')
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        decrypted = unpad(cipher.decrypt(base64.b64decode(cipher_text)), AES.block_size)
+        return decrypted.decode('utf-8')
+
     def _parse_realtime_data(self, tr_id: str, data: str) -> dict:
         """실시간 데이터 파싱"""
         # 데이터는 ^ 구분자로 필드 구분
@@ -218,6 +248,7 @@ class KisWsClient:
         elif tr_id == 'H0STASP0':  # 주식호가
             return self._parse_stock_hoga(fields)
         elif tr_id in ['H0STCNI0', 'H0STCNI9']:  # 체결통보
+            logger.info(f"[KIS H0STCNI0] raw fields({len(fields)}): {fields}")
             return self._parse_order_ccnl(fields)
 
         return {'fields': fields}
@@ -270,19 +301,18 @@ class KisWsClient:
             return {'fields': fields}
 
         return {
-            'cust_id': fields[0],          # 고객ID
-            'acct_no': fields[1],          # 계좌번호
-            'order_no': fields[2],         # 주문번호
-            'orgn_order_no': fields[3],    # 원주문번호
-            'sell_buy': fields[4],         # 매도매수구분
-            'order_type': fields[5],       # 주문구분
-            'stock_code': fields[8],       # 종목코드
-            'stock_name': fields[9],       # 종목명
-            'order_qty': fields[10],       # 주문수량
-            'order_price': fields[11],     # 주문가격
-            'ccnl_qty': fields[13],        # 체결수량
-            'ccnl_price': fields[14],      # 체결가격
-            'ccnl_time': fields[17],       # 체결시간
+            'cust_id':      fields[0],   # 고객ID
+            'acct_no':      fields[1],   # 계좌번호
+            'order_no':     fields[2],   # 주문번호
+            'orgn_order_no':fields[3],   # 원주문번호
+            'sell_buy':     fields[4],   # 매도매수구분 (01:매수 02:매도)
+            'order_type':   fields[5],   # 정정구분
+            'stock_code':   fields[8],   # 종목코드
+            'ccnl_qty':     fields[9],   # 체결수량
+            'ccnl_price':   fields[10],  # 체결단가
+            'ccnl_time':    fields[11],  # 체결시간 HHMMSS
+            'order_qty':    fields[16],  # 주문수량
+            'stock_name':   fields[18],  # 체결종목명
         }
 
     async def run(self):

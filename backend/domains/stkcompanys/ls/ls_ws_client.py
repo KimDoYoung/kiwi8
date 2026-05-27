@@ -149,15 +149,11 @@ class LsWsClient:
         while self.keep_running:
             try:
                 raw = await self.websocket.recv()
-
-                # JSON 파싱
                 try:
                     data = json.loads(raw)
                     await self._handle_message(data)
                 except json.JSONDecodeError:
-                    # 바이너리 데이터 처리
                     await self._handle_binary_data(raw)
-
             except websockets.ConnectionClosed as e:
                 logger.warning(f"[LS] WebSocket 연결 종료: {e}")
                 self.connected = False
@@ -279,12 +275,15 @@ class LsWsClient:
 
     def _parse_order_ccnl(self, body: dict) -> dict:
         """주문체결통보 데이터 파싱"""
+        expcode = body.get('expcode', '')
+        # LS는 ISIN(KR7XXXXXX000) 반환 — 6자리 종목코드 추출
+        stock_code = expcode[3:9] if len(expcode) == 12 and expcode.startswith('KR') else expcode
         return {
             'order_no': body.get('ordno', ''),
             'orgn_order_no': body.get('orgordno', ''),
-            'stock_code': body.get('expcode', ''),
+            'stock_code': stock_code,
             'stock_name': body.get('hname', ''),
-            'sell_buy': body.get('ordgb', ''),
+            'sell_buy': body.get('ordgb', ''),   # '01':매수 '02':매도
             'order_qty': body.get('ordqty', ''),
             'order_price': body.get('ordprc', ''),
             'ccnl_qty': body.get('cheqty', ''),

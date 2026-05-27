@@ -73,7 +73,7 @@ class KiwoomWsClient:
                             if type_ in self.handlers:
                                 await self.handlers[type_](data)
                             else:
-                                logger.debug(f"[Kiwoom] 미등록 타입: {type_}")
+                                logger.info(f"[Kiwoom] 미등록 타입: {type_} data={data}")
                     else:
                         logger.warning(f"[Kiwoom] data가 리스트가 아님: {response}")
 
@@ -111,6 +111,26 @@ class KiwoomWsClient:
             'open_price': v(9),   # 시가 (16)
             'high_price': v(10),  # 고가 (17)
             'low_price': v(11),   # 저가 (18)
+        }
+
+    def _parse_order_ccnl(self, data: dict) -> dict:
+        """주문체결통보 파싱 (KIWOOM REG 체결)"""
+        values = data.get('values', [])
+
+        def v(i):
+            return values[i] if len(values) > i else ''
+
+        return {
+            'acct_no':   data.get('item', ''),
+            'order_no':  v(0),   # 주문번호
+            'stock_code': v(1),  # 종목코드
+            'stock_name': v(2),  # 종목명
+            'sell_buy':  v(3),   # 매도매수구분
+            'order_qty': v(4),   # 주문수량
+            'order_price': v(5), # 주문가격
+            'ccnl_qty':  v(6),   # 체결수량
+            'ccnl_price': v(7),  # 체결가격
+            'ccnl_time': v(8),   # 체결시간
         }
 
     async def register(self, grp_no: str, item_list: list[str], type_list: list[str]):
