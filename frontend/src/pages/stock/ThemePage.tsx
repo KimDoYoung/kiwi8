@@ -386,12 +386,7 @@ export default function ThemePage() {
         {/* 상세 검색 조건 패널 */}
         <div className="flex items-center gap-2">
           <Popover open={isFilterPanelOpen} onOpenChange={setIsFilterPanelOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-base font-medium border-gray-300 text-[14px]">
-                <Settings2 size={14} />
-                검색 조건
-              </Button>
-            </PopoverTrigger>
+            <PopoverTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1.5 text-base font-medium border-gray-300 text-[14px]"><Settings2 size={14} />검색 조건</Button>} />
             <PopoverContent className="p-0 w-auto" align="start">
               <ThemeQueryConditionPanel 
                 initialFilters={numFilters} 
