@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 import { setStatusMessage } from '@/store/statusStore'
 import { useWsStore, type WsMessage } from '@/store/wsStore'
 
-const WS_URL = 'ws://localhost:8003/kiwi8/ws/realtime'
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+const WS_URL = `${protocol}//${window.location.host}/kiwi8/ws/realtime`
 const MAX_RETRY_DELAY = 30000
 
 export function useWebSocket() {

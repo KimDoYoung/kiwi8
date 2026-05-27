@@ -44,6 +44,11 @@ export default defineConfig({
         target: 'http://localhost:8003',
         changeOrigin: true,
       },
+      '/kiwi8/ws': {
+        target: 'ws://localhost:8003',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   }
 })
