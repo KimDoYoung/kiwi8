@@ -13,6 +13,7 @@ import StkWordsPage from '@/pages/words/StkWordsPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import LogViewPage from '@/pages/settings/LogViewPage'
 import StockDetailPage from '@/pages/stock/StockDetailPage'
+import StockEvaluationPage from '@/pages/stock/StockEvaluationPage'
 import StockFindPage from '@/pages/stock/StockFindPage'
 import MyStockPage from '@/pages/stock/MyStockPage'
 import StockNewsPage from '@/pages/stock/StockNewsPage'
@@ -31,10 +32,11 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '1104': ExecutionHistoryPage,
   // [1200 시장 분석]
   '1201': StockDetailPage,
-  '1202': StockFindPage,
-  '1203': MyStockPage,
-  '1204': ThemePage,
-  '1205': StockNewsPage,
+  '1202': StockEvaluationPage,
+  '1203': StockFindPage,
+  '1204': MyStockPage,
+  '1205': ThemePage,
+  '1206': StockNewsPage,
   // [1300 주문 센터]
   '1301': PlaceholderPage,
   '1302': PlaceholderPage,

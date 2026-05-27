@@ -53,7 +53,7 @@ def main():
     parts: list[str] = []
     for idx, post in enumerate(posts, 1):
         print(f"  [{idx}/{len(posts)}] {post['title'][:50]}")
-        body = _fetch_detail(post['href'], detail_session)
+        body = _fetch_detail(post['nid'], detail_session)
         entry = f"[{idx}] {post['title']}"
         if body:
             entry += f"\n{body}"

@@ -441,11 +441,11 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 -- [1200 시장 분석] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
 (12, 3, '1201', '종목 상세', '/stock/detail', 1),
-(12, 3, '1202', '全종목 탐색', '/stock/find', 2),
-(12, 3, '1203', '관심종목', '/stock/mystock', 3),
-(12, 3, '1204', '테마별 분석', '/stock/theme', 4),
-(12, 3, '1205', '증권 뉴스', '/stock/news', 5);
-
+(12, 3, '1202', '종목 평가', '/stock/evaluation', 2),
+(12, 3, '1203', '全종목 탐색', '/stock/find', 3),
+(12, 3, '1204', '관심종목', '/stock/mystock', 4),
+(12, 3, '1205', '테마별 분석', '/stock/theme', 5),
+(12, 3, '1206', '증권 뉴스', '/stock/news', 6);
 -- [1300 주문 센터] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
 (13, 3, '1301', '통합 매수 주문', '/order/buy', 1),

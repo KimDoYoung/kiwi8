@@ -6,17 +6,17 @@
 전날 게시물을 수집, 제목+본문을 하나의 텍스트로 합쳐 stk_options에 저장.
 종목+날짜 기준 UPSERT이므로 재실행해도 중복 없음.
 
-작성자: kiwi8
+본문 수집: Naver front-api(m.stock.naver.com/front-api/discussion/detail) 직접 호출.
+iframe 방식 폐기 — Next.js 앱이 client-side rendering으로 전환되어 iframe HTML에 본문 없음.
 """
 from __future__ import annotations
 
 import asyncio
-import json
 import random
 import sqlite3
 import time
 from datetime import datetime, timedelta
-from urllib.parse import urljoin
+from urllib.parse import parse_qs, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -28,6 +28,7 @@ from backend.domains.kscheduler.k_scheduler import job_registry
 logger = get_logger(__name__)
 
 _NAVER_BOARD_URL = "https://finance.naver.com/item/board.naver"
+_DISCUSS_API = "https://m.stock.naver.com/front-api/discussion/detail"
 _HEADERS = {
     'User-Agent': (
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -41,6 +42,12 @@ _HEADERS = {
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
     'Referer': 'https://finance.naver.com/',
+}
+_API_HEADERS = {
+    **_HEADERS,
+    'Accept': 'application/json, text/plain, */*',
+    'Referer': 'https://m.stock.naver.com/',
+    'Origin': 'https://m.stock.naver.com',
 }
 
 
@@ -69,6 +76,13 @@ def _get_stock_codes() -> list[str]:
         return [row[0] for row in cur.fetchall()]
 
 
+def _extract_nid(href: str) -> str:
+    """href에서 nid(게시물 ID) 추출. 예: /item/board_read.naver?nid=421003829"""
+    params = parse_qs(urlparse(href).query)
+    nid_list = params.get('nid', [])
+    return nid_list[0] if nid_list else ''
+
+
 # ==============================================================
 # 스크래핑
 # ==============================================================
@@ -76,10 +90,7 @@ def _get_stock_codes() -> list[str]:
 def _fetch_posts(stk_cd: str, target_dot: str, max_posts: int = 40, max_pages: int = 10) -> list[dict]:
     """
     target_dot('YYYY.MM.DD') 날짜의 게시물만 수집.
-    날짜 셀은 'YYYY.MM.DD HH:MM' 포맷이므로 앞 10자리만 비교한다.
-    아래 두 조건 중 하나라도 충족되면 즉시 중단:
-      - 대상 날짜보다 이전 글 등장
-      - max_posts(기본 40)건 수집 완료
+    반환: [{'title': ..., 'href': ..., 'nid': ...}, ...]
     """
     session = _make_session()
     posts: list[dict] = []
@@ -110,8 +121,8 @@ def _fetch_posts(stk_cd: str, target_dot: str, max_posts: int = 40, max_pages: i
             date_span = tds[0].find('span', class_='tah p10 gray03')
             if not date_span:
                 continue
-            date_str = date_span.get_text(strip=True)  # 'YYYY.MM.DD HH:MM'
-            date_part = date_str[:10]                   # 'YYYY.MM.DD'
+            date_str = date_span.get_text(strip=True)
+            date_part = date_str[:10]
 
             if date_part < target_dot:
                 done = True
@@ -127,8 +138,9 @@ def _fetch_posts(stk_cd: str, target_dot: str, max_posts: int = 40, max_pages: i
                 continue
             title = anchor.get('title', '').strip()
             href = anchor.get('href', '').strip()
-            if title and href:
-                posts.append({'title': title, 'href': href})
+            nid = _extract_nid(href)
+            if title and href and nid:
+                posts.append({'title': title, 'href': href, 'nid': nid})
                 if len(posts) >= max_posts:
                     done = True
                     break
@@ -140,69 +152,39 @@ def _fetch_posts(stk_cd: str, target_dot: str, max_posts: int = 40, max_pages: i
     return posts
 
 
-def _fetch_detail(href: str, session: requests.Session) -> str:
+def _fetch_detail(nid: str, session: requests.Session) -> str:
     """
-    게시물 상세 본문 텍스트 추출.
-    실패 시 빈 문자열 반환 (제목만이라도 집계에 포함되도록).
+    Naver front-api를 직접 호출해 게시물 본문 텍스트 추출.
+    실패 시 '' 반환 (제목만이라도 집계에 포함되도록).
     """
-    detail_url = urljoin("https://finance.naver.com", href)
+    url = f"{_DISCUSS_API}?id={nid}"
     try:
-        time.sleep(0.5)
-        resp = session.get(detail_url, timeout=10)
+        time.sleep(0.3)
+        resp = session.get(url, headers=_API_HEADERS, timeout=10)
         resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "html.parser")
+        data = resp.json()
 
-        view_table = soup.find('table', class_='view')
-        if not view_table:
-            return ''
-        iframe = view_table.find('iframe')
-        if not iframe:
-            return ''
-        iframe_src = iframe.get('src', '')
-        if not iframe_src:
+        if not data.get('isSuccess'):
+            logger.debug(f"[naver_options] nid={nid} API 실패: {data.get('message')}")
             return ''
 
-        iframe_url = urljoin(detail_url, iframe_src)
-        iframe_headers = dict(_HEADERS)
-        iframe_headers['Referer'] = detail_url
+        content_html = data.get('result', {}).get('contentHtml', '')
+        if not content_html:
+            return ''
 
-        time.sleep(0.5)
-        iframe_resp = session.get(iframe_url, headers=iframe_headers, timeout=10)
-        iframe_resp.raise_for_status()
-        iframe_soup = BeautifulSoup(iframe_resp.text, "html.parser")
-
-        # __NEXT_DATA__ JSON 우선 시도
-        next_data = iframe_soup.find('script', {'id': '__NEXT_DATA__'})
-        if next_data:
-            try:
-                jdata = json.loads(next_data.string)
-                queries = (
-                    jdata.get('props', {})
-                    .get('pageProps', {})
-                    .get('dehydratedState', {})
-                    .get('queries', [])
-                )
-                for q in queries:
-                    if 'discussion/detail' in str(q.get('queryKey', '')):
-                        content_html = (
-                            q.get('state', {}).get('data', {}).get('result', {}).get('contentHtml', '')
-                        )
-                        if content_html:
-                            csoup = BeautifulSoup(content_html, "html.parser")
-                            lines = [p.get_text(strip=True) for p in csoup.find_all('p') if p.get_text(strip=True)]
-                            if lines:
-                                return '\n'.join(lines)
-            except (json.JSONDecodeError, Exception):
-                pass
-
-        # fallback: iframe 전체 텍스트
-        lines = [p.get_text(strip=True) for p in iframe_soup.find_all('p') if p.get_text(strip=True)]
+        csoup = BeautifulSoup(content_html, "html.parser")
+        lines = [
+            p.get_text(strip=True)
+            for p in csoup.find_all('p')
+            if p.get_text(strip=True)
+        ]
         if lines:
             return '\n'.join(lines)
-        return iframe_soup.get_text(separator='\n', strip=True)[:500]
+
+        return csoup.get_text(separator='\n', strip=True)
 
     except Exception as e:
-        logger.debug(f"[naver_options] 본문 추출 실패 ({href}): {e}")
+        logger.debug(f"[naver_options] nid={nid} 본문 추출 실패: {e}")
         return ''
 
 
@@ -256,7 +238,7 @@ def collect_naver_options() -> int:
         session = _make_session()
         parts: list[str] = []
         for idx, post in enumerate(posts, 1):
-            body = _fetch_detail(post['href'], session)
+            body = _fetch_detail(post['nid'], session)
             if body:
                 parts.append(f"[{idx}] {post['title']}\n{body}")
             else:

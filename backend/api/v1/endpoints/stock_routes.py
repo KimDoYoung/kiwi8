@@ -1,5 +1,8 @@
+import sqlite3
+
 from fastapi import APIRouter
 
+from backend.core.config import config
 from backend.core.exceptions import KisApiException, KiwoomApiException
 from backend.core.logger import get_logger
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker
@@ -313,4 +316,56 @@ async def get_stk_info_list():
         return KiwoomApiHelper.create_success_response(data={"list": data, "count": len(data)})
     except Exception as e:
         logger.error(f"stk_info 목록 조회 오류: {e!s}")
+        return KiwoomApiHelper.create_error_response(error_code="500", error_message=str(e))
+
+
+@router.get("/stk-info/{stk_cd}", response_model=KiwoomResponse)
+async def get_stk_info_by_code(stk_cd: str):
+    """stk_info 단건 조회"""
+    try:
+        service = get_service("stk_info")
+        item = await service.get_by_code(stk_cd)
+        if not item:
+            return KiwoomApiHelper.create_error_response(error_code="404", error_message="종목 정보 없음")
+        data = {
+            "stk_cd": item.stk_cd,
+            "stk_nm": item.stk_nm,
+            "list_count": item.list_count,
+            "audit_info": item.audit_info,
+            "reg_day": item.reg_day,
+            "last_price": item.last_price,
+            "state": item.state,
+            "market_code": item.market_code,
+            "market_name": item.market_name,
+            "up_name": item.up_name,
+            "up_size_name": item.up_size_name,
+            "company_class_name": item.company_class_name,
+            "order_warning": item.order_warning,
+            "nxt_enable": item.nxt_enable,
+            "main_products": item.main_products,
+            "representative_name": item.representative_name,
+            "homepage": item.homepage,
+            "location": item.location,
+        }
+        return KiwoomApiHelper.create_success_response(data=data)
+    except Exception as e:
+        logger.error(f"stk_info 단건 조회 오류 ({stk_cd}): {e!s}")
+        return KiwoomApiHelper.create_error_response(error_code="500", error_message=str(e))
+
+
+@router.get("/options/{stk_cd}", response_model=KiwoomResponse)
+async def get_stock_options(stk_cd: str, limit: int = 10):
+    """stk_options 조회 — 특정 종목의 네이버 토론방 의견 (날짜 최신순)"""
+    try:
+        with sqlite3.connect(config.DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.execute(
+                "SELECT id, stk_cd, date, options, created_at FROM stk_options "
+                "WHERE stk_cd = ? ORDER BY date DESC LIMIT ?",
+                (stk_cd, limit)
+            )
+            rows = [dict(row) for row in cur.fetchall()]
+        return KiwoomApiHelper.create_success_response(data={"list": rows, "count": len(rows)})
+    except Exception as e:
+        logger.error(f"stk_options 조회 오류 ({stk_cd}): {e!s}")
         return KiwoomApiHelper.create_error_response(error_code="500", error_message=str(e))
