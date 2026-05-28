@@ -6,13 +6,13 @@ import { toNum, fmt, colorStyle } from '@/lib/utils'
 import RefreshButton from '@/shared/components/RefreshButton'
 
 /** 손익금액 셀 */
-export function ProfitCell({ value }: { value: number }) {
+export const ProfitCell = React.memo(function ProfitCell({ value }: { value: number }) {
   const n = toNum(value)
   return <span style={colorStyle(n)}>{fmt(n)}</span>
-}
+})
 
 /** 전일대비 셀 — 금액 (비율) 한 줄 우정렬, 양수=빨강/음수=파랑, + 기호 생략, % 없음 */
-export function PrevDayCell({ value, rate }: { value: number; rate: number }) {
+export const PrevDayCell = React.memo(function PrevDayCell({ value, rate }: { value: number; rate: number }) {
   const color = value > 0 ? '#ef4444' : value < 0 ? '#3b82f6' : undefined
   const fmtAmt = value < 0 ? `-${fmt(Math.abs(value))}` : fmt(value)
   const fmtRate = value < 0 ? `-${Math.abs(rate).toFixed(2)}` : `${rate.toFixed(2)}`
@@ -22,22 +22,22 @@ export function PrevDayCell({ value, rate }: { value: number; rate: number }) {
       <span style={{ fontSize: '10px', opacity: 0.85 }}>({fmtRate})</span>
     </span>
   )
-}
+})
 
 /** 손익율 셀 (% 기호 없음, 헤더에 표시) */
-export function RateCell({ value }: { value: number }) {
+export const RateCell = React.memo(function RateCell({ value }: { value: number }) {
   const n = toNum(value)
   return <span style={colorStyle(n)}>{n.toFixed(2)}</span>
-}
+})
 
 /** 비중 셀 (+ 부호 없음, 음수 없음) */
-export function WeightCell({ value }: { value: number }) {
+export const WeightCell = React.memo(function WeightCell({ value }: { value: number }) {
   const n = toNum(value)
   return <span>{n.toFixed(1) + '%'}</span>
-}
+})
 
 /** 종목코드 클릭 → 네이버 금융 오픈 */
-export function CodeCell({ value }: { value: string }) {
+export const CodeCell = React.memo(function CodeCell({ value }: { value: string }) {
   return (
     <button
       className="font-mono text-blue-600 hover:underline cursor-pointer w-full text-center"
@@ -47,25 +47,25 @@ export function CodeCell({ value }: { value: string }) {
       {value}
     </button>
   )
-}
+})
 
 /** 매수/매도/상세 버튼 */
-export function ActionCell({ 
-  onBuy, 
+export const ActionCell = React.memo(function ActionCell({
+  onBuy,
   onSell
-}: { 
-  onBuy?: () => void, 
+}: {
+  onBuy?: () => void,
   onSell?: () => void
 }) {
   return (
     <div className="flex gap-1 items-center h-full">
-      <button 
+      <button
         onClick={(e) => { e.stopPropagation(); onBuy?.(); }}
         className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors"
       >
         매수
       </button>
-      <button 
+      <button
         onClick={(e) => { e.stopPropagation(); onSell?.(); }}
         className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
       >
@@ -73,7 +73,7 @@ export function ActionCell({
       </button>
     </div>
   )
-}
+})
 
 /** 헤더바 컴포넌트 */
 export function AccountHeader({

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
 import type { ColDef, RowDoubleClickedEvent } from 'ag-grid-community'
@@ -113,16 +113,20 @@ export default function LsAccountPage() {
     const sumSonik = useMemo(() => stocks.reduce((s, r) => s + toNum(r['평가손익']), 0), [stocks])
 
     const gridData = useMemo(() => [
-        ...stocks,
-        { 
-            종목명: '합계', 
-            매입금액: sumMaeip, 
-            평가금액: sumPyeong, 
-            평가손익: sumSonik, 
+        ...stocks.map(s => ({
+            ...s,
+            _weight: totalMaeip > 0 ? toNum(s['매입금액']) / totalMaeip * 100 : 0,
+        })),
+        {
+            종목명: '합계',
+            매입금액: sumMaeip,
+            평가금액: sumPyeong,
+            평가손익: sumSonik,
             수익율: sumMaeip !== 0 ? (sumSonik / sumMaeip) * 100 : 0,
-            _isSummary: true 
+            _weight: totalMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0,
+            _isSummary: true,
         },
-    ], [stocks, sumMaeip, sumPyeong, sumSonik])
+    ], [stocks, totalMaeip, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
         const allCols: (ColDef & { simple?: boolean })[] = [
@@ -160,10 +164,7 @@ export default function LsAccountPage() {
             },
             {
                 headerName: '비중(%)', width: 85, type: 'numericColumn', simple: false,
-                valueGetter: (p) => {
-                    if (p.data?._isSummary) return (sumMaeip > 0 ? sumMaeip / totalMaeip * 100 : 0)
-                    return totalMaeip > 0 ? toNum(p.data?.매입금액) / totalMaeip * 100 : 0
-                },
+                valueGetter: (p) => p.data?._weight ?? 0,
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
                 comparator: numComparator,
             },
@@ -218,19 +219,30 @@ export default function LsAccountPage() {
 
         const strip = (cols: (ColDef & { simple?: boolean })[]) => cols.map(({ simple: _, ...col }) => col)
         return isSimpleView ? strip(allCols.filter(col => col.simple)) : strip(allCols)
-    }, [totalMaeip, sumMaeip, openOrderModal, isSimpleView])
+    }, [openOrderModal, isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({
         sortable: true, resizable: true,
     }), [])
 
-    const onRowDoubleClicked = (p: RowDoubleClickedEvent) => {
+    const onRowDoubleClicked = useCallback((p: RowDoubleClickedEvent) => {
         if (p.data?._isSummary) return
         const code = p.data?.종목번호 ?? p.data?.종목코드
         const name = p.data?.종목명
         setStock(code, name)
         openByScreenNo('1201', menus || [])
-    }
+    }, [setStock, openByScreenNo, menus])
+
+    const getRowId = useCallback((p: { data: Record<string, unknown> }) =>
+        p.data?._isSummary ? '__summary__' : String(p.data?.종목번호 ?? p.data?.종목코드 ?? ''), [])
+
+    const getRowClass = useCallback((p: { data?: Record<string, unknown> }) =>
+        p.data?._isSummary ? 'summary-row' : '', [])
+
+    const postSortRows = useCallback(({ nodes }: { nodes: { data?: Record<string, unknown> }[] }) => {
+        const idx = nodes.findIndex(n => n.data?._isSummary)
+        if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])
+    }, [])
 
     if (isLoading) {
         return <Loading message="LS 계좌 정보를 불러오는 중..." />
@@ -300,12 +312,10 @@ export default function LsAccountPage() {
                     domLayout="normal"
                     headerHeight={36}
                     rowHeight={32}
+                    getRowId={getRowId}
                     onRowDoubleClicked={onRowDoubleClicked}
-                    postSortRows={({ nodes }) => {
-                        const idx = nodes.findIndex(n => n.data?._isSummary)
-                        if (idx > -1) nodes.push(nodes.splice(idx, 1)[0])
-                    }}
-                    getRowClass={(p) => p.data?._isSummary ? 'summary-row' : ''}
+                    postSortRows={postSortRows}
+                    getRowClass={getRowClass}
                 />
             </div>
         </div>
