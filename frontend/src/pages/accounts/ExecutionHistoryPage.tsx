@@ -4,6 +4,7 @@ import { AgGridReact } from 'ag-grid-react'
 import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import api from '@/lib/api'
+import { formatDate, formatYmd, fmt } from '@/lib/utils'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -12,7 +13,7 @@ interface TradeRow {
   broker: string
   acct_no: string
   order_no: string
-  sell_buy: string        // '1':매도 '2':매수
+  sell_buy: string        // '01':매수 '02':매도
   stk_cd: string
   stk_nm: string
   ymd: string
@@ -33,8 +34,8 @@ function SideCell({ value }: { value: string }) {
 }
 
 function YmdCell({ value }: { value: string }) {
-  if (!value || value.length !== 8) return <span>{value}</span>
-  return <span>{`${value.slice(0,4)}-${value.slice(4,6)}-${value.slice(6,8)}`}</span>
+  if (!value) return <span>-</span>
+  return <span>{formatDate(value, false)}</span>
 }
 
 function TimeCell({ value }: { value: string }) {
@@ -46,7 +47,7 @@ function TimeCell({ value }: { value: string }) {
 
 function AmountCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-gray-300 text-xs">-</span>
-  return <span>{value.toLocaleString('ko-KR')}</span>
+  return <span>{fmt(value)}</span>
 }
 
 async function fetchTrades(broker: string, ymd: string): Promise<TradeRow[]> {
@@ -60,13 +61,16 @@ async function fetchTrades(broker: string, ymd: string): Promise<TradeRow[]> {
 const BROKERS = ['전체', 'KIS', 'LS', 'KIWOOM'] as const
 type BrokerFilter = typeof BROKERS[number]
 
-function todayYmd() {
-  return new Date().toISOString().slice(0, 10).replace(/-/g, '')
+const BROKER_COLORS: Record<BrokerFilter, string> = {
+  '전체':   '#6b7280',
+  'KIS':    '#80624c',
+  'LS':     '#003378',
+  'KIWOOM': '#e4007f',
 }
 
 export default function ExecutionHistoryPage() {
   const [broker, setBroker] = useState<BrokerFilter>('전체')
-  const [ymd, setYmd] = useState(todayYmd())
+  const [ymd, setYmd] = useState(() => formatYmd(new Date()))
 
   const { data: rows = [], isLoading, refetch } = useQuery({
     queryKey: ['trades-history', broker, ymd],
@@ -74,14 +78,14 @@ export default function ExecutionHistoryPage() {
   })
 
   const colDefs = useMemo<ColDef<TradeRow>[]>(() => [
-    { field: 'ccnl_time', headerName: '체결시간', width: 90, cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
-    { field: 'ymd',       headerName: '일자',     width: 100, cellRenderer: YmdCell },
-    { field: 'broker',    headerName: '증권사',   width: 72 },
+    { field: 'ccnl_time', headerName: '체결시간', width: 100, cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
+    { field: 'ymd',       headerName: '일자',     width: 120, cellRenderer: YmdCell },
+    { field: 'broker',    headerName: '증권사',   width: 100 },
     { field: 'stk_cd',   headerName: '종목코드', width: 88, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'stk_nm',   headerName: '종목명',   width: 130 },
     { field: 'sell_buy', headerName: '구분',     width: 68, cellRenderer: SideCell },
     {
-      field: 'ccnl_qty', headerName: '체결수량', width: 80,
+      field: 'ccnl_qty', headerName: '체결수량', width: 90,
       type: 'numericColumn',
       cellRenderer: AmountCell,
     },
@@ -155,8 +159,9 @@ export default function ExecutionHistoryPage() {
           <button
             key={b}
             onClick={() => setBroker(b)}
-            className={`px-3 py-0.5 rounded-full text-xs font-semibold transition-colors
-              ${broker === b ? 'bg-green-600 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400'}`}
+            style={broker === b ? { backgroundColor: BROKER_COLORS[b], borderColor: BROKER_COLORS[b], color: 'white' } : {}}
+            className={`px-3 py-0.5 rounded-full text-xs font-semibold transition-colors border
+              ${broker !== b ? 'bg-white border-gray-200 text-gray-500 hover:border-gray-400' : ''}`}
           >
             {b}
           </button>
