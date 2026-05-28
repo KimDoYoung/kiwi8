@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact, type CustomCellRendererProps } from 'ag-grid-react'
 import type { ColDef, RowDoubleClickedEvent } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import { useWsStore } from '@/store/wsStore'
 import { useModalStore } from '@/store/modalStore'
 import { useStockDetailStore } from '@/store/stockDetailStore'
 import { useLayoutStore } from '@/store/layoutStore'
@@ -48,6 +49,12 @@ export default function KisAccountPage() {
         queryFn: fetchKisAccount,
         staleTime: 1000 * 30,
     })
+
+    const orderEvents = useWsStore((s) => s.orderEvents)
+    useEffect(() => {
+        const latest = orderEvents[0]
+        if (latest?.broker === 'kis') refetch()
+    }, [orderEvents, refetch])
 
     const { data: marketStatus } = useQuery({
         queryKey: ['marketStatus'],

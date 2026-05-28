@@ -117,10 +117,10 @@ class WsManager:
             logger.info(f"[Kiwoom] 체결통보 raw={d} parsed={parsed}")
             if int(parsed.get('ccnl_qty') or 0) > 0 and int(parsed.get('ccnl_price') or 0) > 0:
                 asyncio.create_task(_stk_history_service.save_execution(parsed, broker='KIWOOM'))
-            await self.broadcast({'broker': 'kiwoom', 'type': 'order_ccnl', 'data': parsed})
+                await self.broadcast({'broker': 'kiwoom', 'type': 'order_ccnl', 'data': parsed})
 
         self.kiwoom_ws.add_handler('0B', kiwoom_ccnl_handler)
-        self.kiwoom_ws.add_handler('체결', kiwoom_order_handler)
+        self.kiwoom_ws.add_handler('00', kiwoom_order_handler)
 
         # KIS 핸들러: 주식체결 + 계좌체결통보
         async def kis_ccnl_handler(d: dict):
@@ -180,11 +180,14 @@ class WsManager:
         while self._running:
             try:
                 await self.kiwoom_ws.connect()
-                if config.KIWOOM_ACCT_NO:
-                    await self.kiwoom_ws.subscribe(config.KIWOOM_ACCT_NO, '체결')
-                    logger.info(f"[Kiwoom WS] 계좌체결통보 구독: {config.KIWOOM_ACCT_NO}")
+                # receive_messages를 먼저 task로 시작해야 LOGIN 응답 수신 가능
+                recv_task = asyncio.create_task(self.kiwoom_ws.receive_messages())
+                logged_in = await self.kiwoom_ws.wait_login()
+                if logged_in and config.KIWOOM_ACCT_NO:
+                    await self.kiwoom_ws.subscribe(config.KIWOOM_ACCT_NO, '00')
+                    logger.info(f"[Kiwoom WS] 계좌체결통보 구독(00): {config.KIWOOM_ACCT_NO}")
                 delay = 10
-                await self.kiwoom_ws.receive_messages()
+                await recv_task
             except Exception as e:
                 logger.error(f"[Kiwoom WS] 오류: {e}")
             if not self._running:

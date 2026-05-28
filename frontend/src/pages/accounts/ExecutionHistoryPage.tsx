@@ -37,6 +37,13 @@ function YmdCell({ value }: { value: string }) {
   return <span>{`${value.slice(0,4)}-${value.slice(4,6)}-${value.slice(6,8)}`}</span>
 }
 
+function TimeCell({ value }: { value: string }) {
+  if (!value) return <span>-</span>
+  const v = value.replace(/:/g, '')
+  if (v.length >= 6) return <span>{`${v.slice(0,2)}:${v.slice(2,4)}:${v.slice(4,6)}`}</span>
+  return <span>{value}</span>
+}
+
 function AmountCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-gray-300 text-xs">-</span>
   return <span>{value.toLocaleString('ko-KR')}</span>
@@ -67,7 +74,7 @@ export default function ExecutionHistoryPage() {
   })
 
   const colDefs = useMemo<ColDef<TradeRow>[]>(() => [
-    { field: 'ccnl_time', headerName: '체결시간', width: 90, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
+    { field: 'ccnl_time', headerName: '체결시간', width: 90, cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'ymd',       headerName: '일자',     width: 100, cellRenderer: YmdCell },
     { field: 'broker',    headerName: '증권사',   width: 72 },
     { field: 'stk_cd',   headerName: '종목코드', width: 88, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
@@ -109,8 +116,8 @@ export default function ExecutionHistoryPage() {
   ], [])
 
   const totalAmt = rows.reduce((s, r) => s + (r.ccnl_qty ?? 0) * (r.ccnl_price ?? 0), 0)
-  const buyCount = rows.filter((r) => r.sell_buy === '2').length
-  const sellCount = rows.filter((r) => r.sell_buy === '1').length
+  const buyCount = rows.filter((r) => isBuy(r.sell_buy)).length
+  const sellCount = rows.filter((r) => !isBuy(r.sell_buy)).length
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-gray-50">

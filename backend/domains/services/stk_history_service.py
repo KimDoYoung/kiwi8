@@ -36,13 +36,18 @@ class StkHistoryService:
             elif broker == 'KIWOOM':
                 acct_no = config.KIWOOM_ACCT_NO
 
+        stk_cd = data.get('stock_code', '')
+        stk_nm = data.get('stock_name', '')
+        if not stk_nm or stk_nm.strip('0') == '':
+            stk_nm = await _lookup_stk_nm(self.db_path, stk_cd)
+
         params = (
             broker,
             acct_no,
             data.get('order_no', ''),
             data.get('sell_buy', ''),
-            data.get('stock_code', ''),
-            data.get('stock_name', ''),
+            stk_cd,
+            stk_nm,
             ymd,
             _to_int(data.get('order_qty')),
             _to_int(data.get('order_price')),
@@ -83,6 +88,18 @@ class StkHistoryService:
         except Exception as e:
             logger.error(f"[StkHistory] 조회 오류: {e}")
             return []
+
+
+async def _lookup_stk_nm(db_path: str, stk_cd: str) -> str:
+    if not stk_cd:
+        return ''
+    try:
+        async with aiosqlite.connect(db_path) as db:
+            async with db.execute('SELECT stk_nm FROM stk_info WHERE stk_cd = ?', (stk_cd,)) as cur:
+                row = await cur.fetchone()
+                return row[0] if row else ''
+    except Exception:
+        return ''
 
 
 def _to_int(val) -> int | None:

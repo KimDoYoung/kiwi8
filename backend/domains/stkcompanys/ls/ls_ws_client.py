@@ -273,21 +273,50 @@ class LsWsClient:
         }
 
     def _parse_order_ccnl(self, body: dict) -> dict:
-        """주문체결통보 데이터 파싱"""
+        """주문체결통보 데이터 파싱
+        SONAT000: 접수통보 (ccnl 데이터 없음)
+        SONAS100: 체결통보 (execqty/execprc 필드 사용)
+        """
+        trcode = body.get('trcode', '')
+
+        if trcode == 'SONAS100':
+            # 단축코드 'A437730' → '437730'
+            shtn = body.get('shtnIsuno', '')
+            stock_code = shtn[1:] if shtn and shtn[0].isalpha() else shtn
+            # bnstp: '1'=매도, '2'=매수 → KIS 컨벤션 '02'=매도, '01'=매수
+            bnstp = body.get('bnstp', '')
+            sell_buy = '02' if bnstp == '1' else ('01' if bnstp == '2' else '')
+            return {
+                'order_no': body.get('ordno', ''),
+                'orgn_order_no': body.get('orgordno', ''),
+                'acct_no': body.get('accno', ''),
+                'stock_code': stock_code,
+                'stock_name': body.get('Isunm', ''),
+                'sell_buy': sell_buy,
+                'order_qty': body.get('ordqty', ''),
+                'order_price': body.get('ordprc', ''),
+                'ccnl_qty': body.get('execqty', ''),
+                'ccnl_price': body.get('execprc', ''),
+                'ccnl_time': body.get('exectime', ''),
+            }
+
+        # SONAT000: 접수통보 — ccnl 데이터 없음, 저장 대상 아님
         expcode = body.get('expcode', '')
-        # LS는 ISIN(KR7XXXXXX000) 반환 — 6자리 종목코드 추출
         stock_code = expcode[3:9] if len(expcode) == 12 and expcode.startswith('KR') else expcode
+        # ordgb: '01'=매도, '02'=매수 → KIS 컨벤션 '02'=매도, '01'=매수
+        ordgb = body.get('ordgb', '')
+        sell_buy = '02' if ordgb == '01' else ('01' if ordgb == '02' else '')
         return {
             'order_no': body.get('ordno', ''),
             'orgn_order_no': body.get('orgordno', ''),
             'stock_code': stock_code,
             'stock_name': body.get('hname', ''),
-            'sell_buy': body.get('ordgb', ''),   # '01':매수 '02':매도
+            'sell_buy': sell_buy,
             'order_qty': body.get('ordqty', ''),
-            'order_price': body.get('ordprc', ''),
-            'ccnl_qty': body.get('cheqty', ''),
-            'ccnl_price': body.get('cheprc', ''),
-            'ccnl_time': body.get('chetime', ''),
+            'order_price': body.get('ordprice', ''),
+            'ccnl_qty': '',
+            'ccnl_price': '',
+            'ccnl_time': '',
         }
 
     async def run(self):

@@ -299,19 +299,32 @@ class KisWsClient:
         if len(fields) < 20:
             return {'fields': fields}
 
+        # fields[13]: 체결여부 1=접수 2=체결
+        cncl_dvsn = fields[13] if len(fields) > 13 else ''
+        # KIS H0STCNI0: 01=매도, 02=매수 → 내부 컨벤션 플립
+        raw_side = fields[4]
+        if raw_side == '01':
+            sell_buy = '02'
+        elif raw_side == '02':
+            sell_buy = '01'
+        else:
+            sell_buy = raw_side
+        # 접수(cncl_dvsn='1')일 때 ccnl_qty/price를 0으로 → 저장/broadcast 차단
+        is_exec = cncl_dvsn == '2'
         return {
-            'cust_id':      fields[0],   # 고객ID
-            'acct_no':      fields[1],   # 계좌번호
-            'order_no':     fields[2],   # 주문번호
-            'orgn_order_no':fields[3],   # 원주문번호
-            'sell_buy':     fields[4],   # 매도매수구분 (01:매수 02:매도)
-            'order_type':   fields[5],   # 정정구분
-            'stock_code':   fields[8],   # 종목코드
-            'ccnl_qty':     fields[9],   # 체결수량
-            'ccnl_price':   fields[10],  # 체결단가
-            'ccnl_time':    fields[11],  # 체결시간 HHMMSS
-            'order_qty':    fields[16],  # 주문수량
-            'stock_name':   fields[18],  # 체결종목명
+            'cust_id':      fields[0],
+            'acct_no':      fields[1],
+            'order_no':     fields[2],
+            'orgn_order_no':fields[3],
+            'sell_buy':     sell_buy,
+            'order_type':   fields[5],
+            'stock_code':   fields[8],
+            'ccnl_qty':     fields[9] if is_exec else '0',
+            'ccnl_price':   fields[10] if is_exec else '0',
+            'ccnl_time':    fields[11] if is_exec else '',
+            'order_qty':    fields[16],
+            'stock_name':   '',
+            'cncl_dvsn':    cncl_dvsn,  # '1'=접수 '2'=체결
         }
 
     async def run(self):

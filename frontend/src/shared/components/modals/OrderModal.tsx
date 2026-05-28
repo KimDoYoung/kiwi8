@@ -36,6 +36,7 @@ export default function OrderModal() {
   const [message, setMessage] = useState<{ text: string; type: 'info' | 'error' | 'success' } | null>(null)
   const [broker, setBroker] = useState<'kis' | 'kiwoom' | 'ls'>('kis')
   const [confirmed, setConfirmed] = useState(false)
+  const [hasOrdered, setHasOrdered] = useState(false)
 
   const { data: marketStatus } = useQuery({
     queryKey: ['marketStatus'],
@@ -54,6 +55,14 @@ export default function OrderModal() {
       price: 0,
     },
   })
+
+  useEffect(() => {
+    if (!isOrderModalOpen) {
+      setHasOrdered(false)
+      setConfirmed(false)
+      setMessage(null)
+    }
+  }, [isOrderModalOpen])
 
   useEffect(() => {
     if (isOrderModalOpen && orderInitialData) {
@@ -127,7 +136,8 @@ export default function OrderModal() {
       })
 
       if (res.success) {
-        showMessage(`${type === 'buy' ? '매수' : '매도'} 주문이 성공적으로 전송되었습니다.`, 'success')
+        showMessage(`${type === 'buy' ? '매수' : '매도'} 주문 접수됨. 체결 시 알림이 표시됩니다.`, 'success')
+        setHasOrdered(true)
         setConfirmed(false)
       } else {
         showMessage(res.error_message || '주문 실패', 'error')
@@ -273,7 +283,7 @@ export default function OrderModal() {
                   <Button 
                     type="button" 
                     className="flex-1 h-12 text-lg font-bold bg-red-600 hover:bg-red-700 text-white"
-                    disabled={loadingType !== null || isMarketClosed || !confirmed}
+                    disabled={loadingType !== null || isMarketClosed || !confirmed || hasOrdered}
                     onClick={form.handleSubmit((v) => onSubmit(v as unknown as OrderFormValues, 'buy'))}
                   >
                     {loadingType === 'buy' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매수'}
@@ -283,7 +293,7 @@ export default function OrderModal() {
                   <Button 
                     type="button" 
                     className="flex-1 h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={loadingType !== null || isMarketClosed || !confirmed}
+                    disabled={loadingType !== null || isMarketClosed || !confirmed || hasOrdered}
                     onClick={form.handleSubmit((v) => onSubmit(v as unknown as OrderFormValues, 'sell'))}
                   >
                     {loadingType === 'sell' ? <Loader2 className="w-5 h-5 animate-spin" /> : '매도'}
@@ -298,6 +308,7 @@ export default function OrderModal() {
                 onClick={() => {
                   form.reset({ ...form.getValues(), qty: 1, price: 0 })
                   setConfirmed(false)
+                  setHasOrdered(false)
                   setMessage(null)
                 }}
               >

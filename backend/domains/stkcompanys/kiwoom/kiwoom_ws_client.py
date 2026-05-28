@@ -1,3 +1,4 @@
+import asyncio
 import json
 from collections.abc import Callable
 
@@ -16,11 +17,21 @@ class KiwoomWsClient:
         self.connected = False
         self.keep_running = True
         self.handlers: dict[str, Callable] = {}
+        self._login_event: asyncio.Event = asyncio.Event()
+
+    async def wait_login(self, timeout: float = 10.0) -> bool:
+        try:
+            await asyncio.wait_for(self._login_event.wait(), timeout=timeout)
+            return True
+        except asyncio.TimeoutError:
+            logger.error('[Kiwoom WS] 로그인 대기 타임아웃')
+            return False
 
     async def connect(self):
         try:
             token = await self.token_manager.get_token()
 
+            self._login_event.clear()
             self.websocket = await websockets.connect(self.uri)
             self.connected = True
             logger.info("키움 웹소켓 서버와 연결을 시도 중입니다.")
@@ -58,6 +69,7 @@ class KiwoomWsClient:
                         await self.disconnect()
                     else:
                         logger.info('웹소켓(실시간) 로그인 성공하였습니다.')
+                        self._login_event.set()
 
                 elif trnm == 'PING':
                     await self.send_message(response)
@@ -83,7 +95,7 @@ class KiwoomWsClient:
             except websockets.ConnectionClosed:
                 logger.warning('키움 웹소켓 서버로부터 연결이 종료되었습니다')
                 self.connected = False
-                await self.websocket.close()
+                break
 
     async def subscribe(self, stock_code: str, tr_type: str = '0B', grp_no: str = '1'):
         await self.register(grp_no=grp_no, item_list=[stock_code], type_list=[tr_type])
@@ -120,17 +132,24 @@ class KiwoomWsClient:
         def v(i):
             return values[i] if len(values) > i else ''
 
+        raw_side = v(3)  # 매도매수구분: '1'=매도,'2'=매수
+        if raw_side == '2':
+            sell_buy = '01'
+        elif raw_side == '1':
+            sell_buy = '02'
+        else:
+            sell_buy = raw_side
         return {
             'acct_no':   data.get('item', ''),
-            'order_no':  v(0),   # 주문번호
-            'stock_code': v(1),  # 종목코드
-            'stock_name': v(2),  # 종목명
-            'sell_buy':  v(3),   # 매도매수구분
-            'order_qty': v(4),   # 주문수량
-            'order_price': v(5), # 주문가격
-            'ccnl_qty':  v(6),   # 체결수량
-            'ccnl_price': v(7),  # 체결가격
-            'ccnl_time': v(8),   # 체결시간
+            'order_no':  v(0),
+            'stock_code': v(1),
+            'stock_name': v(2),
+            'sell_buy':  sell_buy,
+            'order_qty': v(4),
+            'order_price': v(5),
+            'ccnl_qty':  v(6),
+            'ccnl_price': v(7),
+            'ccnl_time': v(8),
         }
 
     async def register(self, grp_no: str, item_list: list[str], type_list: list[str]):
