@@ -52,6 +52,9 @@ class Config:
         
         self.SCHEDULER_ENABLED: bool = os.getenv('SCHEDULER_ENABLED', 'true').lower() == 'true'
 
+        self.LLM_URL   = os.getenv('LLM_URL',   'http://localhost:11434')
+        self.LLM_MODEL = os.getenv('LLM_MODEL', 'qwen2.5-coder:14b')
+
         self.DATA_FOLDER = self.BASE_DIR + '/data'
         self.FILE_FOLDER = self.BASE_DIR + '/files'
 

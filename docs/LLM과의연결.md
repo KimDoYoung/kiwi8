@@ -214,3 +214,334 @@
   라우터부터 구축해보는 것이 어떨까요? 개발자님이 동의하신다면 관련 상세 설계 및 구현 계획을
   잡아드리겠습니다!
 
+
+
+## 가격
+
+     3개 증권사 현재가 API
+
+     ┌────────────────┬─────────────────┬──────────────────────────────────────────────────┐
+     │     증권사     │ API ID / TR코드 │                       URL                        │
+     ├────────────────┼─────────────────┼──────────────────────────────────────────────────┤
+     │ KIS (한국투자) │ FHKST01010100   │ /uapi/domestic-stock/v1/quotations/inquire-price │
+     ├────────────────┼─────────────────┼──────────────────────────────────────────────────┤
+     │ LS증권         │ t8407           │ /stock/market-data                               │
+     ├────────────────┼─────────────────┼──────────────────────────────────────────────────┤
+     │ 키움           │ ka10001         │ https://api.kiwoom.com/api/dostk/stkinfo         │
+     └────────────────┴─────────────────┴──────────────────────────────────────────────────┘
+
+     상세
+
+     - KIS: FHKST01010100 — "주식현재가 시세". 응답필드 stck_prpr
+       - 파일: backend/domains/stkcompanys/kis/models/requests/kis_req_1.py
+     - LS: t8407 — "API용주식멀티현재가조회". 1회 최대 50종목. 응답필드 price
+       - 파일: backend/domains/stkcompanys/ls/models/requests/market_chart.py
+     - 키움: ka10001 — "주식기본정보요청".
+       - 파일: backend/domains/stkcompanys/kiwoom/models/kiwoom_request_definition.py
+
+     중앙 라우팅
+
+     backend/domains/infrahub/current_pricer.py — CurrentPricer 클래스
+     - get_price1(stk_cd) — 단일종목
+     - get_price_multi(stk_cds) — 멀티종목
+     - 장중(09:00~15:30): LS t8407 우선 (멀티쿼리 효율)
+     - NXT 시간: KIS 강제
+     - 장 마감: 캐시 우선 → KIS fallback
+
+● ┌────────┬───────────────┬───────────────────────────┐
+  │ 증권사 │    API ID     │           비고            │
+  ├────────┼───────────────┼───────────────────────────┤
+  │ KIS    │ FHKST01010100 │ 단일종목, 응답: stck_prpr │
+  ├────────┼───────────────┼───────────────────────────┤
+  │ LS     │ t8407         │ 최대 50종목 멀티쿼리      │
+  ├────────┼───────────────┼───────────────────────────┤
+  │ 키움   │ ka10001       │ 주식기본정보요청          │
+  └────────┴───────────────┴───────────────────────────┘
+
+  current_pricer.py가 3개를 통합 관리 — 장중엔 LS t8407 우선 사용(멀티쿼리 효율).
+
+## LLM과 daemon
+❯ 나는 kiwi8을 linux ubutun core 서버에 docker에 올려서 사용하고 있음.
+  그러나 서버에는 localLLM을 갖고 있지 않음.
+  단 local cachyos linux pc에 qwen2.5-coder:14b localLLM을 갖고 있음.
+  이 local LLM과 kdaemon을 이용해서 어떤 식으로 kiwi8을 upgrade한 성능을 갖도록 할 수 있을까?
+  내 생각에 여러가지 재미있는 기능을 만들 수 있을 것 같은데...
+
+
+
+ Local LLM × kdaemon × kiwi8 업그레이드 아이디어
+
+ 상황 정리
+
+ - kiwi8 서버: Ubuntu Core + Docker (LLM 없음)
+ - CachyOS PC: qwen2.5-coder:14b (Ollama port 11434) + 사용자 로컬
+ - 네트워크 연결: 같은 LAN이거나 SSH 터널 필요
+
+ ---
+ 0. HW 제약 분석 및 연결 아키텍처
+
+ [Ubuntu Server / Docker]              [CachyOS PC]
+    kiwi8 backend                    Browser (React kiwi8)
+    kdaemon / kscheduler         ←→  llmBridge.ts          →  Ollama :11434
+    ai_task DB table                  (이미 서버 인증됨)         qwen2.5-coder
+
+ 서버 → CachyOS Ollama 직접 호출 ❌ 불가 (NAT/방화벽)
+
+ 해결: 브라우저가 중간자
+ - 브라우저는 CachyOS에서 실행 → localhost:11434 Ollama 직접 접근 가능
+ - 브라우저는 kiwi8 서버 API에 이미 인증된 상태로 접근 가능
+ - 별도 데몬 불필요, TS 파일 하나로 해결
+
+ 흐름:
+ kiwi8 서버  →  ai_task 생성 (pending)
+      ↑               ↓
+ 브라우저 llmBridge.ts  ←  폴링 GET /api/v1/ai/tasks/pending
+      ↓
+ localhost:11434/api/chat  (Ollama)
+      ↓
+ 결과 POST /api/v1/ai/tasks/{id}/result
+      ↓
+ 서버 DB  status=done, result 저장
+      ↓
+ kdaemon/scheduler/프론트가 결과 사용
+
+ ---
+ 1. 재미있는 기능 아이디어 (우선순위 순)
+
+ 🥇 A. kdaemon 자연어 룰 생성기
+
+ "삼성전자가 62000원 이하로 떨어지면 10주 매수해줘"
+ → LLM이 kdaemon DB 룰 JSON 자동 생성 → DB 저장 → kdaemon 즉시 적용
+
+ - 사용자: 자연어 입력
+ - 백엔드: kdemon_rules 스키마를 LLM에 주입 → JSON 룰 생성 요청
+ - kdaemon: 실시간 반영
+ - 임팩트: 비개발자도 자동매매 룰 설정 가능
+
+ ---
+ 🥇 B. AI 아침 브리핑 (KScheduler 연동)
+
+ 매일 오전 8:50 스케줄러 잡이:
+ 1. 전날 계좌 잔고 + 수익률 (account_history)
+ 2. 어젯밤 수집된 보유종목 뉴스 (stk_news)
+ 3. 관련 테마 현황 (judal_themes)
+ 4. 오늘 시장 전망
+
+ → LLM이 종합해서 500자 브리핑 텍스트 생성
+ → DB 저장 + 프론트 대시보드에 표시
+
+ 구현: jobs/ai_morning_briefing.py + KScheduler 등록
+
+ ---
+ 🥇 C. LLM 챗 인터페이스 (React 탭)
+
+ 프론트에 "AI 어시스턴트" 탭 추가. 사용자 질문 → 백엔드가 실시간 컨텍스트 조립 → LLM 응답.
+
+ 컨텍스트 조립 예시 ("삼성전자 지금 사도 돼?"):
+ 현재가: 62,300원 (CurrentPricer 호출)
+ 보유현황: 20주, 평단 65,000원, -4.1%
+ 예수금: KIS 500만원
+ 최근 일지: "62,000원에서 물타기 예정"
+ 최근 뉴스: stk_news에서 삼성전자 최근 5건
+ → LLM 응답에 order_recommendation JSON 포함 → 프론트에서 [주문실행] 버튼 팝업
+
+ ---
+ 🥈 D. kdaemon + LLM 하이브리드 판단
+
+ kdaemon이 룰 조건 충족 시 → 즉시 주문 대신 LLM에게 먼저 물어봄 (dry_run 레벨 추가)
+
+ # kdaemon 실행 전 LLM 검증
+ if rule.use_llm_confirm:
+     llm_ok = await ai_service.confirm_trade(rule, current_price, news_context)
+     if not llm_ok:
+         log("LLM이 거부함, 스킵")
+         return
+
+ 설정: 룰에 use_llm_confirm: bool 필드 추가
+ → "뉴스 분위기가 안 좋으면 자동매매 잠깐 멈춰줘" 효과
+
+ ---
+ 🥈 E. Text-to-SQL 자유 조회
+
+ "최근 3개월 동안 수익난 종목만 뽑아줘"
+ "가장 많이 손해 본 거래 5개 알려줘"
+
+ → qwen2.5-coder가 SQLite 스키마 보고 SQL 생성
+ → 백엔드가 실행해서 결과 반환
+ → LLM이 결과를 자연어로 설명
+
+ ---
+ 🥉 F. 매매 일지 AI 요약 (stk_diary 활용)
+
+ 특정 종목의 stk_diary 전체 + 실제 매매 기록(stk_trades_history)을 LLM에 주입
+ → "이 종목으로 나는 왜 손해봤나?" 분석 생성
+
+ ---
+ 🥉 G. 포트폴리오 리밸런싱 제안
+
+ 현재 3개 계좌 보유종목 + 비중 + judal_themes 섹터 정보
+ → LLM: "반도체 비중 62%로 과집중, IT/바이오 추가 검토 권장" 형태 제안
+
+ ---
+ 2. 구현 우선순위 (권장 순서)
+
+ ┌──────┬──────────────────────────────┬────────┬────────┐
+ │ 순서 │             기능             │ 난이도 │ 임팩트 │
+ ├──────┼──────────────────────────────┼────────┼────────┤
+ │ 1    │ Ollama 연결 + AIService 기초 │ 낮음   │ 기반   │
+ ├──────┼──────────────────────────────┼────────┼────────┤
+ │ 2    │ LLM 챗 탭 (C)                │ 중간   │ 높음   │
+ ├──────┼──────────────────────────────┼────────┼────────┤
+ │ 3    │ 아침 브리핑 스케줄러 (B)     │ 중간   │ 높음   │
+ ├──────┼──────────────────────────────┼────────┼────────┤
+ │ 4    │ 자연어 룰 생성기 (A)         │ 중간   │ 높음   │
+ ├──────┼──────────────────────────────┼────────┼────────┤
+ │ 5    │ Text-to-SQL (E)              │ 중간   │ 중간   │
+ ├──────┼──────────────────────────────┼────────┼────────┤
+ │ 6    │ kdaemon LLM 판단 (D)         │ 높음   │ 중간   │
+ └──────┴──────────────────────────────┴────────┴────────┘
+
+ ---
+ 3. 핵심 컴포넌트 설계
+
+ 서버 측: ai_task 테이블 + API
+
+ CREATE TABLE ai_task (
+     id INTEGER PRIMARY KEY,
+     task_type TEXT,        -- 'chat', 'briefing', 'rule_gen', 'trade_confirm'
+     prompt_system TEXT,
+     prompt_user TEXT,
+     status TEXT DEFAULT 'pending',  -- pending / processing / done / error
+     result TEXT,
+     created_at TEXT,
+     completed_at TEXT
+ );
+
+ # backend/api/v1/endpoints/ai_routes.py
+ GET  /api/v1/ai/tasks/pending    # CachyOS 데몬이 폴링
+ POST /api/v1/ai/tasks/{id}/result  # CachyOS 데몬이 결과 제출
+ POST /api/v1/ai/chat             # 프론트에서 채팅 요청 → task 생성
+ GET  /api/v1/ai/tasks/{id}       # 결과 조회 (polling or SSE)
+
+ CachyOS 측: llmBridge.ts (브라우저에서 실행)
+
+ // src/services/llmBridge.ts
+ const OLLAMA_URL = 'http://localhost:11434/api/chat'
+ const MODEL = 'qwen2.5-coder:14b'
+
+ export async function callOllama(system: string, user: string): Promise<string> {
+   const res = await fetch(OLLAMA_URL, {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({
+       model: MODEL,
+       messages: [
+         { role: 'system', content: system },
+         { role: 'user', content: user },
+       ],
+       stream: false,
+     }),
+   })
+   const data = await res.json()
+   return data.message.content
+ }
+
+ // React 앱 초기화 시 폴링 시작 (zustand action or useEffect in App.tsx)
+ export function startLlmBridge(intervalMs = 3000) {
+   setInterval(async () => {
+     const { data: tasks } = await api.get('/api/v1/ai/tasks/pending')
+     for (const task of tasks) {
+       try {
+         const result = await callOllama(task.prompt_system, task.prompt_user)
+         await api.post(`/api/v1/ai/tasks/${task.id}/result`, { result })
+       } catch (e) {
+         await api.post(`/api/v1/ai/tasks/${task.id}/result`, { error: String(e) })
+       }
+     }
+   }, intervalMs)
+ }
+
+ Ollama CORS 설정 필요 (CachyOS에서):
+ OLLAMA_ORIGINS="http://localhost:5173,http://<server-ip>:5173" ollama serve
+
+ kdaemon과의 연결
+
+ kdaemon 룰 트리거 시 use_llm_confirm=True인 경우:
+ 1. kdaemon → ai_task 생성 (task_type='trade_confirm')
+ 2. 최대 30초 대기 (CachyOS 응답 기다림)
+ 3. result가 "YES"면 주문 실행, "NO"면 스킵
+ 4. 30초 내 응답 없으면 기본 정책 적용 (실행 or 스킵)
+
+ ---
+ 검증
+
+ 1. ai_task DB 테이블 생성 확인
+ 2. /api/v1/ai/tasks/pending 엔드포인트 Swagger 테스트
+ 3. CachyOS에서 ai_poller.py 실행, pending task 처리 확인
+ 4. 프론트 챗 탭에서 질문 → 결과 polling 확인
+
+
+
+---
+## 설계 
+1. KDaemon, LlmAgent, LLM(현재 qwen2.5) 3개가 있음
+   - KDaemon -> python fastapi 에 떠 있는 daemon
+   - LlmAgent -> typescript 브라우저에서 실행됨.
+   - LLM -> ollama에서 돌고 있음
+2. LlmAgent(이하 agent)는 LLM과 연결되어서 통신함
+3. LlmAgent는 restapi를 통해서 KDaemon과 통신함.
+4. 각각의 기능
+    - KDaemon  
+        1. 장 중에 price 모니터링
+        2. rule에 따른 동작 
+        3. 매수/매도 수행
+    - Agent
+        1. LLM과 통신
+        2. ai routes 를 통한 데이터 수집 후 LLM과 통신
+    - LLM
+        1. agent와 통신
+
+- ai_routes.py를 작성 /ai 로 시작하면 어떨까?
+- .env.local -> config에 LLM_URL을 갖고 있게 하고
+- agent가 /ai/llm-url 을 요청하면  서버가 주소를 리턴해준다.
+
+
+
+1. KDaemon, LlmAgent, LLM(현재 qwen2.5) 3개가 있음
+   - KDaemon -> python fastapi 에 떠 있는 daemon
+   - LlmAgent -> typescript 브라우저에서 실행됨.
+   - LLM -> ollama에서 돌고 있음
+2. LlmAgent(이하 agent)는 LLM과 연결되어서 통신함
+3. LlmAgent는 restapi를 통해서 KDaemon과 통신함.
+4. 각각의 기능
+    - KDaemon  
+        1. 장 중에 price 모니터링
+        2. rule에 따른 동작 
+        3. 매수/매도 수행
+    - Agent
+        1. LLM과 통신
+        2. ai routes 를 통한 데이터 수집 후 LLM과 통신
+    - LLM
+        1. agent와 통신
+
+- ai_routes.py를 작성 /ai 로 시작하면 어떨까?
+- .env.local -> config에 LLM_URL을 갖고 있게 하고
+- agent가 /ai/llm-url 을 요청하면  서버가 주소를 리턴해준다.
+
+
+
+● Ollama 시스템 서비스. OLLAMA_ORIGINS override 파일 생성 필요. sudo 권한으로 실행해야 함.
+
+  다음 명령어를 터미널에서 실행:
+
+  sudo mkdir -p /etc/systemd/system/ollama.service.d
+  sudo tee /etc/systemd/system/ollama.service.d/override.conf << 'EOF'
+  [Service]
+  Environment="OLLAMA_ORIGINS=*"
+  EOF
+  sudo systemctl daemon-reload
+  sudo systemctl restart ollama
+
+  재시작 후 브라우저에서 다시 시도. OLLAMA_ORIGINS=* 설정하면 모든 origin 허용 — 로컬 사용이므로 OK.
+
+
