@@ -20,6 +20,22 @@ import { getMarketStatus, sendOrder } from '@/services/stockService'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, AlertCircle, CheckCircle2, XIcon } from 'lucide-react'
 
+function extractOrderNo(broker: string, data: unknown): string {
+  if (!data || typeof data !== 'object') return '-'
+  const d = data as Record<string, unknown>
+  if (broker === 'kiwoom') return String(d['주문번호'] ?? '-')
+  if (broker === 'kis') {
+    const out = d['output']
+    const item = Array.isArray(out) ? out[0] : out
+    return item ? String((item as Record<string, unknown>)['ODNO'] ?? '-') : '-'
+  }
+  if (broker === 'ls') {
+    const b2 = d['CSPAT00601OutBlock2'] as Record<string, unknown> | undefined
+    return String(b2?.['주문번호'] ?? '-')
+  }
+  return '-'
+}
+
 const orderSchema = z.object({
   market: z.enum(['KRX', 'NXT']),
   pdno: z.string().min(1, '종목번호를 입력해주세요'),
@@ -79,9 +95,9 @@ export default function OrderModal() {
     }
   }, [isOrderModalOpen, orderInitialData, form, marketStatus])
 
-  const showMessage = (text: string, type: 'info' | 'error' | 'success') => {
+  const showMessage = (text: string, type: 'info' | 'error' | 'success', autoDismiss = true) => {
     setMessage({ text, type })
-    if (type !== 'error') {
+    if (autoDismiss && type !== 'error') {
       setTimeout(() => setMessage(null), 3000)
     }
   }
@@ -135,8 +151,11 @@ export default function OrderModal() {
         payload
       })
 
-      if (res.success) {
-        showMessage(`${type === 'buy' ? '매수' : '매도'} 주문 접수됨. 체결 시 알림이 표시됩니다.`, 'success')
+      const isLsCompletion = !res.success && broker === 'ls' && res.error_message?.includes('완료되었습니다')
+      if (res.success || isLsCompletion) {
+        const ordNo = extractOrderNo(broker, res.data)
+        const label = type === 'buy' ? '매수' : '매도'
+        showMessage(`${label} 접수 완료 | 주문번호: ${ordNo}`, 'success', false)
         setHasOrdered(true)
         setConfirmed(false)
       } else {
@@ -252,7 +271,7 @@ export default function OrderModal() {
                 </div>
               </div>
 
-              {/* 확인 체크박스 */}
+              {/* 확인 체크박스 + 시장가 버튼 */}
               <div className="flex items-center gap-2 pt-1">
                 <input
                   id="confirmed"
@@ -264,6 +283,13 @@ export default function OrderModal() {
                 <label htmlFor="confirmed" className="text-sm text-slate-700 cursor-pointer select-none">
                   수량 및 가격 확인 함
                 </label>
+                <button
+                  type="button"
+                  onClick={() => form.setValue('price', 0)}
+                  className="ml-auto text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600"
+                >
+                  시장가
+                </button>
               </div>
 
               {/* 메시지 영역 */}
