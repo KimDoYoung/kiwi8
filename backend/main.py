@@ -11,9 +11,9 @@ import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
+from backend.api.v1.endpoints.ai_routes import router as ai_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
-from backend.api.v1.endpoints.ai_routes import router as ai_router
 from backend.api.v1.endpoints.kdemon_routes import router as kdemon_router
 from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
 from backend.api.v1.endpoints.market_routes import router as market_router

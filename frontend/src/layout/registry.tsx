@@ -5,7 +5,6 @@ import AccountSummaryPage from '@/pages/accounts/AccountSummaryPage'
 import TotalBalancePage from '@/pages/accounts/TotalBalancePage'
 import ProfitTrendPage from '@/pages/accounts/ProfitTrendPage'
 import ExecutionHistoryPage from '@/pages/accounts/ExecutionHistoryPage'
-import OrderListPage from '@/pages/accounts/OrderListPage'
 import KiwoomAccountPage from '@/pages/brokers/KiwoomAccountPage'
 import KisAccountPage from '@/pages/brokers/KisAccountPage'
 import LsAccountPage from '@/pages/brokers/LsAccountPage'
@@ -32,7 +31,6 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '1102': TotalBalancePage,
   '1103': ProfitTrendPage,
   '1104': ExecutionHistoryPage,
-  '1105': OrderListPage,
   // [1200 시장 분석]
   '1201': StockDetailPage,
   '1202': StockEvaluationPage,

@@ -23,7 +23,7 @@ class KiwoomWsClient:
         try:
             await asyncio.wait_for(self._login_event.wait(), timeout=timeout)
             return True
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error('[Kiwoom WS] 로그인 대기 타임아웃')
             return False
 
