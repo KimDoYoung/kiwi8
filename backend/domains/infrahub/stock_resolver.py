@@ -98,6 +98,31 @@ class StockResolver:
         await self._save_nxt_to_cache(stk_cd, nxt_yn)
         return nxt_yn == "Y"
 
+    async def get_stk_nm(self, stk_cd: str) -> str:
+        """종목명 조회
+
+        조회 순서:
+            1. stk_info 테이블 (stk_nm)
+            2. judal_themes 테이블 (stock_name)
+            3. KIS CTPF1604R API (prdt_abrv_name) → stk_info 저장
+
+        Returns:
+            종목명. 못 찾으면 빈 문자열.
+        """
+        nm = self._get_nm_from_stk_info(stk_cd)
+        if nm:
+            return nm
+
+        nm = self._get_nm_from_judal_themes(stk_cd)
+        if nm:
+            self._save_nm_to_stk_info(stk_cd, nm)
+            return nm
+
+        nm = await self._fetch_nm_from_kis(stk_cd)
+        if nm:
+            self._save_nm_to_stk_info(stk_cd, nm)
+        return nm
+
     # ------------------------------------------------------------------
     # 내부: 캐시 조회/저장 (stk_cache 직접 쿼리 — 24h 만료)
     # ------------------------------------------------------------------
@@ -194,3 +219,65 @@ class StockResolver:
         except Exception as e:
             logger.error(f"[StockResolver] ka10100 예외 {stk_cd}: {e}")
             return "N"
+
+    # ------------------------------------------------------------------
+    # 내부: 종목명 조회 헬퍼
+    # ------------------------------------------------------------------
+
+    def _get_nm_from_stk_info(self, stk_cd: str) -> str:
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                row = conn.execute(
+                    "SELECT stk_nm FROM stk_info WHERE stk_cd = ? AND stk_nm IS NOT NULL AND stk_nm != ''",
+                    (stk_cd,),
+                ).fetchone()
+            return row[0] if row else ""
+        except Exception as e:
+            logger.debug(f"[StockResolver] stk_nm stk_info 조회 실패 {stk_cd}: {e}")
+            return ""
+
+    def _get_nm_from_judal_themes(self, stk_cd: str) -> str:
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                row = conn.execute(
+                    "SELECT stock_name FROM judal_themes WHERE stock_code = ? AND stock_name IS NOT NULL LIMIT 1",
+                    (stk_cd,),
+                ).fetchone()
+            return row[0] if row else ""
+        except Exception as e:
+            logger.debug(f"[StockResolver] stk_nm judal_themes 조회 실패 {stk_cd}: {e}")
+            return ""
+
+    async def _fetch_nm_from_kis(self, stk_cd: str) -> str:
+        try:
+            from backend.domains.stkcompanys.kis.kis_service import get_kis_api
+            from backend.domains.stkcompanys.kis.models.kis_schema import KisRequest
+
+            kis = await get_kis_api()
+            response = await kis.send_request(
+                KisRequest(api_id="CTPF1604R", payload={"PDNO": stk_cd, "PRDT_TYPE_CD": "300"})
+            )
+            if response.success and response.data:
+                output = response.data.get("output", {})
+                return output.get("prdt_abrv_name", "") if isinstance(output, dict) else ""
+            logger.warning(f"[StockResolver] CTPF1604R 응답 실패: {stk_cd}")
+            return ""
+        except Exception as e:
+            logger.error(f"[StockResolver] CTPF1604R 예외 {stk_cd}: {e}")
+            return ""
+
+    def _save_nm_to_stk_info(self, stk_cd: str, stk_nm: str) -> None:
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                conn.execute(
+                    "INSERT OR IGNORE INTO stk_info (stk_cd, stk_nm) VALUES (?, ?)",
+                    (stk_cd, stk_nm),
+                )
+                conn.execute(
+                    "UPDATE stk_info SET stk_nm = ? WHERE stk_cd = ?",
+                    (stk_nm, stk_cd),
+                )
+                conn.commit()
+            logger.info(f"[StockResolver] stk_nm 저장 stk_cd={stk_cd} stk_nm={stk_nm}")
+        except Exception as e:
+            logger.debug(f"[StockResolver] stk_nm 저장 실패 {stk_cd}: {e}")
