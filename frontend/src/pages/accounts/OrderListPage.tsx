@@ -274,6 +274,12 @@ export default function OrderListPage() {
     <div className="flex flex-col h-full overflow-hidden bg-gray-50">
       {/* 헤더 */}
       <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center gap-3 shrink-0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0">
+          <rect x="3" y="4" width="14" height="16" rx="2" stroke="#6366f1" strokeWidth="1.8" fill="#eef2ff"/>
+          <path d="M7 8h6M7 12h6M7 16h3" stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round"/>
+          <circle cx="19" cy="17" r="4" fill="#f97316"/>
+          <path d="M19 15v2.5M19 17.5l1.2 1.2" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
+        </svg>
         <span className="text-sm font-bold text-gray-700">전 증권사 주문내역</span>
         <span className="text-xs text-gray-400 font-mono">[1105]</span>
         <Button

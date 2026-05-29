@@ -127,6 +127,10 @@ export default function ExecutionHistoryPage() {
     <div className="flex flex-col h-full overflow-hidden bg-gray-50">
       {/* 헤더 */}
       <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center gap-3 shrink-0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0">
+          <path d="M4 13l5 5L20 7" stroke="#16a34a" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M4 13l5 5L20 7" stroke="#16a34a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.3"/>
+        </svg>
         <span className="text-sm font-bold text-gray-700">전 증권사 체결내역</span>
         <span className="text-xs text-gray-400 font-mono">[1104]</span>
 
