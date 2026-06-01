@@ -303,7 +303,7 @@ export default function ExecutionHistoryPage() {
   const tradeColDefs = useMemo<ColDef<TradeRow>[]>(() => [
     { field: 'ccnl_time',   headerName: '체결시간', width: 90,  cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'ymd',         headerName: '일자',     width: 110, cellRenderer: YmdCell },
-    { field: 'broker',      headerName: '증권사',   width: 80  },
+    { field: 'broker',      headerName: '증권사',   width: 90  },
     {
       field: 'stk_cd', headerName: '종목코드', width: 85,
       cellRenderer: ({ value }: { value: string }) => (
@@ -323,7 +323,7 @@ export default function ExecutionHistoryPage() {
         >{value}</span>
       ),
     },
-    { field: 'sell_buy',   headerName: '구분',     width: 60,  cellRenderer: SideCellTrade },
+    { field: 'sell_buy',   headerName: '구분',     width: 70,  cellRenderer: SideCellTrade },
     { field: 'ccnl_qty',   headerName: '체결수량', width: 85,  type: 'numericColumn', cellRenderer: AmountCell },
     { field: 'ccnl_price', headerName: '체결가',   width: 90,  type: 'numericColumn', cellRenderer: AmountCell },
     {
@@ -335,8 +335,8 @@ export default function ExecutionHistoryPage() {
       },
       cellRenderer: AmountCell,
     },
-    { field: 'order_qty',   headerName: '주문수량', width: 78,  type: 'numericColumn', cellRenderer: AmountCell },
-    { field: 'order_price', headerName: '주문가',   width: 88,  type: 'numericColumn', cellRenderer: AmountCell },
+    { field: 'order_qty',   headerName: '주문수량', width: 90,  type: 'numericColumn', cellRenderer: AmountCell },
+    { field: 'order_price', headerName: '주문가',   width: 100,  type: 'numericColumn', cellRenderer: AmountCell },
     { field: 'order_no',   headerName: '주문번호', width: 95,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'acct_no',    headerName: '계좌번호', width: 115, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'note',       headerName: '메모',     width: 110 },
