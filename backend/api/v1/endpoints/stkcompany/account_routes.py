@@ -271,7 +271,10 @@ async def kis_account_list():
         if response.success and response.data:
             korea_data = KisApiHelper.to_korea_data(response.data, 'TTTC8434R')
             response.data = korea_data
-            await _insert_prev_costs_kis(response.data.get('output1', []))
+            output1 = response.data.get('output1', [])
+            output1 = [r for r in output1 if int(r.get('보유수량', 0)) > 0]
+            response.data['output1'] = output1
+            await _insert_prev_costs_kis(output1)
             logger.info('[계좌현황] KIS 계좌현황 조회 성공')
         return response
 
