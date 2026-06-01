@@ -478,3 +478,4 @@ unsubscribe(tr_id, stock_code)  # TR Type: "2"
 - **형식**: 10자리 (8자리 계좌 + 2자리 상품코드)
 - **CANO**: `ACCTNO[0:8]` (앞 8자리)
 - **ACNT_PRDT_CD**: `ACCTNO[8:10]` (뒤 2자리)
+
