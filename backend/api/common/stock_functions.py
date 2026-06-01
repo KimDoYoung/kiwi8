@@ -11,6 +11,7 @@ from backend.api.common.validators import validate_market_type
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.infrahub.cache_keys import CacheKey
+from backend.domains.kscheduler.k_scheduler import job_registry
 from backend.domains.models.stk_info_model import (
     StkInfoBulkCreate,
     StkInfoCreate,
@@ -129,6 +130,12 @@ def _kind_stk_info_fill_sync():
 
 async def kind_stk_info_fill():
     """KIND stk_info 채우기 (비동기 래퍼)"""
+    await asyncio.to_thread(_kind_stk_info_fill_sync)
+
+
+@job_registry.register("fill_kind_stk_info")
+async def fill_kind_stk_info_job(_payload: dict):
+    """매일 03:00 KIND Excel 다운로드 → kind_stk_info + stk_info 갱신."""
     await asyncio.to_thread(_kind_stk_info_fill_sync)
 
 async def stk_info_fill(force:bool=False):

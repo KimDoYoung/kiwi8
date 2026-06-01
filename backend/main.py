@@ -10,6 +10,7 @@ import backend.domains.market.market_service  # noqa: F401 — job_registry 등�
 import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
+import backend.api.common.stock_functions  # noqa: F401 — fill_kind_stk_info job 등록
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.ai_routes import router as ai_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
@@ -196,6 +197,16 @@ async def startup_event():
             schedule_expr="50 23 * * *",
             enabled=True,
             timeout_sec=120,
+            overlap_policy="skip",
+        ))
+
+        scheduler.upsert_job(Job(
+            name="fill_kind_stk_info",
+            func_name="fill_kind_stk_info",
+            schedule_type="cron",
+            schedule_expr="0 3 * * *",
+            enabled=True,
+            timeout_sec=300,
             overlap_policy="skip",
         ))
 
