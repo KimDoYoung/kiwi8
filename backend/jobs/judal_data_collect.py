@@ -28,9 +28,12 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from datetime import datetime
+
 from backend.core.config import config
 from backend.core.logger import get_logger
 from backend.domains.kscheduler.k_scheduler import job_registry
+from backend.domains.services.settings_keys import SettingsKey
 
 logger = get_logger(__name__)
 
@@ -376,10 +379,22 @@ def collect_judal() -> int:
     try:
         count = _save_to_db(all_rows)
         logger.info(f"[judal] DB 적재 완료: {count}행")
+        _save_scrap_time()
         return count
     except Exception as e:
         logger.error(f"[judal] DB 적재 실패: {e}")
         raise
+
+
+def _save_scrap_time():
+    """스크래핑 완료 시각을 settings 테이블에 저장."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with sqlite3.connect(config.DB_PATH) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (name, value) VALUES (?, ?)",
+            (SettingsKey.LAST_SCRAP_JUDAL.value, now),
+        )
+        conn.commit()
 
 
 # ==============================================================

@@ -5,6 +5,9 @@ import type { ColDef } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import api from '@/lib/api'
 import { formatDate, formatYmd, fmt } from '@/lib/utils'
+import { fetchMenuTree } from '@/services/menuService'
+import { useStockDetailStore } from '@/store/stockDetailStore'
+import { useLayoutStore } from '@/store/layoutStore'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -213,6 +216,14 @@ export default function ExecutionHistoryPage() {
   const [broker, setBroker] = useState<BrokerFilter>('전체')
   const [ymd, setYmd] = useState(() => formatYmd(new Date()))
   const queryClient = useQueryClient()
+  const setStock = useStockDetailStore((s) => s.setStock)
+  const openByScreenNo = useLayoutStore((s) => s.openByScreenNo)
+
+  const { data: menus } = useQuery({
+    queryKey: ['menus'],
+    queryFn: fetchMenuTree,
+    staleTime: 1000 * 60 * 10,
+  })
 
   // 체결내역
   const { data: tradeRows = [], isLoading: tradeLoading, refetch: refetchTrades } = useQuery({
@@ -242,20 +253,37 @@ export default function ExecutionHistoryPage() {
   // 컬럼 정의 - 미체결
   const orderColDefs = useMemo<ColDef<OrderRow>[]>(() => [
     { field: 'broker',   headerName: '증권사',   width: 80,  cellRenderer: BrokerCell },
-    { field: 'side',     headerName: '구분',     width: 60,  cellRenderer: SideCellOrder },
-    { field: 'stkCd',   headerName: '종목코드', width: 85,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
-    { field: 'stkNm',   headerName: '종목명',   width: 110 },
+    { field: 'side',     headerName: '구분',     width: 70,  cellRenderer: SideCellOrder },
+    {
+      field: 'stkCd', headerName: '종목코드', width: 85,
+      cellRenderer: ({ value }: { value: string }) => (
+        <span
+          className="font-mono text-gray-500 cursor-pointer hover:text-green-600 hover:underline"
+          style={{ fontSize: '11px' }}
+          onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${value}`, '_blank')}
+        >{value}</span>
+      ),
+    },
+    {
+      field: 'stkNm', headerName: '종목명', width: 110,
+      cellRenderer: ({ value, data }: { value: string; data: OrderRow }) => (
+        <span
+          className="text-blue-600 cursor-pointer hover:underline"
+          onClick={() => { setStock(data.stkCd, value); openByScreenNo('1201', menus || []) }}
+        >{value}</span>
+      ),
+    },
     { field: 'ordNo',   headerName: '주문번호', width: 90,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
-    { field: 'ordQty',  headerName: '주문수량', width: 80,  type: 'numericColumn', cellRenderer: AmtCell },
+    { field: 'ordQty',  headerName: '주문수량', width: 90,  type: 'numericColumn', cellRenderer: AmtCell },
     { field: 'ordPrice',headerName: '주문가',   width: 90,  type: 'numericColumn', cellRenderer: AmtCell },
-    { field: 'ccnlQty', headerName: '체결수량', width: 80,  type: 'numericColumn', cellRenderer: AmtCell },
-    { field: 'remnQty', headerName: '미체결잔량', width: 90, type: 'numericColumn',
+    { field: 'ccnlQty', headerName: '체결수량', width: 90,  type: 'numericColumn', cellRenderer: AmtCell },
+    { field: 'remnQty', headerName: '미체결잔량', width: 100, type: 'numericColumn',
       cellRenderer: (p: { value: number }) => (
         <span className={p.value > 0 ? 'text-orange-600 font-bold' : ''}>{fmt(p.value)}</span>
       ),
     },
     {
-      headerName: '취소', width: 58,
+      headerName: '취소', width: 65,
       cellRenderer: (p: { data: OrderRow }) => (
         <button
           disabled={cancelMut.isPending}
@@ -269,15 +297,32 @@ export default function ExecutionHistoryPage() {
         </button>
       ),
     },
-  ], [cancelMut])
+  ], [cancelMut, setStock, openByScreenNo, menus])
 
   // 컬럼 정의 - 체결내역
   const tradeColDefs = useMemo<ColDef<TradeRow>[]>(() => [
     { field: 'ccnl_time',   headerName: '체결시간', width: 90,  cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'ymd',         headerName: '일자',     width: 110, cellRenderer: YmdCell },
     { field: 'broker',      headerName: '증권사',   width: 80  },
-    { field: 'stk_cd',     headerName: '종목코드', width: 85,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
-    { field: 'stk_nm',     headerName: '종목명',   width: 120 },
+    {
+      field: 'stk_cd', headerName: '종목코드', width: 85,
+      cellRenderer: ({ value }: { value: string }) => (
+        <span
+          className="font-mono text-gray-500 cursor-pointer hover:text-green-600 hover:underline"
+          style={{ fontSize: '11px' }}
+          onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${value}`, '_blank')}
+        >{value}</span>
+      ),
+    },
+    {
+      field: 'stk_nm', headerName: '종목명', width: 120,
+      cellRenderer: ({ value, data }: { value: string; data: TradeRow }) => (
+        <span
+          className="text-blue-600 cursor-pointer hover:underline"
+          onClick={() => { setStock(data.stk_cd, value); openByScreenNo('1201', menus || []) }}
+        >{value}</span>
+      ),
+    },
     { field: 'sell_buy',   headerName: '구분',     width: 60,  cellRenderer: SideCellTrade },
     { field: 'ccnl_qty',   headerName: '체결수량', width: 85,  type: 'numericColumn', cellRenderer: AmountCell },
     { field: 'ccnl_price', headerName: '체결가',   width: 90,  type: 'numericColumn', cellRenderer: AmountCell },
@@ -295,7 +340,7 @@ export default function ExecutionHistoryPage() {
     { field: 'order_no',   headerName: '주문번호', width: 95,  cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'acct_no',    headerName: '계좌번호', width: 115, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
     { field: 'note',       headerName: '메모',     width: 110 },
-  ], [])
+  ], [setStock, openByScreenNo, menus])
 
   const totalAmt = tradeRows.reduce((s, r) => s + (r.ccnl_qty ?? 0) * (r.ccnl_price ?? 0), 0)
   const tradeBuy = tradeRows.filter((r) => isBuy(r.sell_buy)).length

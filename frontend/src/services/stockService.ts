@@ -126,6 +126,11 @@ export const fetchThemeNames = async (): Promise<{ name: string }[]> => {
   return response.data.data
 }
 
+export const fetchThemeScrapInfo = async (): Promise<{ last_scrap_judal: string | null }> => {
+  const response = await api.get('/api/v1/stock/theme/scrap-info')
+  return response.data
+}
+
 export interface StkInfoItem {
   stk_cd: string
   stk_nm: string | null

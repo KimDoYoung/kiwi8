@@ -8,6 +8,7 @@ from backend.core.logger import get_logger
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.models.judal_theme_model import JudalThemeFilter, JudalThemeResponse
 from backend.domains.services import get_service
+from backend.domains.services.settings_keys import SettingsKey
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import KisApiHelper, KisRequest, KisResponse
 from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
@@ -87,6 +88,21 @@ async def get_theme_names():
     except Exception as e:
         logger.error(f"Error fetching theme names: {e}")
         return JudalThemeResponse(success=False, data=[], message=str(e))
+
+
+@router.get("/theme/scrap-info")
+async def get_theme_scrap_info():
+    """judal 최종 스크래핑 시각 조회."""
+    try:
+        with sqlite3.connect(config.DB_PATH) as conn:
+            row = conn.execute(
+                "SELECT value FROM settings WHERE name = ?",
+                (SettingsKey.LAST_SCRAP_JUDAL.value,)
+            ).fetchone()
+        return {"success": True, "last_scrap_judal": row[0] if row else None}
+    except Exception as e:
+        logger.error(f"Error fetching scrap info: {e}")
+        return {"success": False, "last_scrap_judal": None}
 
 @router.get("/chart/candle", response_model=KisResponse)
 async def get_candle_chart(

@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS my_stock (
              CHECK (is_hold IN (0,1)),
   is_watch   INTEGER NOT NULL DEFAULT 0                      -- 관심여부 (0/1)
              CHECK (is_watch IN (0,1)),
+  is_auto_trade INTEGER NOT NULL DEFAULT 0                      -- 자동매매여부 (0/1)
+             CHECK (is_auto_trade IN (0,1)),             
   base_price  INTEGER NULL,                                   -- 기준가(증가시 update)
   sell_rate    REAL    NULL,                                   -- 매도가격 결정을 위한 비율
   sell_price   INTEGER NULL,                                   -- 매도목표가

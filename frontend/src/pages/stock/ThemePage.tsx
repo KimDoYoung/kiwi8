@@ -9,7 +9,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverTrigger, PopoverContent } from '@/shared/components/ui/popover'
-import { fetchThemes, fetchThemeNames, type JudalTheme, type ThemeParams } from '@/services/stockService'
+import { fetchThemes, fetchThemeNames, fetchThemeScrapInfo, type JudalTheme, type ThemeParams } from '@/services/stockService'
 import { fetchMenuTree } from '@/services/menuService'
 import { fmt, numComparator } from '@/lib/utils'
 import Loading from '@/shared/components/Loading'
@@ -130,6 +130,12 @@ export default function ThemePage() {
     const k = themeFilter.toLowerCase()
     return themeNames.filter(t => t.name.toLowerCase().includes(k))
   }, [themeNames, themeFilter])
+
+  const { data: scrapInfo } = useQuery({
+    queryKey: ['themeScrapInfo'],
+    queryFn: fetchThemeScrapInfo,
+    staleTime: 1000 * 60 * 10,
+  })
 
   // 테마 데이터 조회 (그리드용)
   const { data, isLoading, isFetching, error, refetch } = useQuery({
@@ -415,6 +421,12 @@ export default function ThemePage() {
             초기화
           </Button>
         </div>
+
+        {scrapInfo?.last_scrap_judal && (
+          <span className="ml-auto text-[11px] text-gray-400 whitespace-nowrap shrink-0">
+            최종 스크래핑시각 : {scrapInfo.last_scrap_judal}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
