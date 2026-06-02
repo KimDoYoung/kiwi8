@@ -98,7 +98,7 @@ class KDemon:
 
     # ---------- Kiwoom helpers ----------
     async def _ensure_token(self):
-        await self._api.refresh_token()
+        await self.token_manager.refresh_token()
 
     async def _get_current_price(self, symbol: str) -> float | None:
         """종목 현재가 조회. 실제 API id는 프로젝트에 맞춰 교체."""
@@ -115,13 +115,13 @@ class KDemon:
             price = float(resp["output"]["현재가"])
             return price
         except Exception as e:
-            logger.error(f"[kdemon] 현재가 조회 실패 {symbol}: {e}")
+            logger.error(f"kdaemon: 현재가 조회 실패 {symbol}: {e}")
             return None
 
     async def _place_order(self, rule: Rule, price: float):
         """주문 실행. 실제 API/필드명은 환경에 맞게 교체."""
         if self.dry_run:
-            logger.info(f"[kdemon] (DRY-RUN) {rule.action.upper()} {rule.qty} @ {price} / {rule.stk_cd} (rule:{rule.id})")
+            logger.info(f"kdaemon: (DRY-RUN) {rule.action.upper()} {rule.qty} @ {price} / {rule.stk_cd} (rule:{rule.id})")
             return
 
         api_id = "ka20001"  # 예: 현금 매수/매도 API ID로 교체
@@ -139,9 +139,9 @@ class KDemon:
         }
         try:
             resp = await self._api.send_request(req)
-            logger.info(f"[kdemon] 주문 성공 rule={rule.id}, resp={resp}")
+            logger.info(f"kdaemon: 주문 성공 rule={rule.id}, resp={resp}")
         except Exception as e:
-            logger.error(f"[kdemon] 주문 실패 rule={rule.id}: {e}")
+            logger.error(f"kdaemon: 주문 실패 rule={rule.id}: {e}")
 
     # ---------- rule evaluation ----------
     def _in_valid_window(self, rule: Rule) -> bool:
@@ -171,75 +171,76 @@ class KDemon:
             return lp is not None and lp < th and price >= th
         if op == "cross_down":
             return lp is not None and lp > th and price <= th
-        logger.warning(f"[kdemon] unknown condition_op: {op}")
+        logger.warning(f"kdaemon: unknown condition_op: {op}")
         return False
 
     # ---------- control ----------
     async def start(self):
         if self._task and not self._task.done():
-            logger.info("[kdemon] already running")
+            logger.info("kdaemon: already running")
             return
         self._stop_event.clear()
         await self._ensure_token()
         self._rules = self._fetch_rules()
         self._set_state("running")
         self._task = asyncio.create_task(self._run())
-        logger.info("[kdemon] started")
+        logger.info("kdaemon: started")
+        await self._broadcast_state('START', '데몬 시작')
 
     async def stop(self):
         if not self._task:
-            logger.info("[kdemon] not running")
+            logger.info("kdaemon: not running")
             self._set_state("stopped")
             return
         self._stop_event.set()
         await self._task
         self._task = None
         self._set_state("stopped")
-        logger.info("[kdemon] stopped")
+        logger.info("kdaemon: stopped")
+        await self._broadcast_state('STOP', '데몬 정지')
 
     async def refresh(self):
         self._refresh_event.set()
-        logger.info("[kdemon] refresh requested")
+        logger.info("kdaemon: refresh requested")
+
+    async def _broadcast_state(self, action: str, memo: str):
+        try:
+            from datetime import datetime
+            from backend.domains.infrahub.ws_manager import ws_manager
+            clients = len(ws_manager._browser_clients)
+            logger.info(f"kdaemon: broadcast {action} → {clients}개 클라이언트")
+            await ws_manager.broadcast({
+                'broker': 'kdaemon',
+                'type': 'kdaemon_event',
+                'data': {
+                    'action': action,
+                    'dt': datetime.now().strftime('%H:%M:%S'),
+                    'memo': memo,
+                },
+            })
+        except Exception as e:
+            logger.warning(f"kdaemon: broadcast 실패: {e}")
 
     async def _run(self):
+        from backend.domains.kdemon.auto_trader import load_auto_trade_settings, run_auto_trade_cycle
         try:
             while not self._stop_event.is_set():
-                # refresh?
                 if self._refresh_event.is_set():
-                    self._rules = self._fetch_rules()
                     self._refresh_event.clear()
-                    logger.info(f"[kdemon] rules reloaded: {len(self._rules)}")
+                    logger.info("kdaemon: refresh")
 
-                # evaluate rules
-                for rule in list(self._rules):
-                    if self._stop_event.is_set():
-                        break
-                    if rule.status != "active":
-                        continue
-                    if not self._in_valid_window(rule):
-                        continue
-                    if not self._cooldown_ok(rule):
-                        continue
-
-                    price = await self._get_current_price(rule.stk_cd)
-                    if price is None:
-                        continue
-
-                    triggered = self._should_trigger(rule, price)
-                    if triggered:
-                        await self._place_order(rule, price)
-                        self._update_rule_after_tick(rule, price, True)
-                        # 바로 상태 반영
-                        rule.last_price = price
-                        rule.last_triggered_at = now_ymdhms()
-                    else:
-                        self._update_rule_after_tick(rule, price, False)
-                        rule.last_price = price
-
+                settings = load_auto_trade_settings(self._conn)
+                await run_auto_trade_cycle(
+                    conn=self._conn,
+                    max_positions=settings['max_positions'],
+                    stop_rate=settings['stop_rate'],
+                    condition_seq=settings['condition_seq'],
+                    dry_run=self.dry_run,
+                )
                 await asyncio.sleep(self.poll_interval_sec)
         except asyncio.CancelledError:
-            logger.info("[kdemon] task cancelled")
+            logger.info("kdaemon: task cancelled")
         except Exception as e:
-            logger.exception(f"[kdemon] fatal error: {e}")
+            logger.exception(f"kdaemon: fatal error: {e}")
         finally:
             self._set_state("stopped")

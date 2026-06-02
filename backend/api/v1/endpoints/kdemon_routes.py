@@ -55,3 +55,10 @@ def status():
         "updated_at": row[1] if row else None,
         "active_rules": cur[0] if cur else 0
     }
+
+@router.get("/conditions")
+async def get_conditions():
+    """키움 조건식 목록 조회 (ka10171 WebSocket)"""
+    from backend.domains.kdemon.auto_trader import get_condition_list
+    items = await get_condition_list()
+    return {"ok": True, "data": items}

@@ -37,9 +37,23 @@ export interface JifEvent {
   jstatus: string
 }
 
+export interface KdaemonEvent {
+  action: 'BUY' | 'SELL' | 'FIND' | 'ERROR' | 'START' | 'STOP'
+  dt: string
+  stk_cd?: string
+  stk_nm?: string
+  price?: number
+  qty?: number
+  amount?: number
+  profit?: number
+  profit_rate?: number
+  sell_reason?: string
+  memo?: string
+}
+
 export interface WsMessage {
-  broker: 'kiwoom' | 'kis' | 'ls'
-  type: 'stock_ccnl' | 'order_ccnl' | 'news' | 'market_time'
+  broker: 'kiwoom' | 'kis' | 'ls' | 'kdaemon'
+  type: 'stock_ccnl' | 'order_ccnl' | 'news' | 'market_time' | 'kdaemon_event'
   data: Record<string, unknown>
 }
 
@@ -49,6 +63,7 @@ interface WsState {
   orderEvents: OrderCcnl[]
   newsItems: NewsItem[]
   marketStatus: Record<string, JifEvent>
+  kdaemonEvents: KdaemonEvent[]
   rawLog: { ts: string; text: string }[]
   totalCount: number
   setConnected: (v: boolean) => void
@@ -62,6 +77,7 @@ export const useWsStore = create<WsState>((set) => ({
   orderEvents: [],
   newsItems: [],
   marketStatus: {},
+  kdaemonEvents: [],
   rawLog: [],
   totalCount: 0,
 
@@ -99,6 +115,9 @@ export const useWsStore = create<WsState>((set) => ({
       if (jif.jangubun) {
         set((s) => ({ marketStatus: { ...s.marketStatus, [jif.jangubun]: jif } }))
       }
+    } else if (type === 'kdaemon_event') {
+      const ev = data as unknown as KdaemonEvent
+      set((s) => ({ kdaemonEvents: [ev, ...s.kdaemonEvents].slice(0, 100) }))
     }
   },
 }))

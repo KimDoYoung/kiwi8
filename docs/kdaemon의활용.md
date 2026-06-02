@@ -235,8 +235,7 @@ else if (보유기간 == 5일째 && 장마감직전) {
 - 증권사: 키움증권
 - 종목갯수: 3개
 - 사용가능한 금액 : 키움증권의 사용가능한 총 예수금.
-- 종목관련 table : my_stock (is_auto_trade가 true인 것)
-    - is_auto_trade를 setting하는 ui는 없다. 즉 사용자(사람)는 조정할 수 없다.
+- 종목관련 table : auto_trade_position
 - kdaemon과의 frontend UI 
     - websocket : kdaemon의 동작을 websocket으로 받는다.
     - logger: kdaemon의 동작을 log 파일에 기록한다 이때 'kdaemon:' prefix를 사용, 로그보기에서 걸러서 볼 수 있게 한다.
@@ -253,3 +252,4 @@ else if (보유기간 == 5일째 && 장마감직전) {
             - 기준가에 -5% 이상이 되면 매도한다.
 
 
+시작(START) 했다고 치자.

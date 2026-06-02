@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS kdemon_state (
   status         TEXT NOT NULL,  -- 'stopped' | 'running'
   updated_at     TEXT NOT NULL
 );
+INSERT OR IGNORE INTO kdemon_state (id, status, updated_at) VALUES (1, 'stopped', '20000101000000');
 
 CREATE TABLE IF NOT EXISTS market_jisu (
   id             INTEGER PRIMARY KEY CHECK (id = 1),
@@ -415,6 +416,45 @@ BEGIN
     UPDATE stk_words SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
 END;
 
+-- ============================================================
+-- 자동매매(도박2) 테이블
+-- ============================================================
+
+-- kdaemon 현재 보유 포지션 + trailing stop 상태
+CREATE TABLE IF NOT EXISTS auto_trade_position (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    stk_cd      TEXT UNIQUE NOT NULL,
+    stk_nm      TEXT NOT NULL,
+    buy_price   INTEGER NOT NULL,                   -- 최초 매수가
+    qty         INTEGER NOT NULL,                   -- 보유수량
+    amount      INTEGER NOT NULL,                   -- 투입금액 (buy_price * qty)
+    base_price  INTEGER NOT NULL,                   -- trailing stop 기준가 (상승 시 업데이트)
+    stop_price  INTEGER NOT NULL,                   -- 매도 트리거가 (base_price * (1 - stop_rate))
+    stop_rate   REAL NOT NULL DEFAULT 0.05,         -- 손절/익절 기준 비율 (기본 -5%)
+    bought_at   TEXT DEFAULT (datetime('now','localtime')),
+    updated_at  TEXT DEFAULT (datetime('now','localtime'))
+);
+
+-- kdaemon 매수/매도/종목발견 이력
+CREATE TABLE IF NOT EXISTS auto_trade_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    dt          TEXT DEFAULT (datetime('now','localtime')),
+    action      TEXT NOT NULL,      -- BUY | SELL | FIND | ERROR
+    stk_cd      TEXT,
+    stk_nm      TEXT,
+    price       INTEGER,            -- 체결가
+    qty         INTEGER,
+    amount      INTEGER,            -- price * qty
+    profit      INTEGER,            -- SELL 시만 (손익금액)
+    profit_rate REAL,               -- SELL 시만 (손익율 %)
+    sell_reason TEXT,               -- trailing_stop | stop_loss | manual
+    order_no    TEXT,               -- 주문번호
+    memo        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_auto_trade_log_dt ON auto_trade_log(dt);
+CREATE INDEX IF NOT EXISTS idx_auto_trade_log_stk_cd ON auto_trade_log(stk_cd);
+
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;
 
@@ -493,6 +533,8 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 (32, 3, '8201', 'K-데몬 상태', '/manage/daemon', 1),
 (32, 3, '8202', 'K-스케줄러 설정', '/manage/scheduler', 2);
 
+
 -- [8200 시스템 설정] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (32, 3, '8203', '시스템 설정', '/settings/system', 3);
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (32, 3, '8204', '로그 보기', '/settings/logs', 4);
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (32, 3, '8205', 'LLM과 대화', '/manage/llmtalk', 5);

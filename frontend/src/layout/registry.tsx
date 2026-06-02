@@ -19,6 +19,7 @@ import MyStockPage from '@/pages/stock/MyStockPage'
 import StockNewsPage from '@/pages/stock/StockNewsPage'
 import ThemePage from '@/pages/stock/ThemePage'
 import SchedulerPage from '@/pages/manage/SchedulerPage'
+import DaemonPage from '@/pages/manage/DaemonPage'
 import LlmTalkPage from '@/pages/llm/LlmTalkPage'
 
 // screen_no → React 컴포넌트 매핑
@@ -57,10 +58,11 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '8101': StkDiaryList,
   '8102': StkWordsPage,
   // [8200 시스템 엔진]
-  '8201': LlmTalkPage,
+  '8201': DaemonPage,
   '8202': SchedulerPage,
   '8203': SettingsPage,
   '8204': LogViewPage,
+  '8205': LlmTalkPage,
 }
 
 export default registry
