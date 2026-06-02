@@ -62,3 +62,59 @@ async def get_conditions():
     from backend.domains.kdemon.auto_trader import get_condition_list
     items = await get_condition_list()
     return {"ok": True, "data": items}
+
+
+# ── 매수 전략 CRUD ──────────────────────────────────
+
+class StrategyBody(BaseModel):
+    name: str
+    broker: str = 'kiwoom'
+    condition_seq: str
+    buy_start: str
+    buy_end: str
+    max_positions: int = 3
+    stop_rate: float = 0.05
+    is_active: int = 1
+
+@router.get("/strategies")
+def list_strategies():
+    with _conn() as c:
+        rows = c.execute("SELECT * FROM auto_trade_buy_strategy ORDER BY id").fetchall()
+        cols = [d[0] for d in c.execute("SELECT * FROM auto_trade_buy_strategy LIMIT 0").description or []]
+    if not cols:
+        cols = ['id','name','broker','condition_seq','buy_start','buy_end','max_positions','stop_rate','is_active']
+    return [dict(zip(cols, r)) for r in rows]
+
+@router.post("/strategies")
+def create_strategy(body: StrategyBody):
+    with _conn() as c:
+        cur = c.execute(
+            """INSERT INTO auto_trade_buy_strategy
+               (name, broker, condition_seq, buy_start, buy_end, max_positions, stop_rate, is_active)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (body.name, body.broker, body.condition_seq, body.buy_start,
+             body.buy_end, body.max_positions, body.stop_rate, body.is_active)
+        )
+        c.commit()
+        return {"ok": True, "id": cur.lastrowid}
+
+@router.put("/strategies/{sid}")
+def update_strategy(sid: int, body: StrategyBody):
+    with _conn() as c:
+        c.execute(
+            """UPDATE auto_trade_buy_strategy
+               SET name=?, broker=?, condition_seq=?, buy_start=?, buy_end=?,
+                   max_positions=?, stop_rate=?, is_active=?
+               WHERE id=?""",
+            (body.name, body.broker, body.condition_seq, body.buy_start,
+             body.buy_end, body.max_positions, body.stop_rate, body.is_active, sid)
+        )
+        c.commit()
+    return {"ok": True}
+
+@router.delete("/strategies/{sid}")
+def delete_strategy(sid: int):
+    with _conn() as c:
+        c.execute("DELETE FROM auto_trade_buy_strategy WHERE id=?", (sid,))
+        c.commit()
+    return {"ok": True}

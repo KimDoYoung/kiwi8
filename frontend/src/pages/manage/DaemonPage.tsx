@@ -1,54 +1,75 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Play, Square, RefreshCcw, Save, ListFilter } from 'lucide-react'
+import { Play, Square, RefreshCcw, Plus, Trash2, Pencil, Check, X } from 'lucide-react'
 import api from '@/lib/api'
 import { useWsStore, type KdaemonEvent } from '@/store/wsStore'
+
+// ── API ────────────────────────────────────────────────────
 
 async function fetchStatus() {
     const res = await api.get('/api/v1/kdemon/status')
     return res.data as { status: string; updated_at: string | null }
 }
-
 async function sendCommand(cmd: 'start' | 'stop') {
     const res = await api.post('/api/v1/kdemon/command', { cmd })
     return res.data
 }
 
-async function fetchSettings() {
-    const res = await api.get('/api/v1/settings/list')
-    const all: { name: string; value: string }[] = Array.isArray(res.data) ? res.data : []
-    return {
-        stop_rate: all.find(s => s.name === 'auto_trade_stop_rate')?.value ?? '0.05',
-        max_positions: all.find(s => s.name === 'auto_trade_max_positions')?.value ?? '3',
-        condition_seq: all.find(s => s.name === 'auto_trade_condition_seq')?.value ?? '',
-    }
+interface Strategy {
+    id: number
+    name: string
+    broker: string
+    condition_seq: string
+    buy_start: string
+    buy_end: string
+    max_positions: number
+    stop_rate: number
+    is_active: number
+}
+const emptyForm = (): Omit<Strategy, 'id'> => ({
+    name: '', broker: 'kiwoom', condition_seq: '',
+    buy_start: '09:05', buy_end: '10:30',
+    max_positions: 3, stop_rate: 0.05, is_active: 1,
+})
+
+async function fetchStrategies(): Promise<Strategy[]> {
+    const res = await api.get('/api/v1/kdemon/strategies')
+    return res.data
+}
+async function createStrategy(body: Omit<Strategy, 'id'>) {
+    const res = await api.post('/api/v1/kdemon/strategies', body)
+    return res.data
+}
+async function updateStrategy({ id, ...body }: Strategy) {
+    const res = await api.put(`/api/v1/kdemon/strategies/${id}`, body)
+    return res.data
+}
+async function deleteStrategy(id: number) {
+    const res = await api.delete(`/api/v1/kdemon/strategies/${id}`)
+    return res.data
 }
 
-async function saveSetting(key: string, value: string) {
-    await api.put(`/api/v1/settings/${key}`, { value })
-}
-
-async function fetchConditions() {
-    const res = await api.get('/api/v1/kdemon/conditions')
-    return (res.data?.data ?? []) as { seq: string; name: string }[]
-}
+// ── Component ──────────────────────────────────────────────
 
 export default function DaemonPage() {
     const queryClient = useQueryClient()
     const kdaemonEvents = useWsStore(s => s.kdaemonEvents)
     const feedRef = useRef<HTMLDivElement>(null)
+    const [showEvents, setShowEvents] = useState(true)
+    const [editingId, setEditingId] = useState<number | null>(null)
+    const [addingNew, setAddingNew] = useState(false)
+    const [form, setForm] = useState<Omit<Strategy, 'id'>>(emptyForm())
+    const [editForm, setEditForm] = useState<Strategy | null>(null)
 
     useEffect(() => {
-        if (feedRef.current) {
+        if (showEvents && feedRef.current) {
             feedRef.current.scrollTop = feedRef.current.scrollHeight
         }
-    }, [kdaemonEvents])
+    }, [kdaemonEvents, showEvents])
 
     // ── 데몬 상태 ──
     const { data: statusData, isLoading: statusLoading } = useQuery({
-        queryKey: ['kdemonStatus'],
-        queryFn: fetchStatus,
-        refetchInterval: 5000,
+        queryKey: ['kdemonStatus'], queryFn: fetchStatus, refetchInterval: 5000,
     })
     const cmdMutation = useMutation({
         mutationFn: sendCommand,
@@ -56,215 +77,209 @@ export default function DaemonPage() {
     })
     const isRunning = statusData?.status === 'running'
 
-    // ── 설정 ──
-    const { data: settingsData } = useQuery({
-        queryKey: ['autoTradeSettings'],
-        queryFn: fetchSettings,
+    // ── 전략 목록 ──
+    const { data: strategies = [] } = useQuery({
+        queryKey: ['kdemonStrategies'], queryFn: fetchStrategies,
+    })
+    const createMut = useMutation({
+        mutationFn: createStrategy,
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }); setAddingNew(false); setForm(emptyForm()) },
+    })
+    const updateMut = useMutation({
+        mutationFn: updateStrategy,
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }); setEditingId(null) },
+    })
+    const deleteMut = useMutation({
+        mutationFn: deleteStrategy,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }),
     })
 
-    const [stopRate, setStopRate] = useState('0.05')
-    const [maxPositions, setMaxPositions] = useState('3')
-    const [conditionSeq, setConditionSeq] = useState('')
-    const [saveMsg, setSaveMsg] = useState('')
-
-    useEffect(() => {
-        if (settingsData) {
-            setStopRate(settingsData.stop_rate)
-            setMaxPositions(settingsData.max_positions)
-            setConditionSeq(settingsData.condition_seq)
-        }
-    }, [settingsData])
-
-    const handleSave = async () => {
-        try {
-            await Promise.all([
-                saveSetting('auto_trade_stop_rate', stopRate),
-                saveSetting('auto_trade_max_positions', maxPositions),
-                saveSetting('auto_trade_condition_seq', conditionSeq),
-            ])
-            queryClient.invalidateQueries({ queryKey: ['autoTradeSettings'] })
-            setSaveMsg('저장 완료')
-            setTimeout(() => setSaveMsg(''), 2000)
-        } catch {
-            setSaveMsg('저장 실패')
-            setTimeout(() => setSaveMsg(''), 2000)
-        }
-    }
-
-    // ── 조건식 목록 ──
-    const [showConditions, setShowConditions] = useState(false)
-    const { data: conditions, isFetching: condFetching, refetch: refetchConditions } = useQuery({
-        queryKey: ['kdemonConditions'],
-        queryFn: fetchConditions,
-        enabled: false,
-    })
-
-    const handleLoadConditions = () => {
-        setShowConditions(true)
-        refetchConditions()
-    }
+    const startEdit = (s: Strategy) => { setEditingId(s.id); setEditForm({ ...s }) }
+    const cancelEdit = () => { setEditingId(null); setEditForm(null) }
 
     return (
-        <div className="flex flex-col h-full p-4 gap-6 overflow-auto">
-            <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">K-데몬</h2>
-                <span className="text-gray-400 font-mono text-xs">[8201]</span>
-            </div>
+        <div className="flex flex-col h-full p-4 gap-4 overflow-auto text-sm">
 
-            {/* ── 상태 / 제어 ── */}
-            <div className="bg-white border rounded-lg p-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">데몬 상태</p>
-                <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-gray-50">
-                        <span className={`w-2.5 h-2.5 rounded-full ${
-                            statusLoading ? 'bg-gray-300' :
-                            isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-                        }`} />
-                        <span className="text-sm font-medium">
-                            {statusLoading ? '...' : isRunning ? '실행 중' : '정지'}
-                        </span>
-                        {statusData?.updated_at && (
-                            <span className="text-xs text-gray-400 ml-1">{statusData.updated_at}</span>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => cmdMutation.mutate('start')}
-                        disabled={cmdMutation.isPending || isRunning}
-                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <Play className="w-3.5 h-3.5" /> 시작
-                    </button>
-
-                    <button
-                        onClick={() => cmdMutation.mutate('stop')}
-                        disabled={cmdMutation.isPending || !isRunning}
-                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <Square className="w-3.5 h-3.5" /> 정지
-                    </button>
-
-                    <button
-                        onClick={() => queryClient.invalidateQueries({ queryKey: ['kdemonStatus'] })}
-                        className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 transition-colors"
-                    >
-                        <RefreshCcw className="w-4 h-4" />
-                    </button>
-                </div>
-                {cmdMutation.isError && (
-                    <p className="mt-2 text-xs text-red-500">명령 실패: {String(cmdMutation.error)}</p>
-                )}
-            </div>
-
-            {/* ── 자동매매 설정 ── */}
-            <div className="bg-white border rounded-lg p-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">자동매매 설정</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-                    <label className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600">손절/익절 비율 (stop_rate)</span>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                step="0.01" min="0.01" max="0.5"
-                                value={stopRate}
-                                onChange={e => setStopRate(e.target.value)}
-                                className="w-24 border rounded-md px-2 py-1.5 text-sm font-mono"
-                            />
-                            <span className="text-xs text-gray-500">
-                                = -{Math.round(parseFloat(stopRate || '0') * 100)}%
-                            </span>
-                        </div>
-                    </label>
-
-                    <label className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600">최대 보유 종목 수</span>
-                        <input
-                            type="number"
-                            step="1" min="1" max="10"
-                            value={maxPositions}
-                            onChange={e => setMaxPositions(e.target.value)}
-                            className="w-20 border rounded-md px-2 py-1.5 text-sm font-mono"
-                        />
-                    </label>
-
-                    <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600">조건식 seq 번호</span>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={conditionSeq}
-                                onChange={e => setConditionSeq(e.target.value)}
-                                placeholder="예: 001"
-                                className="w-24 border rounded-md px-2 py-1.5 text-sm font-mono"
-                            />
-                            <button
-                                onClick={handleLoadConditions}
-                                disabled={condFetching}
-                                className="flex items-center gap-1 px-2 py-1.5 border rounded-md text-xs text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                            >
-                                <ListFilter className="w-3.5 h-3.5" />
-                                {condFetching ? '조회중...' : '목록'}
-                            </button>
-                        </div>
-
-                        {/* 조건식 목록 드롭다운 */}
-                        {showConditions && conditions && conditions.length > 0 && (
-                            <div className="mt-1 border rounded-md bg-white shadow-sm max-h-40 overflow-auto">
-                                {conditions.map(c => (
-                                    <button
-                                        key={c.seq}
-                                        onClick={() => { setConditionSeq(c.seq); setShowConditions(false) }}
-                                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 flex items-center gap-2"
-                                    >
-                                        <span className="font-mono text-gray-400 w-8">{c.seq}</span>
-                                        <span>{c.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {showConditions && conditions?.length === 0 && !condFetching && (
-                            <p className="text-xs text-gray-400 mt-1">조건식 없음</p>
-                        )}
-                    </div>
+            {/* ── Row 1: 데몬 상태 + 이벤트 체크박스 ── */}
+            <div className="flex items-center gap-4 bg-white border rounded-lg px-4 py-3">
+                {/* 상태 */}
+                <div className="flex items-center gap-2 border rounded-md px-3 py-1.5 bg-gray-50">
+                    <span className={`w-2.5 h-2.5 rounded-full ${statusLoading ? 'bg-gray-300' : isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                    <span className="font-medium">{statusLoading ? '...' : isRunning ? '실행 중' : '정지'}</span>
+                    {statusData?.updated_at && <span className="text-xs text-gray-400 ml-1">{statusData.updated_at}</span>}
                 </div>
 
-                <div className="flex items-center gap-3 mt-5">
-                    <button
-                        onClick={handleSave}
-                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                    >
-                        <Save className="w-3.5 h-3.5" /> 저장
-                    </button>
-                    {saveMsg && (
-                        <span className={`text-xs ${saveMsg.includes('실패') ? 'text-red-500' : 'text-green-600'}`}>
-                            {saveMsg}
-                        </span>
+                <button onClick={() => cmdMutation.mutate('start')} disabled={cmdMutation.isPending || isRunning}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    <Play className="w-3.5 h-3.5" /> 시작
+                </button>
+                <button onClick={() => cmdMutation.mutate('stop')} disabled={cmdMutation.isPending || !isRunning}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    <Square className="w-3.5 h-3.5" /> 정지
+                </button>
+                <button onClick={() => queryClient.invalidateQueries({ queryKey: ['kdemonStatus'] })}
+                    className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
+                    <RefreshCcw className="w-4 h-4" />
+                </button>
+
+                {/* 이벤트 토글 */}
+                <label className="flex items-center gap-2 ml-auto cursor-pointer select-none text-gray-600">
+                    <input type="checkbox" checked={showEvents} onChange={e => setShowEvents(e.target.checked)}
+                        className="w-4 h-4 accent-blue-600" />
+                    이벤트 보기
+                </label>
+            </div>
+
+            {/* ── 이벤트 피드 (토글) ── */}
+            {showEvents && (
+                <div className="bg-white border rounded-lg p-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        실시간 이벤트
+                        {kdaemonEvents.length > 0 && <span className="ml-2 text-blue-500 font-mono">{kdaemonEvents.length}</span>}
+                    </p>
+                    {kdaemonEvents.length === 0 ? (
+                        <p className="text-xs text-gray-400 py-3 text-center">이벤트 없음</p>
+                    ) : (
+                        <div ref={feedRef} className="space-y-1 max-h-48 overflow-auto">
+                            {[...kdaemonEvents].reverse().slice(-10).map((ev, i) => <EventRow key={i} ev={ev} />)}
+                        </div>
                     )}
                 </div>
-            </div>
+            )}
 
-            {/* ── 이벤트 피드 ── */}
-            <div className="bg-white border rounded-lg p-4 flex-1 min-h-0">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    실시간 이벤트
-                    {kdaemonEvents.length > 0 && (
-                        <span className="ml-2 text-blue-500 font-mono">{kdaemonEvents.length}</span>
-                    )}
-                </p>
-                {kdaemonEvents.length === 0 ? (
-                    <p className="text-xs text-gray-400 py-4 text-center">이벤트 없음 — 데몬 시작 후 표시됩니다.</p>
-                ) : (
-                    <div ref={feedRef} className="space-y-1.5 max-h-64 overflow-auto">
-                        {[...kdaemonEvents].reverse().slice(-10).map((ev, i) => (
-                            <EventRow key={i} ev={ev} />
-                        ))}
-                    </div>
-                )}
+            {/* ── 매수 전략 ── */}
+            <div className="bg-white border rounded-lg p-3 flex-1">
+                <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">매수 전략</p>
+                    <button onClick={() => { setAddingNew(true); setForm(emptyForm()) }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                        <Plus className="w-3.5 h-3.5" /> 추가
+                    </button>
+                </div>
+
+                <div className="overflow-auto">
+                    <table className="w-full text-xs border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                                <th className="px-2 py-2 text-left text-gray-500 font-semibold">전략명</th>
+                                <th className="px-2 py-2 text-left text-gray-500 font-semibold">브로커</th>
+                                <th className="px-2 py-2 text-left text-gray-500 font-semibold">조건식</th>
+                                <th className="px-2 py-2 text-left text-gray-500 font-semibold">매수시간</th>
+                                <th className="px-2 py-2 text-center text-gray-500 font-semibold">최대</th>
+                                <th className="px-2 py-2 text-center text-gray-500 font-semibold">Stop%</th>
+                                <th className="px-2 py-2 text-center text-gray-500 font-semibold">활성</th>
+                                <th className="px-2 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+
+                            {/* 신규 추가 행 */}
+                            {addingNew && (
+                                <StrategyFormRow
+                                    value={form}
+                                    onChange={setForm}
+                                    onSave={() => createMut.mutate(form)}
+                                    onCancel={() => setAddingNew(false)}
+                                    saving={createMut.isPending}
+                                />
+                            )}
+
+                            {strategies.map(s => (
+                                editingId === s.id && editForm ? (
+                                    <StrategyFormRow
+                                        key={s.id}
+                                        value={editForm}
+                                        onChange={v => setEditForm(v as Strategy)}
+                                        onSave={() => updateMut.mutate(editForm)}
+                                        onCancel={cancelEdit}
+                                        saving={updateMut.isPending}
+                                    />
+                                ) : (
+                                    <tr key={s.id} className="hover:bg-gray-50">
+                                        <td className="px-2 py-2 font-medium">{s.name}</td>
+                                        <td className="px-2 py-2 text-gray-500">{s.broker}</td>
+                                        <td className="px-2 py-2 font-mono">{s.condition_seq}</td>
+                                        <td className="px-2 py-2 font-mono text-gray-600">{s.buy_start}~{s.buy_end}</td>
+                                        <td className="px-2 py-2 text-center">{s.max_positions}</td>
+                                        <td className="px-2 py-2 text-center">{Math.round(s.stop_rate * 100)}%</td>
+                                        <td className="px-2 py-2 text-center">
+                                            <span className={`inline-block w-2 h-2 rounded-full ${s.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                        </td>
+                                        <td className="px-2 py-2">
+                                            <div className="flex items-center gap-1 justify-end">
+                                                <button onClick={() => startEdit(s)} className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button onClick={() => deleteMut.mutate(s.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            ))}
+
+                            {strategies.length === 0 && !addingNew && (
+                                <tr><td colSpan={8} className="px-2 py-6 text-center text-gray-400">전략 없음 — 추가 버튼으로 생성</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     )
 }
+
+// ── 전략 입력 행 ─────────────────────────────────────────
+
+function StrategyFormRow({
+    value, onChange, onSave, onCancel, saving,
+}: {
+    value: Omit<Strategy, 'id'> | Strategy
+    onChange: (v: Omit<Strategy, 'id'>) => void
+    onSave: () => void
+    onCancel: () => void
+    saving: boolean
+}) {
+    const f = (key: keyof Omit<Strategy, 'id'>, val: string | number) =>
+        onChange({ ...value, [key]: val })
+
+    return (
+        <tr className="bg-blue-50">
+            <td className="px-1 py-1"><input value={value.name} onChange={e => f('name', e.target.value)} placeholder="전략명" className="w-80 border rounded px-1.5 py-1 text-xs" /></td>
+            <td className="px-1 py-1">
+                <select value={value.broker} onChange={e => f('broker', e.target.value)} className="border rounded px-1 py-1 text-xs">
+                    <option value="kiwoom">키움</option>
+                    <option value="kis">KIS</option>
+                    <option value="ls">LS</option>
+                </select>
+            </td>
+            <td className="px-1 py-1"><input value={value.condition_seq} onChange={e => f('condition_seq', e.target.value)} placeholder="001" className="w-16 border rounded px-1.5 py-1 text-xs font-mono" /></td>
+            <td className="px-1 py-1 flex items-center gap-1">
+                <input value={value.buy_start} onChange={e => f('buy_start', e.target.value)} placeholder="09:05" className="w-14 border rounded px-1.5 py-1 text-xs font-mono" />
+                <span className="text-gray-400">~</span>
+                <input value={value.buy_end} onChange={e => f('buy_end', e.target.value)} placeholder="10:30" className="w-14 border rounded px-1.5 py-1 text-xs font-mono" />
+            </td>
+            <td className="px-1 py-1 text-center"><input type="number" value={value.max_positions} onChange={e => f('max_positions', Number(e.target.value))} className="w-10 border rounded px-1 py-1 text-xs text-center" /></td>
+            <td className="px-1 py-1 text-center"><input type="number" step="0.01" value={value.stop_rate} onChange={e => f('stop_rate', Number(e.target.value))} className="w-14 border rounded px-1 py-1 text-xs text-center" /></td>
+            <td className="px-1 py-1 text-center">
+                <input type="checkbox" checked={value.is_active === 1} onChange={e => f('is_active', e.target.checked ? 1 : 0)} className="w-4 h-4 accent-blue-600" />
+            </td>
+            <td className="px-1 py-1">
+                <div className="flex items-center gap-1 justify-end">
+                    <button onClick={onSave} disabled={saving} className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors">
+                        <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={onCancel} className="p-1 text-gray-500 hover:bg-gray-100 rounded transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            </td>
+        </tr>
+    )
+}
+
+// ── 이벤트 행 ────────────────────────────────────────────
 
 function EventRow({ ev }: { ev: KdaemonEvent }) {
     const colors: Record<string, string> = {
@@ -276,9 +291,8 @@ function EventRow({ ev }: { ev: KdaemonEvent }) {
         STOP:  'bg-orange-50 border-orange-200 text-orange-700',
     }
     const cls = colors[ev.action] ?? 'bg-gray-50 border-gray-200 text-gray-600'
-
     return (
-        <div className={`flex items-center gap-3 px-3 py-1.5 rounded border text-xs ${cls}`}>
+        <div className={`flex items-center gap-3 px-3 py-1 rounded border text-xs ${cls}`}>
             <span className="font-mono text-gray-400 w-16 shrink-0">{ev.dt}</span>
             <span className="font-bold w-10 shrink-0">{ev.action}</span>
             {ev.stk_nm && <span className="font-medium">{ev.stk_nm}</span>}
@@ -286,9 +300,8 @@ function EventRow({ ev }: { ev: KdaemonEvent }) {
             {ev.price != null && <span>{ev.price.toLocaleString()}원</span>}
             {ev.qty != null && <span>{ev.qty}주</span>}
             {ev.profit != null && (
-                <span className={ev.profit >= 0 ? 'text-red-600 font-semibold' : 'text-blue-600 font-semibold'}>
-                    {ev.profit >= 0 ? '+' : ''}{ev.profit.toLocaleString()}원
-                    {ev.profit_rate != null && ` (${ev.profit_rate}%)`}
+                <span className={`font-semibold ${ev.profit >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                    {ev.profit >= 0 ? '+' : ''}{ev.profit.toLocaleString()}원{ev.profit_rate != null && ` (${ev.profit_rate}%)`}
                 </span>
             )}
             {ev.sell_reason && <span className="text-gray-400">[{ev.sell_reason}]</span>}

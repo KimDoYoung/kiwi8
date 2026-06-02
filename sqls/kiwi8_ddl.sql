@@ -455,6 +455,19 @@ CREATE TABLE IF NOT EXISTS auto_trade_log (
 CREATE INDEX IF NOT EXISTS idx_auto_trade_log_dt ON auto_trade_log(dt);
 CREATE INDEX IF NOT EXISTS idx_auto_trade_log_stk_cd ON auto_trade_log(stk_cd);
 
+-- kdaemon 매수 전략 (조건식 + 시간 + 파라미터)
+CREATE TABLE IF NOT EXISTS auto_trade_buy_strategy (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT NOT NULL,                     -- 전략명
+    broker        TEXT NOT NULL DEFAULT 'kiwoom',    -- 증권사 (kiwoom|kis|ls)
+    condition_seq TEXT NOT NULL,                     -- 조건식 seq번호
+    buy_start     TEXT NOT NULL,                     -- 매수 허용 시작 'HH:MM'
+    buy_end       TEXT NOT NULL,                     -- 매수 허용 종료 'HH:MM'
+    max_positions INTEGER NOT NULL DEFAULT 3,        -- 최대 보유 종목수
+    stop_rate     REAL NOT NULL DEFAULT 0.05,        -- trailing stop 비율
+    is_active     INTEGER NOT NULL DEFAULT 1         -- 1:활성 0:비활성
+);
+
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
 DELETE FROM menus;
 

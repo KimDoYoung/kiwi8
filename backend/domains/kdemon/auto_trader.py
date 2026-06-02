@@ -7,7 +7,8 @@ kdaemon 자동매매 엔진 (도박2)
 import asyncio
 import json
 import sqlite3
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, time
 
 import websockets
 
@@ -22,20 +23,43 @@ _KRX = 'KRX'
 
 
 # ─────────────────────────────────────────────────────────
-# 설정 로드
+# 매수 전략
 # ─────────────────────────────────────────────────────────
 
-def load_auto_trade_settings(conn: sqlite3.Connection) -> dict:
-    """settings 테이블에서 auto_trade_* 키 전체 읽어 dict 반환"""
+@dataclass
+class BuyStrategy:
+    id: int
+    name: str
+    broker: str
+    condition_seq: str
+    buy_start: time
+    buy_end: time
+    max_positions: int
+    stop_rate: float
+    is_active: int
+
+
+def get_active_strategies(conn: sqlite3.Connection) -> list[BuyStrategy]:
+    """auto_trade_buy_strategy WHERE is_active=1 조회"""
     cur = conn.cursor()
-    cur.execute("SELECT name, value FROM settings WHERE name LIKE 'auto_trade_%'")
+    cur.execute("SELECT * FROM auto_trade_buy_strategy WHERE is_active=1")
     rows = cur.fetchall()
-    result = {row[0]: row[1] for row in rows}
-    return {
-        'stop_rate': float(result.get('auto_trade_stop_rate', '0.05')),
-        'max_positions': int(result.get('auto_trade_max_positions', '3')),
-        'condition_seq': result.get('auto_trade_condition_seq', ''),
-    }
+    cols = [d[0] for d in cur.description]
+    result = []
+    for row in rows:
+        d = dict(zip(cols, row))
+        start_parts = d['buy_start'].split(':')
+        end_parts = d['buy_end'].split(':')
+        result.append(BuyStrategy(
+            id=d['id'], name=d['name'], broker=d['broker'],
+            condition_seq=d['condition_seq'],
+            buy_start=time(int(start_parts[0]), int(start_parts[1])),
+            buy_end=time(int(end_parts[0]), int(end_parts[1])),
+            max_positions=d['max_positions'],
+            stop_rate=d['stop_rate'],
+            is_active=d['is_active'],
+        ))
+    return result
 
 
 # ─────────────────────────────────────────────────────────
@@ -386,21 +410,15 @@ def log_action(conn: sqlite3.Connection, action: str, **kwargs) -> None:
 # 메인 사이클
 # ─────────────────────────────────────────────────────────
 
-async def run_auto_trade_cycle(
-    conn: sqlite3.Connection,
-    max_positions: int = 3,
-    stop_rate: float = 0.05,
-    condition_seq: str = '',
-    dry_run: bool = True,
-) -> None:
+async def run_auto_trade_cycle(conn: sqlite3.Connection, dry_run: bool = True) -> None:
     """
-    1. 현재 포지션 조회
-    2. 각 포지션: 현재가 → trailing stop 갱신 → 매도 판단
-    3. 빈 슬롯 있으면: 조건검색 → 예수금/빈슬롯수 = 종목당 예산 → 매수
+    전략 테이블 기반 사이클:
+    1. trailing stop 체크 → 매도 (항상)
+    2. 활성 전략별: 현재 시각이 buy_start~buy_end 범위면 → 조건검색 → 매수
     """
-    logger.info(f'kdaemon: 사이클 시작 dry_run={dry_run}')
+    now_t = datetime.now().time()
 
-    # ── step1: 포지션 trailing stop 체크 ──
+    # ── step1: 포지션 trailing stop 체크 (항상 실행) ──
     positions = get_positions(conn)
     for pos in positions:
         cur_price = await get_current_price(pos.stk_cd)
@@ -409,8 +427,6 @@ async def run_auto_trade_cycle(
             continue
 
         new_base, new_stop = calc_trailing_stop(pos.base_price, cur_price, pos.stop_rate)
-
-        # base_price 올랐으면 DB 갱신
         if new_base > pos.base_price:
             update_position_trailing(conn, pos.stk_cd, new_base, new_stop)
             pos.base_price = new_base
@@ -421,55 +437,57 @@ async def run_auto_trade_cycle(
             logger.info(f'kdaemon: {pos.stk_cd} trailing stop 발동 cur={cur_price:,} stop={pos.stop_price:,}')
             await sell_stock(conn, pos, cur_price, 'trailing_stop', dry_run=dry_run)
 
-    # ── step2: 빈 슬롯 매수 ──
+    # ── step2: 전략별 매수 (시간 조건 체크) ──
+    strategies = get_active_strategies(conn)
+    if not strategies:
+        return
+
     positions = get_positions(conn)  # 매도 후 재조회
-    empty_slots = max_positions - len(positions)
-    if empty_slots <= 0:
-        logger.info(f'kdaemon: 포지션 만석({len(positions)}/{max_positions}), 매수 skip')
-        return
-
-    if not condition_seq:
-        logger.warning('kdaemon: auto_trade_condition_seq 미설정, 매수 skip')
-        return
-
-    candidates = await find_stocks_by_condition(condition_seq)
-    # 이미 보유 중인 종목 제외
     held = {p.stk_cd for p in positions}
-    candidates = [c for c in candidates if c not in held]
 
-    if not candidates:
-        logger.info('kdaemon: 조건검색 결과 없음')
-        return
+    for strategy in strategies:
+        if not (strategy.buy_start <= now_t <= strategy.buy_end):
+            continue  # 매수 허용 시간 아님
 
-    cash = await get_available_cash()
-    if cash <= 0:
-        logger.warning('kdaemon: 사용가능 예수금 없음')
-        return
-
-    budget_per_stock = cash // empty_slots
-    logger.info(f'kdaemon: 빈슬롯={empty_slots} 예수금={cash:,}원 종목당={budget_per_stock:,}원')
-
-    bought = 0
-    for stk_cd in candidates:
-        if bought >= empty_slots:
-            break
-
-        cur_price = await get_current_price(stk_cd)
-        if not cur_price or cur_price <= 0:
+        empty_slots = strategy.max_positions - len(positions)
+        if empty_slots <= 0:
+            logger.info(f'kdaemon: [{strategy.name}] 포지션 만석 ({len(positions)}/{strategy.max_positions})')
             continue
 
-        qty = budget_per_stock // cur_price
-        if qty <= 0:
-            logger.warning(f'kdaemon: {stk_cd} 예산 부족 price={cur_price:,} budget={budget_per_stock:,}')
+        if not strategy.condition_seq:
+            logger.warning(f'kdaemon: [{strategy.name}] condition_seq 미설정, skip')
             continue
 
-        # 종목명 조회 (조건검색 결과에 없으면 코드 그대로)
-        stk_nm = stk_cd
-        result = await buy_stock(conn, stk_cd, stk_nm, cur_price, qty,
-                                 stop_rate=stop_rate, dry_run=dry_run)
-        if result is not None or dry_run:
-            bought += 1
-            log_action(conn, 'FIND', stk_cd=stk_cd, stk_nm=stk_nm,
-                       memo=f'조건식{condition_seq} 매수완료')
+        candidates = await find_stocks_by_condition(strategy.condition_seq)
+        candidates = [c for c in candidates if c not in held]
 
-    logger.info(f'kdaemon: 사이클 완료 매수={bought}건')
+        if not candidates:
+            logger.info(f'kdaemon: [{strategy.name}] 조건검색 결과 없음')
+            continue
+
+        cash = await get_available_cash()
+        if cash <= 0:
+            logger.warning(f'kdaemon: [{strategy.name}] 예수금 없음')
+            continue
+
+        budget_per_stock = cash // empty_slots
+        logger.info(f'kdaemon: [{strategy.name}] 빈슬롯={empty_slots} 예수금={cash:,}원 종목당={budget_per_stock:,}원')
+
+        bought = 0
+        for stk_cd in candidates:
+            if bought >= empty_slots:
+                break
+            cur_price = await get_current_price(stk_cd)
+            if not cur_price or cur_price <= 0:
+                continue
+            qty = budget_per_stock // cur_price
+            if qty <= 0:
+                logger.warning(f'kdaemon: {stk_cd} 예산 부족 price={cur_price:,} budget={budget_per_stock:,}')
+                continue
+            result = await buy_stock(conn, stk_cd, stk_cd, cur_price, qty,
+                                     stop_rate=strategy.stop_rate, dry_run=dry_run)
+            if result is not None or dry_run:
+                bought += 1
+                held.add(stk_cd)
+
+        logger.info(f'kdaemon: [{strategy.name}] 매수={bought}건')

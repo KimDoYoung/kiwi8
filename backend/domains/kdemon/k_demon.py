@@ -222,21 +222,14 @@ class KDemon:
             logger.warning(f"kdaemon: broadcast 실패: {e}")
 
     async def _run(self):
-        from backend.domains.kdemon.auto_trader import load_auto_trade_settings, run_auto_trade_cycle
+        from backend.domains.kdemon.auto_trader import run_auto_trade_cycle
         try:
             while not self._stop_event.is_set():
                 if self._refresh_event.is_set():
                     self._refresh_event.clear()
                     logger.info("kdaemon: refresh")
 
-                settings = load_auto_trade_settings(self._conn)
-                await run_auto_trade_cycle(
-                    conn=self._conn,
-                    max_positions=settings['max_positions'],
-                    stop_rate=settings['stop_rate'],
-                    condition_seq=settings['condition_seq'],
-                    dry_run=self.dry_run,
-                )
+                await run_auto_trade_cycle(conn=self._conn, dry_run=self.dry_run)
                 await asyncio.sleep(self.poll_interval_sec)
         except asyncio.CancelledError:
             logger.info("kdaemon: task cancelled")
