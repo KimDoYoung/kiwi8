@@ -5,6 +5,8 @@ GET /api/v1/stkcompany/kis/account/list
 GET /api/v1/stkcompany/ls/account/list
 """
 
+import asyncio
+
 from fastapi import APIRouter
 
 from backend.core.config import config
@@ -158,9 +160,12 @@ async def total_account_list():
     logger.info('[계좌현황] 통합 계좌현황 조회 요청')
 
     try:
-        kiwoom_response = await kiwoom_account_list()
-        kis_response = await kis_account_list()
-        ls_response = await ls_account_list()
+        kiwoom_response, kis_response, ls_response = await asyncio.gather(
+            kiwoom_account_list(),
+            kis_account_list(),
+            ls_account_list(),
+            return_exceptions=True,
+        )
 
         all_entries: list[dict] = []
         for broker, response in (
@@ -334,56 +339,56 @@ async def ls_account_list():
 
 async def _insert_prev_costs_kiwoom(stock_list: list):
     cache = get_prev_price_cache()
-    for stock in stock_list:
+    async def enrich(stock):
         stk_cd = stock.get('종목코드', '')
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
-        
         cur_price = parse_price(stock.get('현재가', 0))
         avg_price = parse_price(stock.get('평균단가', 0))
-        
-        stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
-        stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-        prev_close = int(stock['전일종가'])
+        prev_close, trend = await cache.get_price_and_trend(stk_cd)
+        prev_close = int(prev_close)
+        stock['전일종가'] = prev_close
+        stock['가격추세'] = trend
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
+    await asyncio.gather(*[enrich(s) for s in stock_list])
 
 async def _insert_prev_costs_kis(stock_list: list):
     cache = get_prev_price_cache()
-    for stock in stock_list:
+    async def enrich(stock):
         stk_cd = stock.get('상품번호', '')
         if stk_cd and len(stk_cd) == 7 and stk_cd.startswith('A'):
             stk_cd = stk_cd[1:]
-            
         cur_price = parse_price(stock.get('현재가', 0))
         avg_price = parse_price(stock.get('매입평균가격', 0))
-            
-        stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
-        stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-        prev_close = int(stock['전일종가'])
+        prev_close, trend = await cache.get_price_and_trend(stk_cd)
+        prev_close = int(prev_close)
+        stock['전일종가'] = prev_close
+        stock['가격추세'] = trend
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
+    await asyncio.gather(*[enrich(s) for s in stock_list])
 
 async def _insert_prev_costs_ls(stock_list: list, price_market: str):
     cache = get_prev_price_cache()
-    for stock in stock_list:
+    async def enrich(stock):
         stk_cd = stock.get('종목번호', '')
         # LS API는 NXT에서의 현재가를 가져오지 못한다. 그래서 NXT인 경우 현재가를 코넥스 종목코드로 다시 조회해서 넣어준다. 😡
-        if price_market == "NXT" : 
-           is_nxt_enabled = await StockResolver.get().is_enable_nxt(stk_cd)
-           if is_nxt_enabled:
-                pricer = CurrentPricer.get() 
+        if price_market == "NXT":
+            is_nxt_enabled = await StockResolver.get().is_enable_nxt(stk_cd)
+            if is_nxt_enabled:
+                pricer = CurrentPricer.get()
                 cost = await pricer.get_price1(stk_cd) or 0
-                stock['현재가'] = cost 
-               
+                stock['현재가'] = cost
         cur_price = parse_price(stock.get('현재가', 0))
         avg_price = parse_price(stock.get('평균단가', 0))
-            
-        stock['전일종가'] = await cache.get_last_price(stk_cd) or 0
-        stock['가격추세'] = await cache.get_last_trend(stk_cd) or '-'
-        prev_close = int(stock['전일종가'])
+        prev_close, trend = await cache.get_price_and_trend(stk_cd)
+        prev_close = int(prev_close)
+        stock['전일종가'] = prev_close
+        stock['가격추세'] = trend
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
+    await asyncio.gather(*[enrich(s) for s in stock_list])

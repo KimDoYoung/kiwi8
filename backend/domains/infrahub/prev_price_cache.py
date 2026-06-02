@@ -382,6 +382,28 @@ class PrevPriceCache:
 
         return None
 
+    async def get_price_and_trend(self, stk_cd: str) -> tuple[float, str]:
+        """전일종가와 추세를 한 번의 캐시/API 조회로 반환"""
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        data = self._cache.get(stk_cd)
+        if data and len(data.prices) >= 2:
+            if data.dates and self._normalize_date_for_sort(data.dates[-1]) == yesterday:
+                return data.prices[-2], data.trend
+            else:
+                await self.clear(stk_cd)
+        for attempt in range(3):
+            try:
+                prices, dates = await self._fetch_price_data(stk_cd)
+                if prices and dates and len(prices) >= 2:
+                    await self.set(stk_cd, dates, prices)
+                    return self._cache[stk_cd].prices[-2], self._cache[stk_cd].trend
+            except Exception as e:
+                logger.warning(f"가격/추세 조회 실패 ({stk_cd}) [{attempt+1}/3]: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(0.3)
+        logger.error(f"가격/추세 조회 최종 실패 ({stk_cd})")
+        return 0, '-'
+
     async def _fetch_price_data(self, stk_cd: str) -> tuple[list[float] | None, list[str] | None]:
         """3개 증권사 API 중 랜덤하게 선택하여 10일 가격 데이터 조회
 
