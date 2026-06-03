@@ -103,7 +103,7 @@ export default function KisAccountPage() {
     const totalMaeip = useMemo(() =>
         rawStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [rawStocks])
 
-    const 예수금 = toNum(summary['예수금총금액'])
+    const 예수금 = toNum(summary['가수도정산금액'])
     const 평가금액 = toNum(summary['총평가금액'])
     const 손익 = toNum(summary['평가손익합계금액'])
 

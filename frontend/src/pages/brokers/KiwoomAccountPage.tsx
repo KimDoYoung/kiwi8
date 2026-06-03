@@ -94,7 +94,7 @@ export default function KiwoomAccountPage() {
         rawStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [rawStocks])
 
     const summary = data?.data ?? {}
-    const 예수금 = toNum(summary['예수금'])
+    const 예수금 = toNum(summary['D+2추정예수금'])
     const 평가금액 = toNum(summary['유가잔고평가액'] ?? summary['예탁자산평가액'])
     const 총매입 = toNum(summary['총매입금액'])
     const 손익 = 평가금액 - 총매입
