@@ -22,13 +22,12 @@ import random
 import re
 import sqlite3
 import time
+from datetime import datetime
 from io import StringIO
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-
-from datetime import datetime
 
 from backend.core.config import config
 from backend.core.logger import get_logger

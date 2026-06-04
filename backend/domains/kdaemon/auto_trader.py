@@ -70,7 +70,10 @@ def get_active_strategies(conn: sqlite3.Connection) -> list[BuyStrategy]:
 async def get_available_cash() -> int:
     """키움 kt00001(qry_tp=3) → 주문가능금액(예수금) 반환 (원)"""
     from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-    from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
+    from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+        KiwoomApiHelper,
+        KiwoomRequest,
+    )
 
     kiwoom = await get_kiwoom_api()
     req = KiwoomRequest(api_id='kt00001', payload={'qry_tp': '3'})
@@ -279,7 +282,10 @@ async def buy_stock(
         logger.info(f'kdaemon: (DRY-RUN) BUY {stk_nm}({stk_cd}) {qty}주 @ {price:,}원 = {amount:,}원')
     else:
         from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-        from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import KiwoomApiHelper, KiwoomRequest
+        from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+            KiwoomApiHelper,
+            KiwoomRequest,
+        )
 
         kiwoom = await get_kiwoom_api()
         req = KiwoomRequest(
@@ -389,6 +395,7 @@ def log_action(conn: sqlite3.Connection, action: str, **kwargs) -> None:
     # BUY/SELL/ERROR 는 WebSocket으로 브라우저에 실시간 전송
     if action in ('BUY', 'SELL', 'ERROR', 'FIND'):
         import asyncio
+
         from backend.domains.infrahub.ws_manager import ws_manager
         msg = {
             'broker': 'kdaemon',

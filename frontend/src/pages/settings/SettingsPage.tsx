@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
-import { RefreshCw, Trash2, Database, Key, CheckCircle2, AlertCircle, Bot } from 'lucide-react'
+import { RefreshCw, Trash2, Database, Key, CheckCircle2, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
 
 type StatusMessage = {

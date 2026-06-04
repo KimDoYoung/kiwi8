@@ -7,11 +7,11 @@ import { useWsStore, type KdaemonEvent } from '@/store/wsStore'
 // ── API ────────────────────────────────────────────────────
 
 async function fetchStatus() {
-    const res = await api.get('/api/v1/kdemon/status')
+    const res = await api.get('/api/v1/kdaemon/status')
     return res.data as { status: string; updated_at: string | null }
 }
 async function sendCommand(cmd: 'start' | 'stop') {
-    const res = await api.post('/api/v1/kdemon/command', { cmd })
+    const res = await api.post('/api/v1/kdaemon/command', { cmd })
     return res.data
 }
 
@@ -33,22 +33,22 @@ const emptyForm = (): Omit<Strategy, 'id'> => ({
 })
 
 async function fetchStrategies(): Promise<Strategy[]> {
-    const res = await api.get('/api/v1/kdemon/strategies')
+    const res = await api.get('/api/v1/kdaemon/strategies')
     return res.data
 }
 
 // ── 직접 매수 큐 ───────────────────────────────────────
 
 async function fetchManualStocks(): Promise<string[]> {
-    const res = await api.get('/api/v1/kdemon/manual-stocks')
+    const res = await api.get('/api/v1/kdaemon/manual-stocks')
     return res.data.lines ?? []
 }
 async function saveManualStocks(lines: string[]) {
-    const res = await api.put('/api/v1/kdemon/manual-stocks', { lines })
+    const res = await api.put('/api/v1/kdaemon/manual-stocks', { lines })
     return res.data
 }
 
-// ── 포지션 / 로그 ──────────────────────────────────────
+// ── 포지션 ────────────────────────────────────────────
 
 interface Position {
     id: number
@@ -63,40 +63,21 @@ interface Position {
     bought_at: string
     updated_at: string
 }
-interface TradeLog {
-    id: number
-    dt: string
-    action: string
-    stk_cd: string | null
-    stk_nm: string | null
-    price: number | null
-    qty: number | null
-    amount: number | null
-    profit: number | null
-    profit_rate: number | null
-    sell_reason: string | null
-    order_no: string | null
-    memo: string | null
-}
 
 async function fetchPositions(): Promise<Position[]> {
-    const res = await api.get('/api/v1/kdemon/positions')
-    return res.data
-}
-async function fetchLogs(): Promise<TradeLog[]> {
-    const res = await api.get('/api/v1/kdemon/logs?limit=50')
+    const res = await api.get('/api/v1/kdaemon/positions')
     return res.data
 }
 async function createStrategy(body: Omit<Strategy, 'id'>) {
-    const res = await api.post('/api/v1/kdemon/strategies', body)
+    const res = await api.post('/api/v1/kdaemon/strategies', body)
     return res.data
 }
 async function updateStrategy({ id, ...body }: Strategy) {
-    const res = await api.put(`/api/v1/kdemon/strategies/${id}`, body)
+    const res = await api.put(`/api/v1/kdaemon/strategies/${id}`, body)
     return res.data
 }
 async function deleteStrategy(id: number) {
-    const res = await api.delete(`/api/v1/kdemon/strategies/${id}`)
+    const res = await api.delete(`/api/v1/kdaemon/strategies/${id}`)
     return res.data
 }
 
@@ -122,56 +103,52 @@ export default function DaemonPage() {
 
     // ── 데몬 상태 ──
     const { data: statusData, isLoading: statusLoading } = useQuery({
-        queryKey: ['kdemonStatus'], queryFn: fetchStatus, refetchInterval: 5000,
+        queryKey: ['kdaemonStatus'], queryFn: fetchStatus, refetchInterval: 5000,
     })
     const cmdMutation = useMutation({
         mutationFn: sendCommand,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdemonStatus'] }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdaemonStatus'] }),
     })
     const isRunning = statusData?.status === 'running'
 
     // ── 전략 목록 ──
     const { data: strategies = [] } = useQuery({
-        queryKey: ['kdemonStrategies'], queryFn: fetchStrategies,
+        queryKey: ['kdaemonStrategies'], queryFn: fetchStrategies,
     })
     const createMut = useMutation({
         mutationFn: createStrategy,
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }); setAddingNew(false); setForm(emptyForm()) },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['kdaemonStrategies'] }); setAddingNew(false); setForm(emptyForm()) },
     })
     const updateMut = useMutation({
         mutationFn: updateStrategy,
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }); setEditingId(null) },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['kdaemonStrategies'] }); setEditingId(null) },
     })
     const deleteMut = useMutation({
         mutationFn: deleteStrategy,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdaemonStrategies'] }),
     })
 
     // ── 직접 매수 큐 ──
     const { data: manualLines = [], refetch: refetchManual } = useQuery({
-        queryKey: ['kdemonManualStocks'], queryFn: fetchManualStocks, refetchInterval: 10000,
+        queryKey: ['kdaemonManualStocks'], queryFn: fetchManualStocks, refetchInterval: 10000,
     })
     const saveMut = useMutation({
         mutationFn: saveManualStocks,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdemonManualStocks'] }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdaemonManualStocks'] }),
     })
 
-    // ── 포지션 / 로그 ──
+    // ── 포지션 ──
     const { data: positions = [] } = useQuery({
-        queryKey: ['kdemonPositions'], queryFn: fetchPositions, refetchInterval: 30000,
-    })
-    const { data: tradeLogs = [] } = useQuery({
-        queryKey: ['kdemonLogs'], queryFn: fetchLogs, refetchInterval: 60000,
+        queryKey: ['kdaemonPositions'], queryFn: fetchPositions, refetchInterval: 30000,
     })
 
-    // WS 이벤트 수신 시 positions/logs 자동 갱신
+    // WS 이벤트 수신 시 positions/manualStocks 자동 갱신
     const prevEvLen = useRef(0)
     useEffect(() => {
         if (kdaemonEvents.length !== prevEvLen.current) {
             prevEvLen.current = kdaemonEvents.length
-            queryClient.invalidateQueries({ queryKey: ['kdemonPositions'] })
-            queryClient.invalidateQueries({ queryKey: ['kdemonLogs'] })
-            queryClient.invalidateQueries({ queryKey: ['kdemonManualStocks'] })
+            queryClient.invalidateQueries({ queryKey: ['kdaemonPositions'] })
+            queryClient.invalidateQueries({ queryKey: ['kdaemonManualStocks'] })
         }
     }, [kdaemonEvents, queryClient])
 
@@ -205,7 +182,7 @@ export default function DaemonPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     <Square className="w-3.5 h-3.5" /> 정지
                 </button>
-                <button onClick={() => queryClient.invalidateQueries({ queryKey: ['kdemonStatus'] })}
+                <button onClick={() => queryClient.invalidateQueries({ queryKey: ['kdaemonStatus'] })}
                     className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
                     <RefreshCcw className="w-4 h-4" />
                 </button>
@@ -302,66 +279,30 @@ export default function DaemonPage() {
 
                 </div>
 
-                {/* RIGHT: 실시간 이벤트 + 매매 이력 */}
+                {/* RIGHT: 실시간 이벤트 */}
                 <div className="flex flex-col gap-4">
 
                     {/* 실시간 이벤트 */}
                     <div className="bg-white border rounded-lg p-3">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                            실시간 이벤트
-                            {kdaemonEvents.length > 0 && <span className="ml-2 text-blue-500 font-mono">{kdaemonEvents.length}</span>}
-                        </p>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                실시간 이벤트
+                                {kdaemonEvents.length > 0 && <span className="ml-2 text-blue-500 font-mono">{kdaemonEvents.length}</span>}
+                            </p>
+                            {kdaemonEvents.length > 0 && (
+                                <button onClick={clearKdaemonEvents}
+                                    className="text-xs text-gray-400 hover:text-red-500 transition-colors px-1.5 py-0.5 rounded hover:bg-red-50">
+                                    전체 지우기
+                                </button>
+                            )}
+                        </div>
                         {!showEvents || kdaemonEvents.length === 0 ? (
                             <p className="text-xs text-gray-400 py-3 text-center">
                                 {showEvents ? '이벤트 없음' : '이벤트 보기 비활성'}
                             </p>
                         ) : (
-                            <div ref={feedRef} className="space-y-1 max-h-48 overflow-auto">
-                                {[...kdaemonEvents].reverse().slice(0, 10).map((ev, i) => <EventRow key={i} ev={ev} />)}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 매매 이력 */}
-                    <div className="bg-white border rounded-lg p-3">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">매매 이력 (최근 50건)</p>
-                        {tradeLogs.length === 0 ? (
-                            <p className="text-xs text-gray-400 py-2 text-center">이력 없음</p>
-                        ) : (
-                            <div className="overflow-auto max-h-64">
-                                <table className="w-full text-xs border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-50 border-b border-gray-200">
-                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">시각</th>
-                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">구분</th>
-                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">종목</th>
-                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">가격</th>
-                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">손익</th>
-                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">사유</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {tradeLogs.map(log => {
-                                            const actionCls: Record<string, string> = {
-                                                BUY: 'text-red-600 font-bold', SELL: 'text-blue-600 font-bold',
-                                                ERROR: 'text-yellow-600 font-bold', FIND: 'text-gray-500',
-                                            }
-                                            return (
-                                                <tr key={log.id} className="hover:bg-gray-50">
-                                                    <td className="px-2 py-1 font-mono text-gray-400">{log.dt}</td>
-                                                    <td className={`px-2 py-1 ${actionCls[log.action] ?? 'text-gray-600'}`}>{log.action}</td>
-                                                    <td className="px-2 py-1">{log.stk_nm || log.stk_cd || '-'}</td>
-                                                    <td className="px-2 py-1 text-right font-mono">{log.price != null ? log.price.toLocaleString() : '-'}</td>
-                                                    <td className={`px-2 py-1 text-right font-mono ${log.profit != null ? (log.profit >= 0 ? 'text-red-600' : 'text-blue-600') : ''}`}>
-                                                        {log.profit != null ? `${log.profit >= 0 ? '+' : ''}${log.profit.toLocaleString()}` : '-'}
-                                                        {log.profit_rate != null && <span className="text-gray-400 ml-1">({log.profit_rate}%)</span>}
-                                                    </td>
-                                                    <td className="px-2 py-1 text-gray-400">{log.sell_reason ?? log.memo ?? ''}</td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
+                            <div ref={feedRef} className="space-y-1 max-h-[540px] overflow-auto">
+                                {[...kdaemonEvents].reverse().map((ev, i) => <EventRow key={i} ev={ev} />)}
                             </div>
                         )}
                     </div>

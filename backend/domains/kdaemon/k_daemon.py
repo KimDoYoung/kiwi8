@@ -1,4 +1,5 @@
 import asyncio
+import random
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -28,7 +29,7 @@ def _get_stop_rate(conn: sqlite3.Connection) -> float:
     return 0.05
 
 
-class KDemon:
+class KDaemon:
     """
     자동매매 데몬
     - start(): auto_trade_position 확인 → 부족분 auto_trade.data에서 매수
@@ -36,7 +37,7 @@ class KDemon:
     - stop(): 루프 종료
     dry_run=True 이면 실제 주문 없이 log + WS로만 동작 (시뮬레이션)
     """
-    _instance: "KDemon|None" = None
+    _instance: "KDaemon|None" = None
 
     def __init__(self, db_path: str, poll_interval_sec: int = 60, dry_run: bool = True):
         self.db_path = db_path
@@ -48,16 +49,16 @@ class KDemon:
         self._conn.row_factory = sqlite3.Row
 
     @classmethod
-    def get(cls, db_path: str, poll_interval_sec: int = 60, dry_run: bool = True) -> "KDemon":
+    def get(cls, db_path: str, poll_interval_sec: int = 60, dry_run: bool = True) -> "KDaemon":
         if cls._instance is None:
-            cls._instance = KDemon(db_path, poll_interval_sec, dry_run)
+            cls._instance = KDaemon(db_path, poll_interval_sec, dry_run)
         return cls._instance
 
     # ── DB ─────────────────────────────────────────────
 
     def _set_state(self, status: str):
         self._conn.execute(
-            "UPDATE kdemon_state SET status=?, updated_at=? WHERE id=1",
+            "UPDATE kdaemon_state SET status=?, updated_at=? WHERE id=1",
             (status, now_ymdhms())
         )
         self._conn.commit()
@@ -88,8 +89,11 @@ class KDemon:
         auto_trade.data에서 부족분 읽기 → 매수 (dry_run)
         읽은 종목은 파일에서 삭제
         """
-        from backend.domains.kdemon.auto_trader import (
-            get_available_cash, get_current_price, buy_stock, log_action,
+        from backend.domains.kdaemon.auto_trader import (
+            buy_stock,
+            get_available_cash,
+            get_current_price,
+            log_action,
         )
 
         empty_slots = MAX_POSITIONS - len(existing)
@@ -108,7 +112,7 @@ class KDemon:
 
         if not to_buy:
             logger.info('kdaemon: 매수할 신규 종목 없음')
-            log_action(self._conn, 'FIND', memo=f'매수 종목 없음 (파일 비어있음 or 이미 보유)')
+            log_action(self._conn, 'FIND', memo='매수 종목 없음 (파일 비어있음 or 이미 보유)')
             return
 
         stop_rate = _get_stop_rate(self._conn)
@@ -154,7 +158,7 @@ class KDemon:
         self._stop_event.clear()
         self._set_state('running')
 
-        from backend.domains.kdemon.auto_trader import get_positions
+        from backend.domains.kdaemon.auto_trader import get_positions
         positions = get_positions(self._conn)
 
         if len(positions) < MAX_POSITIONS:
@@ -171,17 +175,16 @@ class KDemon:
         self._stop_event.set()
         if self._task and not self._task.done():
             try:
-                # stop_event 덕분에 _run()이 즉시 루프 탈출 → finally에서 STOP broadcast
-                # shield: timeout 시에도 task 자체는 cancel 안 함
                 await asyncio.wait_for(asyncio.shield(self._task), timeout=3)
-            except asyncio.TimeoutError:
-                # 3초 안에 못 끝나면 강제 cancel
+            except TimeoutError:
                 self._task.cancel()
                 try:
                     await self._task
                 except (asyncio.CancelledError, Exception):
                     pass
         self._task = None
+        # 태스크 없이 stop() 호출(백엔드 재시작 후 등)에도 DB 상태 보장
+        self._set_state('stopped')
 
     async def refresh(self):
         logger.info('kdaemon: refresh — 다음 사이클에서 포지션 재조회')
@@ -189,10 +192,14 @@ class KDemon:
     # ── 모니터링 루프 ───────────────────────────────────
 
     async def _run(self):
-        from backend.domains.kdemon.auto_trader import (
-            get_positions, get_current_price,
-            calc_trailing_stop, update_position_trailing,
-            should_sell, sell_stock, log_action,
+        from backend.domains.kdaemon.auto_trader import (
+            calc_trailing_stop,
+            get_current_price,
+            get_positions,
+            log_action,
+            sell_stock,
+            should_sell,
+            update_position_trailing,
         )
         try:
             while not self._stop_event.is_set():
@@ -200,10 +207,19 @@ class KDemon:
                 logger.info(f'kdaemon: 모니터링 사이클 — 포지션 {len(positions)}개')
                 for pos in positions:
                     cur_price = await get_current_price(pos.stk_cd)
-                    if cur_price is None:
+                    if self.dry_run:
+                        # buy_price 기준 ±8% 랜덤 시뮬 가격
+                        sim_base = pos.buy_price or 50_000
+                        cur_price = int(sim_base * random.uniform(0.92, 1.08))
+                    elif cur_price is None:
                         logger.warning(f'kdaemon: {pos.stk_cd} 현재가 없음, skip')
                         log_action(self._conn, 'ERROR', stk_cd=pos.stk_cd, memo='현재가 조회 실패')
                         continue
+
+                    # 현재가/손절가 상태 브로드캐스트
+                    log_action(self._conn, 'FIND',
+                               stk_cd=pos.stk_cd, stk_nm=pos.stk_nm, price=cur_price,
+                               memo=f'현재가 {cur_price:,}원 | 손절가 {pos.stop_price:,}원')
 
                     new_base, new_stop = calc_trailing_stop(
                         pos.base_price, cur_price, pos.stop_rate
@@ -212,7 +228,9 @@ class KDemon:
                         update_position_trailing(self._conn, pos.stk_cd, new_base, new_stop)
                         pos.base_price = new_base
                         pos.stop_price = new_stop
-                        logger.info(f'kdaemon: {pos.stk_cd} base={new_base:,} stop={new_stop:,}')
+                        log_action(self._conn, 'FIND',
+                                   stk_cd=pos.stk_cd, stk_nm=pos.stk_nm, price=cur_price,
+                                   memo=f'기준가↑ {new_base:,}원 → 손절가↑ {new_stop:,}원')
 
                     if should_sell(pos, cur_price):
                         logger.info(
@@ -222,13 +240,19 @@ class KDemon:
                         await sell_stock(self._conn, pos, cur_price,
                                          'trailing_stop', dry_run=self.dry_run)
 
+                # 매도 후 포지션 재조회 → 빈 슬롯 있으면 auto_trade.data에서 보충
+                positions = get_positions(self._conn)
+                if len(positions) < MAX_POSITIONS:
+                    logger.info(f'kdaemon: 포지션 {len(positions)}/{MAX_POSITIONS} → 신규 종목 보충 시도')
+                    await self._initial_buy(existing=positions)
+
                 # stop_event 대기 — set되면 즉시 루프 탈출
                 try:
                     await asyncio.wait_for(
                         self._stop_event.wait(), timeout=self.poll_interval_sec
                     )
                     break
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass  # 정상 주기, 계속
 
         except asyncio.CancelledError:

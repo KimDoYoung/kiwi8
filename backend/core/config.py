@@ -55,7 +55,7 @@ class Config:
         self.LLM_URL   = os.getenv('LLM_URL',   'http://localhost:11434')
         self.LLM_MODEL = os.getenv('LLM_MODEL', 'qwen2.5-coder:14b')
 
-        self.KDEMON_DRY_RUN = os.getenv('KDEMON_DRY_RUN', 'true').lower() == 'true'
+        self.KDAEMON_DRY_RUN = os.getenv('KDAEMON_DRY_RUN', 'true').lower() == 'true'
 
         self.DATA_FOLDER = self.BASE_DIR + '/data'
         self.FILE_FOLDER = self.BASE_DIR + '/files'

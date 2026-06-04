@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from backend.core.config import config
 from backend.core.logger import get_logger
-from backend.domains.kdemon.k_demon import KDemon, now_ymdhms
+from backend.domains.kdaemon.k_daemon import KDaemon, now_ymdhms
 
 # APIRouter 인스턴스 생성
 router = APIRouter()
@@ -31,12 +31,12 @@ async def send_command(body: CommandBody):
     # (옵션) 명령을 테이블에 적재
     with _conn() as c:
         c.execute("""
-            INSERT INTO kdemon_commands (cmd, args_json, created_at)
+            INSERT INTO kdaemon_commands (cmd, args_json, created_at)
             VALUES (?, ?, ?)
         """, (cmd, (body.args and json.dumps(body.args)) or None, now_ymdhms()))
         c.commit()
 
-    demon = KDemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDEMON_DRY_RUN)
+    demon = KDaemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDAEMON_DRY_RUN)
     if cmd == "start":
         await demon.start()
     elif cmd == "stop":
@@ -49,8 +49,8 @@ async def send_command(body: CommandBody):
 @router.get("/status")
 def status():
     with _conn() as c:
-        row = c.execute("SELECT status, updated_at FROM kdemon_state WHERE id=1").fetchone()
-        cur = c.execute("SELECT COUNT(*) FROM kdemon_rules WHERE status='active'").fetchone()
+        row = c.execute("SELECT status, updated_at FROM kdaemon_state WHERE id=1").fetchone()
+        cur = c.execute("SELECT COUNT(*) FROM kdaemon_rules WHERE status='active'").fetchone()
     return {
         "status": row[0] if row else "unknown",
         "updated_at": row[1] if row else None,
@@ -60,7 +60,7 @@ def status():
 @router.get("/conditions")
 async def get_conditions():
     """키움 조건식 목록 조회 (ka10171 WebSocket)"""
-    from backend.domains.kdemon.auto_trader import get_condition_list
+    from backend.domains.kdaemon.auto_trader import get_condition_list
     items = await get_condition_list()
     return {"ok": True, "data": items}
 
