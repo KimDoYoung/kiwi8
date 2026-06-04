@@ -273,3 +273,86 @@ else if (보유기간 == 5일째 && 장마감직전) {
   - condition_seq 목록 조회 버튼 (WS 연결) 연동 확인
   - dry_run → 실제 주문 전환 검증
   - WS 메시지 수신 디버그 마무리
+
+
+Plan: DaemonPage 3-Table 완성
+
+ Context
+
+ kdaemon 자동매매 시스템은 3개 테이블을 사용한다:
+ - auto_trade_buy_strategy — 매수 전략 (이미 DaemonPage CRUD 구현됨)
+ - auto_trade_position — 현재 보유 포지션 (UI/API 없음)
+ - auto_trade_log — 매매 이력 로그 (UI/API 없음)
+
+ DaemonPage는 전략 CRUD + 이벤트 피드만 있고, 포지션/로그 조회 섹션이 빠져 있음.
+
+ 구현 범위
+
+ 1. Backend — kdemon_routes.py 에 2개 엔드포인트 추가
+
+ GET /api/v1/kdemon/positions
+   → auto_trade_position 전체 조회 (ORDER BY bought_at DESC)
+   → 반환: [{id, stk_cd, stk_nm, buy_price, qty, amount, base_price, stop_price, stop_rate, bought_at,
+ updated_at}]
+
+ GET /api/v1/kdemon/logs?limit=100
+   → auto_trade_log 조회 (ORDER BY dt DESC LIMIT limit)
+   → 반환: [{id, dt, action, stk_cd, stk_nm, price, qty, amount, profit, profit_rate, sell_reason,
+ order_no, memo}]
+
+ 구현 방식: 기존 _conn() + sqlite3 패턴 그대로. 새 Pydantic 모델 불필요 (dict 반환).
+
+ 2. Frontend — DaemonPage.tsx 에 2개 섹션 추가
+
+ 섹션 A: 현재 포지션 (auto_trade_position)
+
+ DaemonPage 하단, 전략 테이블 아래에 추가.
+ - useQuery({ queryKey: ['kdemonPositions'], queryFn: fetchPositions, refetchInterval: 30000 })
+ - 컬럼: 종목명/코드 | 매수가 | 수량 | 금액 | 기준가 | 손절가 | Stop% | 매수시각
+ - 손절가 기준으로 현재 포지션 위험도 색상 표시 (stop_price 대비 base_price 비율)
+ - WS 이벤트(SELL/BUY) 수신 시 자동 refetch: useEffect → queryClient.invalidateQueries
+
+ 섹션 B: 매매 이력 (auto_trade_log)
+
+ 포지션 아래 또는 탭 전환. 최근 50건.
+ - useQuery({ queryKey: ['kdemonLogs'], queryFn: fetchLogs, refetchInterval: 60000 })
+ - 컬럼: 시각 | action | 종목 | 가격 | 수량 | 손익 | 손익% | 사유 | 메모
+ - action 별 색상: BUY=적색, SELL=청색, ERROR=황색, FIND=회색
+ - 이미 EventRow 컴포넌트에 색상 로직 있음 — 유사하게 적용
+
+ 3. WS 이벤트 → 자동 리프레시 연동
+
+ DaemonPage에서 kdaemonEvents 변경 감지 → positions/logs invalidate:
+
+ const prevLen = useRef(0)
+ useEffect(() => {
+   if (kdaemonEvents.length !== prevLen.current) {
+     prevLen.current = kdaemonEvents.length
+     queryClient.invalidateQueries({ queryKey: ['kdemonPositions'] })
+     queryClient.invalidateQueries({ queryKey: ['kdemonLogs'] })
+   }
+ }, [kdaemonEvents])
+
+ 수정 파일
+
+ 1. backend/api/v1/endpoints/kdemon_routes.py — positions/logs GET 추가 (~25줄)
+ 2. frontend/src/pages/manage/DaemonPage.tsx — 포지션 섹션 + 로그 섹션 추가 (~120줄)
+
+ 검증
+
+ 1. kdaemon start → 매수 발생 → positions 섹션에 종목 표시 확인
+ 2. trailing stop 발동 → sell → positions에서 제거, logs에 수익 표시 확인
+ 3. dry_run=True 상태에서도 log 기록 되는지 확인
+ 4. WS 이벤트 수신 → UI 자동 갱신 확인 (새로고침 불필요)
+
+
+daemon이 시작(START) 되면
+1. start()
+    - auto_trade_position에서 3개의 종목을 가져온다.
+    - 3개 미만이라면 부족한 숫자만큼 get_stocks()에서 가져온다.
+    - get_stocks_from_auto_trade_txt() 종목외의 데이터는 default값을 사용한다.
+        - db/auto_trade.txt에서 가져온다. 가져온 것은 삭제
+    - 새로 가져온 종목은 매수한다.   시장가를 가져와야하고, 키움증권의 예수금도 가져와야한다.(무조건 현금이고 신용거래는 생각치 않고 있음)
+2. 3개의 종목에 대한 base_price와 매도가격이 결정되어서 db에 들어가 있다 (역시 이것은 settings에 있어야할까? 지금은 모두 auto_trade_buy_strategy에 있음.)
+3. 1분단위로 대상 종목들에 대한 가격을 모니터링해서 매도 가격이 되면 매도한다.
+4. 시간이 조건식을 수행할 시간이 되면 조건식을 수행한다.

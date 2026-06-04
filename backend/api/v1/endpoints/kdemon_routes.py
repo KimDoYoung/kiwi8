@@ -1,8 +1,9 @@
 
 import json
 import sqlite3
+from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from backend.core.config import config
@@ -118,3 +119,49 @@ def delete_strategy(sid: int):
         c.execute("DELETE FROM auto_trade_buy_strategy WHERE id=?", (sid,))
         c.commit()
     return {"ok": True}
+
+
+# ── 직접 매수 큐 (auto_trade.data) ────────────────────
+
+def _manual_stocks_path() -> Path:
+    return Path(config.BASE_DIR) / 'db' / 'auto_trade.data'
+
+@router.get("/manual-stocks")
+def get_manual_stocks():
+    path = _manual_stocks_path()
+    if not path.exists():
+        return {"lines": []}
+    lines = [l.strip() for l in path.read_text().splitlines() if l.strip()]
+    return {"lines": lines}
+
+class ManualStocksBody(BaseModel):
+    lines: list[str]
+
+@router.put("/manual-stocks")
+def save_manual_stocks(body: ManualStocksBody):
+    path = _manual_stocks_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = '\n'.join(l.strip() for l in body.lines if l.strip())
+    path.write_text(content)
+    return {"ok": True}
+
+
+# ── 포지션 / 로그 조회 ────────────────────────────────
+
+@router.get("/positions")
+def list_positions():
+    with _conn() as c:
+        rows = c.execute("SELECT * FROM auto_trade_position ORDER BY bought_at DESC").fetchall()
+        cols = [d[0] for d in c.execute("SELECT * FROM auto_trade_position LIMIT 0").description or []]
+    if not cols:
+        cols = ['id','stk_cd','stk_nm','buy_price','qty','amount','base_price','stop_price','stop_rate','bought_at','updated_at']
+    return [dict(zip(cols, r)) for r in rows]
+
+@router.get("/logs")
+def list_logs(limit: int = Query(default=100, le=500)):
+    with _conn() as c:
+        rows = c.execute("SELECT * FROM auto_trade_log ORDER BY dt DESC LIMIT ?", (limit,)).fetchall()
+        cols = [d[0] for d in c.execute("SELECT * FROM auto_trade_log LIMIT 0").description or []]
+    if not cols:
+        cols = ['id','dt','action','stk_cd','stk_nm','price','qty','amount','profit','profit_rate','sell_reason','order_no','memo']
+    return [dict(zip(cols, r)) for r in rows]

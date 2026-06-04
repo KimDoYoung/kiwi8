@@ -36,6 +36,57 @@ async function fetchStrategies(): Promise<Strategy[]> {
     const res = await api.get('/api/v1/kdemon/strategies')
     return res.data
 }
+
+// ── 직접 매수 큐 ───────────────────────────────────────
+
+async function fetchManualStocks(): Promise<string[]> {
+    const res = await api.get('/api/v1/kdemon/manual-stocks')
+    return res.data.lines ?? []
+}
+async function saveManualStocks(lines: string[]) {
+    const res = await api.put('/api/v1/kdemon/manual-stocks', { lines })
+    return res.data
+}
+
+// ── 포지션 / 로그 ──────────────────────────────────────
+
+interface Position {
+    id: number
+    stk_cd: string
+    stk_nm: string
+    buy_price: number
+    qty: number
+    amount: number
+    base_price: number
+    stop_price: number
+    stop_rate: number
+    bought_at: string
+    updated_at: string
+}
+interface TradeLog {
+    id: number
+    dt: string
+    action: string
+    stk_cd: string | null
+    stk_nm: string | null
+    price: number | null
+    qty: number | null
+    amount: number | null
+    profit: number | null
+    profit_rate: number | null
+    sell_reason: string | null
+    order_no: string | null
+    memo: string | null
+}
+
+async function fetchPositions(): Promise<Position[]> {
+    const res = await api.get('/api/v1/kdemon/positions')
+    return res.data
+}
+async function fetchLogs(): Promise<TradeLog[]> {
+    const res = await api.get('/api/v1/kdemon/logs?limit=50')
+    return res.data
+}
 async function createStrategy(body: Omit<Strategy, 'id'>) {
     const res = await api.post('/api/v1/kdemon/strategies', body)
     return res.data
@@ -60,6 +111,7 @@ export default function DaemonPage() {
     const [addingNew, setAddingNew] = useState(false)
     const [form, setForm] = useState<Omit<Strategy, 'id'>>(emptyForm())
     const [editForm, setEditForm] = useState<Strategy | null>(null)
+    const [newCode, setNewCode] = useState('')
 
     useEffect(() => {
         if (showEvents && feedRef.current) {
@@ -94,21 +146,56 @@ export default function DaemonPage() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdemonStrategies'] }),
     })
 
+    // ── 직접 매수 큐 ──
+    const { data: manualLines = [], refetch: refetchManual } = useQuery({
+        queryKey: ['kdemonManualStocks'], queryFn: fetchManualStocks, refetchInterval: 10000,
+    })
+    const saveMut = useMutation({
+        mutationFn: saveManualStocks,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdemonManualStocks'] }),
+    })
+
+    // ── 포지션 / 로그 ──
+    const { data: positions = [] } = useQuery({
+        queryKey: ['kdemonPositions'], queryFn: fetchPositions, refetchInterval: 30000,
+    })
+    const { data: tradeLogs = [] } = useQuery({
+        queryKey: ['kdemonLogs'], queryFn: fetchLogs, refetchInterval: 60000,
+    })
+
+    // WS 이벤트 수신 시 positions/logs 자동 갱신
+    const prevEvLen = useRef(0)
+    useEffect(() => {
+        if (kdaemonEvents.length !== prevEvLen.current) {
+            prevEvLen.current = kdaemonEvents.length
+            queryClient.invalidateQueries({ queryKey: ['kdemonPositions'] })
+            queryClient.invalidateQueries({ queryKey: ['kdemonLogs'] })
+            queryClient.invalidateQueries({ queryKey: ['kdemonManualStocks'] })
+        }
+    }, [kdaemonEvents, queryClient])
+
+    const addCode = () => {
+        const code = newCode.trim()
+        if (!code || manualLines.includes(code)) return
+        const next = [...manualLines, code]
+        setNewCode('')
+        saveMut.mutate(next)
+    }
+    const removeCode = (code: string) => saveMut.mutate(manualLines.filter(l => l !== code))
+
     const startEdit = (s: Strategy) => { setEditingId(s.id); setEditForm({ ...s }) }
     const cancelEdit = () => { setEditingId(null); setEditForm(null) }
 
     return (
         <div className="flex flex-col h-full p-4 gap-4 overflow-auto text-sm">
 
-            {/* ── Row 1: 데몬 상태 + 이벤트 체크박스 ── */}
+            {/* ── 데몬 컨트롤 (full width) ── */}
             <div className="flex items-center gap-4 bg-white border rounded-lg px-4 py-3">
-                {/* 상태 */}
                 <div className="flex items-center gap-2 border rounded-md px-3 py-1.5 bg-gray-50">
                     <span className={`w-2.5 h-2.5 rounded-full ${statusLoading ? 'bg-gray-300' : isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     <span className="font-medium">{statusLoading ? '...' : isRunning ? '실행 중' : '정지'}</span>
                     {statusData?.updated_at && <span className="text-xs text-gray-400 ml-1">{statusData.updated_at}</span>}
                 </div>
-
                 <button onClick={() => cmdMutation.mutate('start')} disabled={cmdMutation.isPending || isRunning}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     <Play className="w-3.5 h-3.5" /> 시작
@@ -121,8 +208,6 @@ export default function DaemonPage() {
                     className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
                     <RefreshCcw className="w-4 h-4" />
                 </button>
-
-                {/* 이벤트 토글 */}
                 <label className="flex items-center gap-2 ml-auto cursor-pointer select-none text-gray-600">
                     <input type="checkbox" checked={showEvents} onChange={e => setShowEvents(e.target.checked)}
                         className="w-4 h-4 accent-blue-600" />
@@ -130,25 +215,161 @@ export default function DaemonPage() {
                 </label>
             </div>
 
-            {/* ── 이벤트 피드 (토글) ── */}
-            {showEvents && (
-                <div className="bg-white border rounded-lg p-3">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                        실시간 이벤트
-                        {kdaemonEvents.length > 0 && <span className="ml-2 text-blue-500 font-mono">{kdaemonEvents.length}</span>}
-                    </p>
-                    {kdaemonEvents.length === 0 ? (
-                        <p className="text-xs text-gray-400 py-3 text-center">이벤트 없음</p>
-                    ) : (
-                        <div ref={feedRef} className="space-y-1 max-h-48 overflow-auto">
-                            {[...kdaemonEvents].reverse().slice(-10).map((ev, i) => <EventRow key={i} ev={ev} />)}
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* ── 2-column grid ── */}
+            <div className="grid grid-cols-2 gap-4">
 
-            {/* ── 매수 전략 ── */}
-            <div className="bg-white border rounded-lg p-3 flex-1">
+                {/* LEFT: 직접 매수 큐 + 현재 포지션 */}
+                <div className="flex flex-col gap-4">
+
+                    {/* 직접 매수 큐 */}
+                    <div className="bg-white border rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                직접 매수 큐
+                                {manualLines.length > 0 && <span className="ml-2 text-orange-500 font-mono">{manualLines.length}</span>}
+                            </p>
+                            <button onClick={() => refetchManual()} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors">
+                                <RefreshCcw className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-2 min-h-[24px]">
+                            {manualLines.map(code => (
+                                <span key={code} className="flex items-center gap-1 px-2 py-0.5 bg-orange-50 border border-orange-200 rounded text-xs font-mono text-orange-700">
+                                    {code}
+                                    <button onClick={() => removeCode(code)} className="text-orange-400 hover:text-orange-700">
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </span>
+                            ))}
+                            {manualLines.length === 0 && <span className="text-xs text-gray-400">큐 비어있음</span>}
+                        </div>
+                        <div className="flex gap-1.5">
+                            <input
+                                value={newCode}
+                                onChange={e => setNewCode(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addCode()}
+                                placeholder="종목코드 (예: 005930)"
+                                className="flex-1 border rounded px-2 py-1 text-xs font-mono"
+                            />
+                            <button onClick={addCode} disabled={saveMut.isPending}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded text-xs bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 transition-colors">
+                                <Plus className="w-3.5 h-3.5" /> 추가
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 현재 포지션 */}
+                    <div className="bg-white border rounded-lg p-3">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            현재 포지션
+                            {positions.length > 0 && <span className="ml-2 text-blue-500 font-mono">{positions.length}</span>}
+                        </p>
+                        {positions.length === 0 ? (
+                            <p className="text-xs text-gray-400 py-2 text-center">보유 포지션 없음</p>
+                        ) : (
+                            <div className="overflow-auto">
+                                <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-gray-200">
+                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">종목</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">매수가</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">수량</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">기준가</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">손절가</th>
+                                            <th className="px-2 py-1.5 text-center text-gray-500 font-semibold">Stop%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {positions.map(p => (
+                                            <tr key={p.id} className="hover:bg-gray-50">
+                                                <td className="px-2 py-1.5">
+                                                    <span className="font-medium">{p.stk_nm || p.stk_cd}</span>
+                                                    <span className="text-gray-400 ml-1 text-xs">({p.stk_cd})</span>
+                                                </td>
+                                                <td className="px-2 py-1.5 text-right font-mono">{p.buy_price.toLocaleString()}</td>
+                                                <td className="px-2 py-1.5 text-right">{p.qty}</td>
+                                                <td className="px-2 py-1.5 text-right font-mono">{p.base_price.toLocaleString()}</td>
+                                                <td className="px-2 py-1.5 text-right font-mono text-red-600">{p.stop_price.toLocaleString()}</td>
+                                                <td className="px-2 py-1.5 text-center">{Math.round(p.stop_rate * 100)}%</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+
+                {/* RIGHT: 실시간 이벤트 + 매매 이력 */}
+                <div className="flex flex-col gap-4">
+
+                    {/* 실시간 이벤트 */}
+                    <div className="bg-white border rounded-lg p-3">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            실시간 이벤트
+                            {kdaemonEvents.length > 0 && <span className="ml-2 text-blue-500 font-mono">{kdaemonEvents.length}</span>}
+                        </p>
+                        {!showEvents || kdaemonEvents.length === 0 ? (
+                            <p className="text-xs text-gray-400 py-3 text-center">
+                                {showEvents ? '이벤트 없음' : '이벤트 보기 비활성'}
+                            </p>
+                        ) : (
+                            <div ref={feedRef} className="space-y-1 max-h-48 overflow-auto">
+                                {[...kdaemonEvents].reverse().slice(0, 10).map((ev, i) => <EventRow key={i} ev={ev} />)}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 매매 이력 */}
+                    <div className="bg-white border rounded-lg p-3">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">매매 이력 (최근 50건)</p>
+                        {tradeLogs.length === 0 ? (
+                            <p className="text-xs text-gray-400 py-2 text-center">이력 없음</p>
+                        ) : (
+                            <div className="overflow-auto max-h-64">
+                                <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-gray-200">
+                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">시각</th>
+                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">구분</th>
+                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">종목</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">가격</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">손익</th>
+                                            <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">사유</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {tradeLogs.map(log => {
+                                            const actionCls: Record<string, string> = {
+                                                BUY: 'text-red-600 font-bold', SELL: 'text-blue-600 font-bold',
+                                                ERROR: 'text-yellow-600 font-bold', FIND: 'text-gray-500',
+                                            }
+                                            return (
+                                                <tr key={log.id} className="hover:bg-gray-50">
+                                                    <td className="px-2 py-1 font-mono text-gray-400">{log.dt}</td>
+                                                    <td className={`px-2 py-1 ${actionCls[log.action] ?? 'text-gray-600'}`}>{log.action}</td>
+                                                    <td className="px-2 py-1">{log.stk_nm || log.stk_cd || '-'}</td>
+                                                    <td className="px-2 py-1 text-right font-mono">{log.price != null ? log.price.toLocaleString() : '-'}</td>
+                                                    <td className={`px-2 py-1 text-right font-mono ${log.profit != null ? (log.profit >= 0 ? 'text-red-600' : 'text-blue-600') : ''}`}>
+                                                        {log.profit != null ? `${log.profit >= 0 ? '+' : ''}${log.profit.toLocaleString()}` : '-'}
+                                                        {log.profit_rate != null && <span className="text-gray-400 ml-1">({log.profit_rate}%)</span>}
+                                                    </td>
+                                                    <td className="px-2 py-1 text-gray-400">{log.sell_reason ?? log.memo ?? ''}</td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+            </div>
+
+            {/* ── 매수 전략 (full width) ── */}
+            <div className="bg-white border rounded-lg p-3">
                 <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">매수 전략</p>
                     <button onClick={() => { setAddingNew(true); setForm(emptyForm()) }}
@@ -156,7 +377,6 @@ export default function DaemonPage() {
                         <Plus className="w-3.5 h-3.5" /> 추가
                     </button>
                 </div>
-
                 <div className="overflow-auto">
                     <table className="w-full text-xs border-collapse">
                         <thead>
@@ -172,8 +392,6 @@ export default function DaemonPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-
-                            {/* 신규 추가 행 */}
                             {addingNew && (
                                 <StrategyFormRow
                                     value={form}
@@ -183,7 +401,6 @@ export default function DaemonPage() {
                                     saving={createMut.isPending}
                                 />
                             )}
-
                             {strategies.map(s => (
                                 editingId === s.id && editForm ? (
                                     <StrategyFormRow
@@ -218,7 +435,6 @@ export default function DaemonPage() {
                                     </tr>
                                 )
                             ))}
-
                             {strategies.length === 0 && !addingNew && (
                                 <tr><td colSpan={8} className="px-2 py-6 text-center text-gray-400">전략 없음 — 추가 버튼으로 생성</td></tr>
                             )}

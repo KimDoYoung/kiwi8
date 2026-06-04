@@ -9,6 +9,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, time
+from pathlib import Path
 
 import websockets
 
@@ -407,16 +408,84 @@ def log_action(conn: sqlite3.Connection, action: str, **kwargs) -> None:
 
 
 # ─────────────────────────────────────────────────────────
+# 직접 지정 종목 매수 (auto_trade.data 파일 기반)
+# ─────────────────────────────────────────────────────────
+
+async def process_manual_stocks(
+    conn: sqlite3.Connection,
+    data_file: str,
+    stop_rate: float = 0.05,
+    dry_run: bool = True,
+) -> None:
+    """
+    auto_trade.data 파일 → 한 줄씩 종목코드 → 매수 → 성공 시 해당 줄 제거
+    예수금 부족 / 현재가 조회 실패 종목은 파일에 유지
+    """
+    path = Path(data_file)
+    if not path.exists():
+        return
+
+    lines = [l.strip() for l in path.read_text().splitlines() if l.strip()]
+    if not lines:
+        return
+
+    logger.info(f'kdaemon: 직접지정 종목 {len(lines)}개 처리 시작')
+    positions = get_positions(conn)
+    held = {p.stk_cd for p in positions}
+    remaining = []
+    cash = await get_available_cash()
+
+    for stk_cd in lines:
+        if stk_cd in held:
+            logger.info(f'kdaemon: {stk_cd} 이미 보유중 — 큐에서 제거')
+            continue
+
+        if cash <= 0:
+            logger.warning(f'kdaemon: 직접지정 {stk_cd} 예수금 없음 — 큐 유지')
+            remaining.append(stk_cd)
+            continue
+
+        cur_price = await get_current_price(stk_cd)
+        if not cur_price:
+            logger.warning(f'kdaemon: {stk_cd} 현재가 조회 실패 — 큐 유지')
+            remaining.append(stk_cd)
+            continue
+
+        qty = cash // cur_price
+        if qty <= 0:
+            logger.warning(f'kdaemon: {stk_cd} 예산 부족 price={cur_price:,} cash={cash:,} — 큐 유지')
+            remaining.append(stk_cd)
+            continue
+
+        result = await buy_stock(conn, stk_cd, stk_cd, cur_price, qty,
+                                 stop_rate=stop_rate, dry_run=dry_run)
+        if result is not None or dry_run:
+            held.add(stk_cd)
+            cash -= cur_price * qty
+        else:
+            remaining.append(stk_cd)
+
+    path.write_text('\n'.join(remaining))
+    logger.info(f'kdaemon: 직접지정 처리 완료, 남은 큐={len(remaining)}개')
+
+
+# ─────────────────────────────────────────────────────────
 # 메인 사이클
 # ─────────────────────────────────────────────────────────
 
 async def run_auto_trade_cycle(conn: sqlite3.Connection, dry_run: bool = True) -> None:
     """
-    전략 테이블 기반 사이클:
+    자동매매 사이클:
+    0. 직접지정 종목 매수 (auto_trade.data)
     1. trailing stop 체크 → 매도 (항상)
     2. 활성 전략별: 현재 시각이 buy_start~buy_end 범위면 → 조건검색 → 매수
     """
+    from backend.core.config import config
     now_t = datetime.now().time()
+
+    # ── step0: 직접지정 종목 매수 (우선) ──
+    data_file = str(Path(config.BASE_DIR) / 'db' / 'auto_trade.data')
+    await process_manual_stocks(conn, data_file, dry_run=dry_run)
 
     # ── step1: 포지션 trailing stop 체크 (항상 실행) ──
     positions = get_positions(conn)
