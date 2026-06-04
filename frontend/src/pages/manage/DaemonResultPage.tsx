@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
 import api from '@/lib/api'
+import { llmAgent } from '@/services/LlmAgent'
 
 // ── API ───────────────────────────────────────────────────
 
@@ -40,7 +42,7 @@ async function fetchPositions(): Promise<Position[]> {
 }
 
 async function fetchLogs(): Promise<TradeLog[]> {
-    const res = await api.get('/api/v1/kdaemon/logs?limit=500')
+    const res = await api.get('/api/v1/kdaemon/logs?limit=50')
     return res.data
 }
 
@@ -103,7 +105,7 @@ function calcDayStats(logs: TradeLog[]): DayStat[] {
 
 // ── 컴포넌트 ──────────────────────────────────────────────
 
-type Tab = 'positions' | 'by-stock' | 'by-date' | 'history'
+type Tab = 'positions' | 'by-stock' | 'by-date' | 'history' | 'summary'
 
 export default function DaemonResultPage() {
     const [tab, setTab] = useState<Tab>('positions')
@@ -132,6 +134,7 @@ export default function DaemonResultPage() {
         { id: 'by-stock', label: '종목별 손익' },
         { id: 'by-date', label: '기간별 손익' },
         { id: 'history', label: `전체 이력 (${logs.length})` },
+        { id: 'summary', label: 'AI 요약' },
     ]
 
     return (
@@ -181,6 +184,9 @@ export default function DaemonResultPage() {
             )}
             {!logLoading && tab === 'history' && (
                 <HistoryTab logs={logs} />
+            )}
+            {tab === 'summary' && (
+                <SummaryTab positions={positions} logs={logs} />
             )}
         </div>
     )
@@ -277,10 +283,11 @@ function HistoryTab({ logs }: { logs: TradeLog[] }) {
     if (logs.length === 0) {
         return <Empty msg="이력 없음" />
     }
+    const sorted = [...logs].reverse()
     return (
         <div className="overflow-auto max-h-[520px]">
             <Table headers={['시각', '구분', '종목', '가격', '수량', '금액', '손익', '수익률', '메모']}>
-                {logs.map(l => (
+                {sorted.map(l => (
                     <tr key={l.id} className="border-b border-gray-100 hover:bg-blue-50 text-xs">
                         <Td cls="text-gray-400 whitespace-nowrap">{l.dt}</Td>
                         <Td cls={ACTION_COLOR[l.action] ?? 'text-gray-600'}>{l.action}</Td>
@@ -298,6 +305,229 @@ function HistoryTab({ logs }: { logs: TradeLog[] }) {
                     </tr>
                 ))}
             </Table>
+        </div>
+    )
+}
+
+// ── LLM 요약 탭 ──────────────────────────────────────────
+
+function extractInitialCash(logs: TradeLog[]): number | null {
+    for (const l of [...logs].reverse()) {
+        if (l.action === 'FIND' && l.memo) {
+            const m = l.memo.match(/예수금[=\s]+([\d,]+)원/)
+            if (m) return parseInt(m[1].replace(/,/g, ''))
+        }
+    }
+    return null
+}
+
+function elapsedStr(dtStr: string): string {
+    const start = new Date(dtStr.replace(' ', 'T'))
+    const diffMs = Date.now() - start.getTime()
+    const mins = Math.floor(diffMs / 60000)
+    const hours = Math.floor(mins / 60)
+    if (hours > 0) return `${hours}시간 ${mins % 60}분`
+    return `${mins}분`
+}
+
+function buildPrompt(positions: Position[], logs: TradeLog[]): string {
+    const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    const lines: string[] = []
+
+    // 시작시간 / 경과시간
+    const firstBuy = [...logs].reverse().find(l => l.action === 'BUY')
+    const startTime = firstBuy?.dt ?? null
+    const elapsed = startTime ? elapsedStr(startTime) : null
+
+    // 예수금
+    const initialCash = extractInitialCash(logs)
+    const heldAmount = positions.reduce((s, p) => s + p.amount, 0)
+    const remainingCash = initialCash != null ? initialCash - heldAmount : null
+
+    lines.push(`[kdaemon 자동매매 현황] 조회시각: ${now}`)
+    if (startTime) lines.push(`  시작: ${startTime}  경과: ${elapsed}`)
+    if (initialCash != null) lines.push(`  초기 예수금: ${initialCash.toLocaleString()}원  추정 잔여: ${(remainingCash ?? 0).toLocaleString()}원`)
+    lines.push('')
+
+    lines.push(`■ 현재 포지션 (${positions.length}개)`)
+    if (positions.length === 0) {
+        lines.push('  - 없음')
+    } else {
+        for (const p of positions) {
+            lines.push(`  - ${p.stk_nm}(${p.stk_cd}): 매수가 ${p.buy_price.toLocaleString()}원, ${p.qty}주, 손절가 ${p.stop_price.toLocaleString()}원`)
+        }
+    }
+    lines.push('')
+
+    const tradeLogs = logs.filter(l => l.action === 'BUY' || l.action === 'SELL')
+    lines.push(`■ 매매 이력 (${tradeLogs.length}건)`)
+    if (tradeLogs.length === 0) {
+        lines.push('  - 없음')
+    } else {
+        for (const l of [...tradeLogs].reverse()) {
+            const nm = l.stk_nm ?? l.stk_cd ?? '?'
+            const price = l.price?.toLocaleString() ?? '-'
+            const qty = l.qty ?? '-'
+            const amount = l.amount?.toLocaleString() ?? '-'
+            if (l.action === 'BUY') {
+                lines.push(`  - ${l.dt} | 매수 | ${nm} | ${price}원 × ${qty}주 = ${amount}원`)
+            } else {
+                const sign = (l.profit ?? 0) >= 0 ? '+' : ''
+                const profit = l.profit != null ? ` | 손익 ${sign}${l.profit.toLocaleString()}원(${sign}${l.profit_rate ?? 0}%)` : ''
+                lines.push(`  - ${l.dt} | 매도 | ${nm} | ${price}원 × ${qty}주 = ${amount}원${profit}`)
+            }
+        }
+    }
+    lines.push('')
+
+    const sellLogs = logs.filter(l => l.action === 'SELL')
+    const buyLogs = logs.filter(l => l.action === 'BUY')
+    const totalProfit = sellLogs.reduce((s, l) => s + (l.profit ?? 0), 0)
+    const profitSign = totalProfit >= 0 ? '+' : ''
+    lines.push('■ 집계')
+    lines.push(`  - 총 매수: ${buyLogs.length}회 / 총 매도: ${sellLogs.length}회`)
+    lines.push(`  - 누적 손익: ${profitSign}${totalProfit.toLocaleString()}원`)
+    lines.push('')
+    lines.push('위 자동매매 수행 결과를 한국어로 간결하게 요약해주세요. 시작시간, 경과시간, 예수금 변화, 수익/손실 현황, 현재 모니터링 상태를 포함해주세요.')
+
+    return lines.join('\n')
+}
+
+// 마침표 단위로 줄바꿈 + 금액/비율 색상 처리
+function renderSummaryText(text: string) {
+    const sentences = text
+        .replace(/\.\s+/g, '.\n')
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+
+    return sentences.map((sentence, i) => {
+        // 숫자+원 or 숫자+% 패턴 분리
+        const parts = sentence.split(/([-+]?[\d,]+원|[-+]?\d+\.?\d*%)/)
+        return (
+            <p key={i} className="mb-3 leading-relaxed">
+                {parts.map((part, j) => {
+                    if (/^-[\d,]+원$/.test(part) || /^-\d+\.?\d*%$/.test(part)) {
+                        return <span key={j} className="text-blue-600 font-bold">{part}</span>
+                    }
+                    if (/^\+?[\d,]+원$/.test(part) || /^\+\d+\.?\d*%$/.test(part)) {
+                        return <span key={j} className="text-red-600 font-bold">{part}</span>
+                    }
+                    return <span key={j}>{part}</span>
+                })}
+            </p>
+        )
+    })
+}
+
+const SYS_PROMPT = '당신은 주식 자동매매 결과를 분석하는 한국어 AI 어시스턴트입니다. 간결하고 친절하게 답변해주세요.'
+
+interface ChatMsg { role: 'user' | 'assistant'; content: string }
+
+function SummaryTab({ positions, logs }: { positions: Position[]; logs: TradeLog[] }) {
+    const [messages, setMessages] = useState<ChatMsg[]>([])
+    const [input, setInput] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
+    const bottomRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, [messages, loading])
+
+    async function sendMessage(content: string) {
+        if (!content.trim() || loading) return
+        const next: ChatMsg[] = [...messages, { role: 'user', content }]
+        setMessages(next)
+        setInput('')
+        setLoading(true)
+        setError('')
+        try {
+            const reply = await llmAgent.chat(next, SYS_PROMPT)
+            setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+        } catch (e) {
+            setError('AI 호출 실패: ' + String(e))
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+                <button
+                    onClick={() => { setMessages([]); setError(''); sendMessage(buildPrompt(positions, logs)) }}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {loading && messages.length === 0 ? <Loader2 className="w-4 h-4 animate-spin" /> : '🤖'}
+                    분석 시작
+                </button>
+                {messages.length > 0 && (
+                    <button
+                        onClick={() => { setMessages([]); setError('') }}
+                        className="px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
+                        대화 초기화
+                    </button>
+                )}
+                <span className="text-xs text-gray-400">Ollama 실행 중이어야 합니다</span>
+            </div>
+
+            {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{error}</div>
+            )}
+
+            {messages.length === 0 && !loading && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-400 text-sm">
+                    "분석 시작"을 클릭하면 매매 데이터를 AI에 전송합니다. 이후 추가 질문도 가능합니다.
+                </div>
+            )}
+
+            {(messages.length > 0 || loading) && (
+                <div className="border border-gray-200 rounded-lg overflow-auto max-h-[480px] bg-white p-3 space-y-3">
+                    {messages.map((m, i) => (
+                        <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-base leading-relaxed ${
+                                m.role === 'user'
+                                    ? 'bg-blue-600 text-white text-sm rounded-br-sm'
+                                    : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+                            }`}>
+                                {m.role === 'assistant' ? renderSummaryText(m.content) : m.content}
+                            </div>
+                        </div>
+                    ))}
+                    {loading && (
+                        <div className="flex justify-start">
+                            <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-sm">
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            </div>
+                        </div>
+                    )}
+                    <div ref={bottomRef} />
+                </div>
+            )}
+
+            {messages.length > 0 && (
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
+                        placeholder="추가 질문을 입력하세요... (Enter)"
+                        disabled={loading}
+                        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50"
+                    />
+                    <button
+                        onClick={() => sendMessage(input)}
+                        disabled={loading || !input.trim()}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors"
+                    >
+                        전송
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

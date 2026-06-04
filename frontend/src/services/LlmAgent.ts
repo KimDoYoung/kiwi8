@@ -65,6 +65,33 @@ export class LlmAgent {
         return data.message.content as string
     }
 
+    async chat(
+        messages: { role: string; content: string }[],
+        systemPrompt = '당신은 도움이 되는 한국어 AI 어시스턴트입니다.'
+    ): Promise<string> {
+        if (!this.initialized) await this.init()
+        const res = await fetch(`${this.llmUrl}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: this.llmModel,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages,
+                ],
+                stream: false,
+            }),
+        })
+        if (!res.ok) {
+            const msg = `Ollama error: ${res.status}`
+            this.lastError = msg
+            throw new Error(msg)
+        }
+        const data = await res.json()
+        this.lastError = null
+        return data.message.content as string
+    }
+
     getStatus(): LlmAgentStatus {
         return {
             initialized: this.initialized,
