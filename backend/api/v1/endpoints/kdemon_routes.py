@@ -36,7 +36,7 @@ async def send_command(body: CommandBody):
         """, (cmd, (body.args and json.dumps(body.args)) or None, now_ymdhms()))
         c.commit()
 
-    demon = KDemon.get(config.DB_PATH, poll_interval_sec=5, dry_run=config.KDEMON_DRY_RUN)
+    demon = KDemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDEMON_DRY_RUN)
     if cmd == "start":
         await demon.start()
     elif cmd == "stop":

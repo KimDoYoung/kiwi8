@@ -105,6 +105,7 @@ async function deleteStrategy(id: number) {
 export default function DaemonPage() {
     const queryClient = useQueryClient()
     const kdaemonEvents = useWsStore(s => s.kdaemonEvents)
+    const clearKdaemonEvents = useWsStore(s => s.clearKdaemonEvents)
     const feedRef = useRef<HTMLDivElement>(null)
     const [showEvents, setShowEvents] = useState(true)
     const [editingId, setEditingId] = useState<number | null>(null)

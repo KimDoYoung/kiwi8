@@ -69,6 +69,7 @@ interface WsState {
   setConnected: (v: boolean) => void
   handleMessage: (msg: WsMessage) => void
   pushRaw: (text: string) => void
+  clearKdaemonEvents: () => void
 }
 
 export const useWsStore = create<WsState>((set) => ({
@@ -82,6 +83,7 @@ export const useWsStore = create<WsState>((set) => ({
   totalCount: 0,
 
   setConnected: (v) => set({ connected: v }),
+  clearKdaemonEvents: () => set({ kdaemonEvents: [] }),
 
   pushRaw: (text) => set((s) => ({
     totalCount: s.totalCount + 1,
