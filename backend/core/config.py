@@ -56,6 +56,8 @@ class Config:
         self.LLM_MODEL = os.getenv('LLM_MODEL', 'qwen2.5-coder:14b')
 
         self.KDAEMON_DRY_RUN = os.getenv('KDAEMON_DRY_RUN', 'true').lower() == 'true'
+        self.BUY_FEE_RATE: float = 0.00015   # 매수 수수료 0.015%
+        self.SELL_FEE_RATE: float = 0.00215  # 매도 수수료 0.015% + 증권거래세 0.2%
 
         self.DATA_FOLDER = self.BASE_DIR + '/data'
         self.FILE_FOLDER = self.BASE_DIR + '/files'

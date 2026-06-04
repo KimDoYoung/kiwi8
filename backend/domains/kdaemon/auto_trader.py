@@ -263,6 +263,59 @@ def should_sell(position: AutoTradePosition, cur_price: int) -> bool:
 # 주문
 # ─────────────────────────────────────────────────────────
 
+async def _fetch_actual_fill(kiwoom, order_no: str, stk_cd: str, expected_qty: int) -> tuple[int, int]:
+    """
+    kt00007로 실제 체결수량·체결단가 조회 (최대 2회 시도, 1초 간격)
+    반환: (체결수량합계, 가중평균단가) — 조회 실패 시 (expected_qty, 0)
+    """
+    from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
+        KiwoomApiHelper,
+        KiwoomRequest,
+    )
+
+    for attempt in range(2):
+        await asyncio.sleep(1)
+        req = KiwoomRequest(
+            api_id='kt00007',
+            payload={
+                'qry_tp': '4',       # 체결내역만
+                'stk_bond_tp': '1',  # 주식
+                'sell_tp': '2',      # 매수
+                'stk_cd': stk_cd,
+                'fr_ord_no': order_no,
+                'dmst_stex_tp': _KRX,
+            },
+        )
+        resp = await kiwoom.send_request(req)
+        if not resp.success:
+            logger.warning(f'kdaemon: kt00007 조회 실패 시도{attempt+1}: {resp.error_message}')
+            continue
+
+        korea = KiwoomApiHelper.to_korea_data(resp.data, 'kt00007')
+        items = korea.get('계좌별주문체결내역상세', [])
+
+        total_qty = 0
+        total_amount = 0
+        for item in items:
+            if str(item.get('주문번호', '')).strip() != str(order_no).strip():
+                continue
+            fill_qty = int(item.get('체결수량', 0) or 0)
+            fill_price = int(item.get('체결단가', 0) or 0)
+            total_qty += fill_qty
+            total_amount += fill_qty * fill_price
+
+        if total_qty > 0:
+            avg_price = total_amount // total_qty
+            logger.info(f'kdaemon: kt00007 체결확인 ord={order_no} qty={total_qty} avg={avg_price:,}원')
+            return total_qty, avg_price
+
+        if attempt == 0:
+            logger.info(f'kdaemon: kt00007 체결 미확인, 1초 후 재시도 ord={order_no}')
+
+    logger.warning(f'kdaemon: kt00007 체결 확인 실패 → 주문수량 {expected_qty}주로 fallback')
+    return expected_qty, 0
+
+
 async def buy_stock(
     conn: sqlite3.Connection,
     stk_cd: str,
@@ -274,12 +327,14 @@ async def buy_stock(
 ) -> str | None:
     """
     kt10000 시장가 매수주문 → order_no 반환 (실패/dry_run 시 None)
+    실전: kt00007로 실제 체결수량·단가 확인 후 position 기록
     성공 시: insert_position(), log_action('BUY') 자동 호출
     """
-    amount = price * qty
     if dry_run:
+        amount = price * qty
         order_no = f'DRY-{stk_cd}'
         logger.info(f'kdaemon: (DRY-RUN) BUY {stk_nm}({stk_cd}) {qty}주 @ {price:,}원 = {amount:,}원')
+        actual_qty, actual_price = qty, price
     else:
         from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
         from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
@@ -306,18 +361,36 @@ async def buy_stock(
 
         korea = KiwoomApiHelper.to_korea_data(resp.data, 'kt10000')
         order_no = korea.get('주문번호', '')
-        logger.info(f'kdaemon: 매수 성공 {stk_nm}({stk_cd}) {qty}주 주문번호={order_no}')
+        logger.info(f'kdaemon: 매수주문 접수 {stk_nm}({stk_cd}) {qty}주 주문번호={order_no}')
 
-    base_price, stop_price = calc_trailing_stop(price, price, stop_rate)
+        # 실제 체결수량·단가 확인 (부분체결 대응)
+        actual_qty, fill_price = await _fetch_actual_fill(kiwoom, order_no, stk_cd, qty)
+        actual_price = fill_price if fill_price > 0 else price
+
+        if actual_qty == 0:
+            logger.error(f'kdaemon: {stk_nm}({stk_cd}) 체결 0주 — position 미기록')
+            log_action(conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo=f'체결수량 0 ord={order_no}')
+            return None
+
+        if actual_qty < qty:
+            logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 부분체결 {actual_qty}/{qty}주 @ {actual_price:,}원')
+        else:
+            logger.info(f'kdaemon: 매수 체결 확정 {stk_nm}({stk_cd}) {actual_qty}주 @ {actual_price:,}원')
+
+        amount = actual_price * actual_qty
+
+    amount = actual_price * actual_qty
+    base_price, stop_price = calc_trailing_stop(actual_price, actual_price, stop_rate)
     pos = AutoTradePosition(
         stk_cd=stk_cd, stk_nm=stk_nm,
-        buy_price=price, qty=qty, amount=amount,
+        buy_price=actual_price, qty=actual_qty, amount=amount,
         base_price=base_price, stop_price=stop_price,
         stop_rate=stop_rate,
     )
     insert_position(conn, pos)
     log_action(conn, 'BUY', stk_cd=stk_cd, stk_nm=stk_nm,
-               price=price, qty=qty, amount=amount, order_no=order_no if not dry_run else None)
+               price=actual_price, qty=actual_qty, amount=amount,
+               order_no=order_no if not dry_run else None)
     return order_no if not dry_run else None
 
 
@@ -333,8 +406,12 @@ async def sell_stock(
     성공 시: delete_position(), log_action('SELL') 자동 호출
     reason: 'trailing_stop' | 'stop_loss' | 'manual'
     """
-    profit = (cur_price - position.buy_price) * position.qty
-    profit_rate = round((cur_price - position.buy_price) / position.buy_price * 100, 2) if position.buy_price > 0 else 0.0
+    from backend.core.config import config as _cfg
+    sell_amount = cur_price * position.qty
+    buy_cost = int(position.buy_price * position.qty * (1 + _cfg.BUY_FEE_RATE))
+    sell_fee = int(sell_amount * _cfg.SELL_FEE_RATE)
+    profit = sell_amount - buy_cost - sell_fee
+    profit_rate = round(profit / buy_cost * 100, 2) if buy_cost > 0 else 0.0
 
     if dry_run:
         logger.info(

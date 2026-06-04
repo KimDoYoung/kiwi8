@@ -126,26 +126,36 @@ class KDaemon:
                 logger.error('kdaemon: 예수금 조회 실패 또는 잔액 없음')
                 log_action(self._conn, 'ERROR', memo='예수금 조회 실패 또는 잔액 없음')
                 return
-        budget_per = cash // len(to_buy)
-        logger.info(f'kdaemon: 신규 매수 {len(to_buy)}종목 예수금={cash:,}원 종목당={budget_per:,}원')
-        log_action(self._conn, 'FIND', memo=f'매수 대상 {len(to_buy)}종목 예수금={cash:,}원 종목당={budget_per:,}원')
+        budget_per = cash // empty_slots
+        effective_budget = int(budget_per / (1 + config.BUY_FEE_RATE))
+        logger.info(
+            f'kdaemon: 신규 매수 {len(to_buy)}종목 '
+            f'예수금={cash:,}원 빈슬롯={empty_slots} 종목당={budget_per:,}원(수수료차감={effective_budget:,}원)'
+        )
+        log_action(self._conn, 'FIND',
+                   memo=f'매수 {len(to_buy)}종목 예수금={cash:,}원 슬롯당={budget_per:,}원')
+
+        from backend.domains.infrahub.stock_resolver import StockResolver
+        resolver = StockResolver.get()
 
         for stk_cd in to_buy:
+            stk_nm = await resolver.get_stk_nm(stk_cd) or stk_cd
             cur_price = await get_current_price(stk_cd)
             if not cur_price:
                 if self.dry_run:
                     cur_price = 50_000
-                    logger.info(f'kdaemon: (DRY-RUN) {stk_cd} 현재가 조회 실패 → 시뮬 가격 {cur_price:,}원 사용')
+                    logger.info(f'kdaemon: (DRY-RUN) {stk_nm}({stk_cd}) 현재가 조회 실패 → 시뮬 가격 {cur_price:,}원 사용')
                 else:
-                    logger.warning(f'kdaemon: {stk_cd} 현재가 조회 실패, skip')
-                    log_action(self._conn, 'ERROR', stk_cd=stk_cd, memo='현재가 조회 실패')
+                    logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 현재가 조회 실패, skip')
+                    log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo='현재가 조회 실패')
                     continue
-            qty = budget_per // cur_price
+            qty = effective_budget // cur_price
+            logger.info(f'kdaemon: {stk_nm}({stk_cd}) 가격={cur_price:,}원 → {qty}주 (예산={effective_budget:,}원)')
             if qty <= 0:
-                logger.warning(f'kdaemon: {stk_cd} 예산 부족 price={cur_price:,} budget={budget_per:,}')
-                log_action(self._conn, 'ERROR', stk_cd=stk_cd, memo=f'예산 부족 price={cur_price:,}')
+                logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 예산 부족 price={cur_price:,} budget={effective_budget:,}')
+                log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo=f'예산 부족 price={cur_price:,}')
                 continue
-            await buy_stock(self._conn, stk_cd, stk_cd, cur_price, qty,
+            await buy_stock(self._conn, stk_cd, stk_nm, cur_price, qty,
                             stop_rate=stop_rate, dry_run=self.dry_run)
 
     # ── 제어 ───────────────────────────────────────────

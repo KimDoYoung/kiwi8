@@ -1,5 +1,4 @@
 
-import json
 import sqlite3
 from pathlib import Path
 
@@ -8,7 +7,7 @@ from pydantic import BaseModel
 
 from backend.core.config import config
 from backend.core.logger import get_logger
-from backend.domains.kdaemon.k_daemon import KDaemon, now_ymdhms
+from backend.domains.kdaemon.k_daemon import KDaemon
 
 # APIRouter 인스턴스 생성
 router = APIRouter()
@@ -28,21 +27,14 @@ async def send_command(body: CommandBody):
     if cmd not in {"start", "stop", "refresh"}:
         raise HTTPException(400, detail="invalid cmd")
 
-    # (옵션) 명령을 테이블에 적재
-    with _conn() as c:
-        c.execute("""
-            INSERT INTO kdaemon_commands (cmd, args_json, created_at)
-            VALUES (?, ?, ?)
-        """, (cmd, (body.args and json.dumps(body.args)) or None, now_ymdhms()))
-        c.commit()
-
-    demon = KDaemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDAEMON_DRY_RUN)
+    _interval = 20 if config.KDAEMON_DRY_RUN else 60
+    daemon = KDaemon.get(config.DB_PATH, poll_interval_sec=_interval, dry_run=config.KDAEMON_DRY_RUN)
     if cmd == "start":
-        await demon.start()
+        await daemon.start()
     elif cmd == "stop":
-        await demon.stop()
+        await daemon.stop()
     elif cmd == "refresh":
-        await demon.refresh()
+        await daemon.refresh()
 
     return {"ok": True, "cmd": cmd}
 
@@ -50,11 +42,9 @@ async def send_command(body: CommandBody):
 def status():
     with _conn() as c:
         row = c.execute("SELECT status, updated_at FROM kdaemon_state WHERE id=1").fetchone()
-        cur = c.execute("SELECT COUNT(*) FROM kdaemon_rules WHERE status='active'").fetchone()
     return {
         "status": row[0] if row else "unknown",
         "updated_at": row[1] if row else None,
-        "active_rules": cur[0] if cur else 0
     }
 
 @router.get("/conditions")

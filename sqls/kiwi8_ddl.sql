@@ -19,41 +19,14 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT OR IGNORE INTO settings (name, value) VALUES ('user_id', 'kdy987');
 INSERT OR IGNORE INTO settings (name, value) VALUES ('user_pw', '1111');
 
--- kdemon_rules: 자동매매 룰
-CREATE TABLE IF NOT EXISTS kdemon_rules (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  name              TEXT NOT NULL,
-  stk_cd            TEXT NOT NULL,                -- 종목코드 (예: 005930)
-  condition_op      TEXT NOT NULL,                -- 'gte' | 'lte' | 'cross_up' | 'cross_down'
-  threshold         REAL NOT NULL,                -- 기준값 (예: 100.0)
-  action            TEXT NOT NULL,                -- 'buy' | 'sell'
-  qty               INTEGER NOT NULL,             -- 수량
-  status            TEXT NOT NULL DEFAULT 'active', -- 'active' | 'paused' | 'done'
-  cooldown_sec      INTEGER NOT NULL DEFAULT 60,  -- 재트리거 쿨다운
-  valid_from        TEXT,                         -- 'YYYYMMDDHHMMSS' (옵션)
-  valid_to          TEXT,                         -- 'YYYYMMDDHHMMSS' (옵션)
-  last_price        REAL,                         -- 직전 가격(크로스 판정용)
-  last_triggered_at TEXT,                         -- 마지막 실행 시각 'YYYYMMDDHHMMSS'
-  notes             TEXT,
-  created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
--- kdemon_commands: 제어 명령 큐
-CREATE TABLE IF NOT EXISTS kdemon_commands (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  cmd          TEXT NOT NULL,            -- 'start' | 'stop' | 'refresh'
-  args_json    TEXT,                     -- 옵션 인자(JSON)
-  created_at   TEXT NOT NULL,            -- 'YYYYMMDDHHMMSS'
-  processed_at TEXT                      -- 처리 완료 시각
-);
-
--- kdemon_state: 데몬 상태(싱글톤 1row)
-CREATE TABLE IF NOT EXISTS kdemon_state (
+-- kdaemon_state: 데몬 상태(싱글톤 1row)
+CREATE TABLE IF NOT EXISTS kdaemon_state (
   id             INTEGER PRIMARY KEY CHECK (id = 1),
   status         TEXT NOT NULL,  -- 'stopped' | 'running'
   updated_at     TEXT NOT NULL
 );
-INSERT OR IGNORE INTO kdemon_state (id, status, updated_at) VALUES (1, 'stopped', '20000101000000');
+INSERT OR IGNORE INTO kdaemon_state (id, status, updated_at) VALUES (1, 'stopped', '20000101000000');
 
 CREATE TABLE IF NOT EXISTS market_jisu (
   id             INTEGER PRIMARY KEY CHECK (id = 1),
@@ -494,7 +467,8 @@ INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALU
 -- 8000번대: 매니지먼트 하위
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
 (31, 3, 2, '8100', '투자 기록', NULL, 1),
-(32, 3, 2, '8200', '시스템 설정', NULL, 2);
+(33, 3, 2, '8300', '자동매매', NULL, 2),
+(32, 3, 2, '8200', '시스템 설정', NULL, 3);
 
 
 -- 3. 화면/기능 (Level 3 - 최하위 노드)
@@ -541,13 +515,14 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 (31, 3, '8101', '매매 일지', '/manage/diary', 1),
 (31, 3, '8102', '경제 용어', '/manage/stk-words', 2);
 
--- [8200 시스템 엔진] 하위
+-- [8300 자동매매] 하위
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
-(32, 3, '8201', 'K-데몬 상태', '/manage/daemon', 1),
-(32, 3, '8202', 'K-스케줄러 설정', '/manage/scheduler', 2);
-
+(33, 3, '8301', 'K-데몬 상태', '/manage/daemon', 1),
+(33, 3, '8302', 'K-데몬 결과', '/manage/daemon-result', 2);
 
 -- [8200 시스템 설정] 하위
-INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (32, 3, '8203', '시스템 설정', '/settings/system', 3);
-INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (32, 3, '8204', '로그 보기', '/settings/logs', 4);
-INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES (32, 3, '8205', 'LLM과 대화', '/manage/llmtalk', 5);
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
+(32, 3, '8202', 'K-스케줄러 설정', '/manage/scheduler', 1),
+(32, 3, '8203', '시스템 설정', '/settings/system', 2),
+(32, 3, '8204', '로그 보기', '/settings/logs', 3),
+(32, 3, '8205', 'LLM과 대화', '/manage/llmtalk', 4);
