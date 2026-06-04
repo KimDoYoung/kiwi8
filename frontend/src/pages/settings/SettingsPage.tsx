@@ -16,6 +16,7 @@ interface SettingItem {
 
 export default function SettingsPage() {
     const [lastStkFill, setLastStkFill] = useState<string>('정보 없음')
+    const [dbVersion, setDbVersion] = useState<string>('?')
     const [isStkLoading, setIsStkLoading] = useState(false)
     const [isTokenLoading, setIsTokenLoading] = useState(false)
     const [isCacheLoading, setIsCacheLoading] = useState(false)
@@ -40,6 +41,8 @@ export default function SettingsPage() {
             setAllSettings(settings)
             const lastFill = settings.find((s) => s.name === "마지막으로 stk_info를 채운 시각")
             if (lastFill) setLastStkFill(lastFill.value)
+            const dbVer = settings.find((s) => s.name === "db_version")
+            if (dbVer) setDbVersion(dbVer.value)
         } catch (error) {
             console.error('[SettingsPage] fetchSettings 실패:', error)
         } finally {
@@ -155,6 +158,9 @@ export default function SettingsPage() {
                         Kiwi8 시스템의 핵심 구성 요소를 관리하고 데이터를 동기화합니다.
                     </p>
                 </div>
+                <span className="text-xs font-mono text-muted-foreground border rounded-md px-2 py-1 bg-muted">
+                    DB v{dbVersion}
+                </span>
             </header>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,3 +1,13 @@
+-- settings table 실상은 name value
+CREATE TABLE IF NOT EXISTS settings (
+    name TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+INSERT OR IGNORE INTO settings (name, value) VALUES ('user_id', 'kdy987');
+INSERT OR IGNORE INTO settings (name, value) VALUES ('user_pw', '1111');
+INSERT OR IGNORE INTO settings (name, value) VALUES ('db_version', '1.1');
+
 -- jwt token 관리 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     token_id TEXT PRIMARY KEY,             -- Refresh Token 고유 식별자 (UUID 등)
@@ -10,14 +20,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 
--- settings table 실상은 name value
-CREATE TABLE IF NOT EXISTS settings (
-    name TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-INSERT OR IGNORE INTO settings (name, value) VALUES ('user_id', 'kdy987');
-INSERT OR IGNORE INTO settings (name, value) VALUES ('user_pw', '1111');
 
 
 -- kdaemon_state: 데몬 상태(싱글톤 1row)
