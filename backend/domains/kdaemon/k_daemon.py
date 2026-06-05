@@ -67,6 +67,7 @@ class KDaemon:
         for migration in [
             "ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER",
             "ALTER TABLE kdaemon_state ADD COLUMN dry_run INTEGER DEFAULT 1",
+            "ALTER TABLE auto_trade_position ADD COLUMN cur_price INTEGER",
         ]:
             try:
                 self._conn.execute(migration)
@@ -253,8 +254,25 @@ class KDaemon:
             should_sell,
             update_position_trailing,
         )
+        from backend.domains.infrahub.open_time_checker import OpenTimeChecker
+        checker = OpenTimeChecker.get()
+
         try:
             while not self._stop_event.is_set():
+                # 실제 모드: 영업일 여부 확인. 휴장일이면 사이클 전체 skip
+                if not self.dry_run:
+                    is_open = await checker.is_open_day()
+                    if not is_open:
+                        logger.debug('kdaemon: 휴장일 — 사이클 skip')
+                        try:
+                            await asyncio.wait_for(self._stop_event.wait(), timeout=self.poll_interval_sec)
+                            break
+                        except TimeoutError:
+                            continue
+
+                # 실제 매수/매도 허용 여부 (KRX 정규장 09:00~15:30)
+                allow_trade = self.dry_run or checker.isKrxTime()
+
                 positions = get_positions(self._conn)
                 logger.info(f'kdaemon: 모니터링 사이클 — 포지션 {len(positions)}개')
                 for pos in positions:
@@ -285,16 +303,22 @@ class KDaemon:
                                    memo=f'기준가↑ {new_base:,}원 → 손절가↑ {new_stop:,}원')
 
                     if should_sell(pos, cur_price):
-                        logger.info(
-                            f'kdaemon: {pos.stk_cd} trailing stop 발동 '
-                            f'cur={cur_price:,} stop={pos.stop_price:,}'
-                        )
-                        await sell_stock(self._conn, pos, cur_price,
-                                         'trailing_stop', dry_run=self.dry_run)
+                        if allow_trade:
+                            logger.info(
+                                f'kdaemon: {pos.stk_cd} trailing stop 발동 '
+                                f'cur={cur_price:,} stop={pos.stop_price:,}'
+                            )
+                            await sell_stock(self._conn, pos, cur_price,
+                                             'trailing_stop', dry_run=self.dry_run)
+                        else:
+                            logger.info(
+                                f'kdaemon: {pos.stk_cd} trailing stop 조건 충족 '
+                                f'(cur={cur_price:,} stop={pos.stop_price:,}) — 장외시간 대기'
+                            )
 
                 # 매도 후 포지션 재조회 → 빈 슬롯 있으면 auto_trade.data에서 보충
                 positions = get_positions(self._conn)
-                if len(positions) < MAX_POSITIONS:
+                if len(positions) < MAX_POSITIONS and allow_trade:
                     logger.info(f'kdaemon: 포지션 {len(positions)}/{MAX_POSITIONS} → 신규 종목 보충 시도')
                     await self._initial_buy(existing=positions)
 

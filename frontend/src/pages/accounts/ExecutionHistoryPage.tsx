@@ -72,13 +72,8 @@ async function fetchKisExec(ymd: string): Promise<ExecRow[]> {
     })
 }
 
-async function fetchLsExec(ymd: string): Promise<ExecRow[]> {
-  const res = await api.post('/api/v1/stkcompany/ls/t0425', {
-    api_id: 't0425', title: 'execlist',
-    payload: { expcode: '', chegb: '0', medosu: '0', sortgb: '1', cts_ordno: '' },
-  })
-  // t0425는 날짜 필터 없음 - 당일 데이터만 반환
-  void ymd
+async function fetchLsExec(_ymd: string): Promise<ExecRow[]> {
+  const res = await api.get('/api/v1/stkcompany/ls/execlist')
   const list: Record<string, unknown>[] = res.data?.data?.t0425OutBlock1 ?? []
   return list
     .filter((r) => Number(r['체결수량'] ?? 0) > 0)
@@ -93,7 +88,7 @@ async function fetchLsExec(ymd: string): Promise<ExecRow[]> {
         broker: 'LS',
         side,
         stk_cd: rawCd.startsWith('A') ? rawCd.slice(1) : rawCd,
-        stk_nm: '',
+        stk_nm: String(r['stk_nm'] ?? ''),
         ccnl_qty: qty,
         ccnl_price: price,
         amount: qty * price,
@@ -219,7 +214,7 @@ export default function ExecutionHistoryPage() {
         >{value || data.stk_cd}</span>
       ),
     },
-    { field: 'ccnl_qty',   headerName: '체결수량', width: 80,  type: 'numericColumn', cellRenderer: AmtCell },
+    { field: 'ccnl_qty',   headerName: '체결수량', width: 90,  type: 'numericColumn', cellRenderer: AmtCell },
     { field: 'ccnl_price', headerName: '체결가격', width: 90,  type: 'numericColumn', cellRenderer: AmtCell },
     {
       field: 'amount', headerName: '체결금액', width: 110, type: 'numericColumn',

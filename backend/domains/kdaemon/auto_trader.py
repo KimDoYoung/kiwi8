@@ -82,7 +82,7 @@ async def get_available_cash() -> int:
         logger.error(f'kdaemon: 예수금 조회 실패: {resp.error_message}')
         return 0
     korea = KiwoomApiHelper.to_korea_data(resp.data, 'kt00001')
-    cash = parse_price(korea.get('예수금', 0))
+    cash = parse_price(korea.get('d+2추정예수금', 0))
     logger.info(f'kdaemon: 주문가능금액 {cash:,}원')
     return cash
 
@@ -225,14 +225,14 @@ def delete_position(conn: sqlite3.Connection, stk_cd: str) -> None:
 
 
 def update_position_trailing(
-    conn: sqlite3.Connection, stk_cd: str, base_price: int, stop_price: int
+    conn: sqlite3.Connection, stk_cd: str, base_price: int, stop_price: int, cur_price: int | None = None
 ) -> None:
-    """base_price, stop_price, updated_at 갱신"""
+    """base_price, stop_price, cur_price, updated_at 갱신"""
     conn.execute(
         '''UPDATE auto_trade_position
-           SET base_price=?, stop_price=?, updated_at=datetime('now','localtime')
+           SET base_price=?, stop_price=?, cur_price=?, updated_at=datetime('now','localtime')
            WHERE stk_cd=?''',
-        (base_price, stop_price, stk_cd),
+        (base_price, stop_price, cur_price, stk_cd),
     )
     conn.commit()
 
@@ -594,10 +594,12 @@ async def run_auto_trade_cycle(conn: sqlite3.Connection, dry_run: bool = True) -
 
         new_base, new_stop = calc_trailing_stop(pos.base_price, cur_price, pos.stop_rate)
         if new_base > pos.base_price:
-            update_position_trailing(conn, pos.stk_cd, new_base, new_stop)
+            update_position_trailing(conn, pos.stk_cd, new_base, new_stop, cur_price)
             pos.base_price = new_base
             pos.stop_price = new_stop
             logger.info(f'kdaemon: {pos.stk_cd} base={new_base:,} stop={new_stop:,}')
+        else:
+            update_position_trailing(conn, pos.stk_cd, pos.base_price, pos.stop_price, cur_price)
 
         if should_sell(pos, cur_price):
             logger.info(f'kdaemon: {pos.stk_cd} trailing stop 발동 cur={cur_price:,} stop={pos.stop_price:,}')

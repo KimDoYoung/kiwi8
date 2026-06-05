@@ -1,6 +1,7 @@
 """
 KIS(한국투자증권) REST API 클라이언트
 """
+import asyncio
 from datetime import datetime
 from typing import Any
 
@@ -117,21 +118,32 @@ class KisRestApi(StockApi):
             # [Step 2] 토큰 에러 감지 시 재시도
             # EGW00123: Access Token expired, EGW00121: Invalid Access Token
             is_token_error = (
-                not response.success and 
+                not response.success and
                 response.error_code in ['EGW00121', 'EGW00123']
             )
 
             if is_token_error:
                 logger.warning(f"[KIS] API 호출 중 토큰 오류 감지({response.error_code}). 토큰 강제 재발급 후 재시도합니다. (API: {request.api_id})")
-                
+
                 # 토큰 강제 재발급
                 await self.token_manager.issue_access_token()
-                
+
                 # 새로운 토큰으로 재시도
                 new_token = await self.token_manager.get_token()
                 logger.info(f"[KIS] 새 토큰으로 재시도 중... (API: {request.api_id})")
                 response = await self._do_request(request, new_token, api_info, request_time)
-                
+
+                if response.success:
+                    logger.info(f"[KIS] 재시도 성공 (API: {request.api_id})")
+                else:
+                    logger.error(f"[KIS] 재시도 실패 (API: {request.api_id}): {response.error_message}")
+
+            # [Step 3] 초당 거래건수 초과(EGW00201) 시 1초 대기 후 재시도
+            elif not response.success and response.error_code == 'EGW00201':
+                logger.warning(f"[KIS] 초당 거래건수 초과. 1초 대기 후 재시도 (API: {request.api_id})")
+                await asyncio.sleep(1)
+                token = await self.token_manager.get_token()
+                response = await self._do_request(request, token, api_info, request_time)
                 if response.success:
                     logger.info(f"[KIS] 재시도 성공 (API: {request.api_id})")
                 else:

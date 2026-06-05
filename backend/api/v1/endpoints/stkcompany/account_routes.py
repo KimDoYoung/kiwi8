@@ -281,6 +281,8 @@ async def kis_account_list():
             response.data['output1'] = output1
             await _insert_prev_costs_kis(output1)
             logger.info('[계좌현황] KIS 계좌현황 조회 성공')
+        else:
+            logger.warning(f'[계좌현황] KIS API 오류: code={response.error_code} msg={response.error_message}')
         return response
 
     except Exception as e:

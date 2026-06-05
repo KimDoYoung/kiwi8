@@ -260,6 +260,10 @@ export default function KisAccountPage() {
         return <LoadingFail message="KIS 계좌 정보를 불러오는데 실패했습니다." />
     }
 
+    if (data.success === false) {
+        return <LoadingFail message={`KIS API 오류: ${data.error_message ?? '잠시 후 다시 시도해주세요'}`} onRetry={() => refetch()} />
+    }
+
     return (
         <div className="flex flex-col h-full text-base">
             <AccountHeader

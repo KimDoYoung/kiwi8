@@ -75,6 +75,42 @@ async def insert_prev_costs_ls(stock_list: list):
         stock["전일종가"] = price if price else 0
         stock["가격추세"] = trend if trend else "-"
 
+@router.get("/execlist")
+async def ls_execlist():
+    """t0425 체결내역 + 종목명 enrichment"""
+    from backend.domains.infrahub.stock_resolver import StockResolver
+    resolver = StockResolver.get()
+
+    try:
+        ls = await get_ls_api()
+        req = LsRequest(
+            api_id='t0425',
+            payload={'expcode': '', 'chegb': '0', 'medosu': '0', 'sortgb': '1', 'cts_ordno': ''},
+        )
+        response = await ls.send_request(req)
+        if not response.success:
+            return {'success': False, 'error_message': response.error_message, 'data': None}
+
+        if response.data:
+            response.data = LsApiHelper.to_korea_data(response.data, 't0425')
+        rows = (response.data or {}).get('t0425OutBlock1') or []
+        # unique 종목코드만 조회
+        codes = list({str(r.get('종목번호', '')).lstrip('A') for r in rows if r.get('종목번호')})
+        nm_map: dict[str, str] = {}
+        for cd in codes:
+            nm_map[cd] = await resolver.get_stk_nm(cd)
+
+        for r in rows:
+            raw_cd = str(r.get('종목번호', ''))
+            cd = raw_cd.lstrip('A')
+            r['stk_nm'] = nm_map.get(cd, '')
+
+        return {'success': True, 'data': {'t0425OutBlock1': rows}}
+    except Exception as e:
+        logger.error(f'[LS execlist] 오류: {e}')
+        return {'success': False, 'error_message': str(e), 'data': None}
+
+
 @router.get("/issue-new-token", response_model=LsResponse)
 async def issue_new_token():
     """새로운 토큰 발급"""

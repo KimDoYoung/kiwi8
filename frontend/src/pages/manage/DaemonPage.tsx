@@ -61,6 +61,7 @@ interface Position {
     base_price: number
     stop_price: number
     stop_rate: number
+    cur_price: number | null
     bought_at: string
     updated_at: string
 }
@@ -285,6 +286,8 @@ export default function DaemonPage() {
                                         <tr className="bg-gray-50 border-b border-gray-200">
                                             <th className="px-2 py-1.5 text-left text-gray-500 font-semibold">종목</th>
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">매수가</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">현재가</th>
+                                            <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">평가손익</th>
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">수량</th>
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">기준가</th>
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">손절가</th>
@@ -300,6 +303,15 @@ export default function DaemonPage() {
                                                     <span className="text-gray-400 ml-1 text-xs">({p.stk_cd})</span>
                                                 </td>
                                                 <td className="px-2 py-1.5 text-right font-mono">{p.buy_price.toLocaleString()}</td>
+                                                <td className="px-2 py-1.5 text-right font-mono">
+                                                    {p.cur_price != null ? p.cur_price.toLocaleString() : <span className="text-gray-300">—</span>}
+                                                </td>
+                                                <td className="px-2 py-1.5 text-right font-mono">
+                                                    {p.cur_price != null ? (() => {
+                                                        const pl = (p.cur_price - p.buy_price) * p.qty
+                                                        return <span className={pl >= 0 ? 'text-red-600' : 'text-blue-600'}>{pl >= 0 ? '+' : ''}{pl.toLocaleString()}</span>
+                                                    })() : <span className="text-gray-300">—</span>}
+                                                </td>
                                                 <td className="px-2 py-1.5 text-right">{p.qty}</td>
                                                 <td className="px-2 py-1.5 text-right font-mono">{p.base_price.toLocaleString()}</td>
                                                 <td className="px-2 py-1.5 text-right font-mono text-red-600">{p.stop_price.toLocaleString()}</td>

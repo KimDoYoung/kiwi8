@@ -77,7 +77,7 @@ KIS_RESPONSE_DEF_7 = {
         }
     },
     # === 주식일별주문체결조회 ===
-    '(3개월이내) TTTC0081R (3개월이전) CTSC9215R': {
+    'TTTC0081R': {
         'rt_cd': {'name': '성공실패여부', 'type': 'string', 'required': True, 'length': 1, 'description': ''},
         'msg_cd': {'name': '응답코드', 'type': 'string', 'required': True, 'length': 8, 'description': ''},
         'msg1': {'name': '응답메세지', 'type': 'string', 'required': True, 'length': 80, 'description': ''},
