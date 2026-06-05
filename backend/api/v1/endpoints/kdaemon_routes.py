@@ -19,7 +19,9 @@ class CommandBody(BaseModel):
 
 def _conn():
     DB_PATH = config.DB_PATH
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10)
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
 
 @router.post("/command")
 async def send_command(body: CommandBody):

@@ -226,14 +226,18 @@ export default function DaemonPage() {
                             </button>
                         </div>
                         <div className="flex flex-wrap gap-1.5 mb-2 min-h-[24px]">
-                            {manualLines.map(code => (
-                                <span key={code} className="flex items-center gap-1 px-2 py-0.5 bg-orange-50 border border-orange-200 rounded text-xs font-mono text-orange-700">
-                                    {code}
-                                    <button onClick={() => removeCode(code)} className="text-orange-400 hover:text-orange-700">
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </span>
-                            ))}
+                            {manualLines.map(line => {
+                                const [cd, sr] = line.split(',')
+                                const stopLabel = sr ? ` ${parseFloat(sr) > 1 ? sr : String(parseFloat(sr) * 100)}%` : ''
+                                return (
+                                    <span key={line} className="flex items-center gap-1 px-2 py-0.5 bg-orange-50 border border-orange-200 rounded text-xs font-mono text-orange-700">
+                                        {cd}{stopLabel && <span className="text-orange-400">{stopLabel}</span>}
+                                        <button onClick={() => removeCode(line)} className="text-orange-400 hover:text-orange-700">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </span>
+                                )
+                            })}
                             {manualLines.length === 0 && <span className="text-xs text-gray-400">큐 비어있음</span>}
                         </div>
                         <div className="flex gap-1.5">
@@ -241,7 +245,7 @@ export default function DaemonPage() {
                                 value={newCode}
                                 onChange={e => setNewCode(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && addCode()}
-                                placeholder="종목코드 (예: 005930)"
+                                placeholder="005930 또는 005930,5 (5% 손절)"
                                 className="flex-1 border rounded px-2 py-1 text-xs font-mono"
                             />
                             <button onClick={addCode} disabled={saveMut.isPending}

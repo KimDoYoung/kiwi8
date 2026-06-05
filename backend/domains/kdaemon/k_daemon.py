@@ -29,6 +29,21 @@ def _get_stop_rate(conn: sqlite3.Connection) -> float:
     return 0.05
 
 
+def _parse_stock_line(line: str) -> tuple[str, float | None]:
+    """'005930' | '005930,5' | '005930,0.05' → (stk_cd, stop_rate|None)
+    stop_rate: >1이면 %로 해석 (5 → 0.05), ≤1이면 그대로 (0.05 → 0.05)
+    """
+    parts = line.split(',', 1)
+    stk_cd = parts[0].strip()
+    if len(parts) == 2:
+        try:
+            val = float(parts[1].strip())
+            return stk_cd, val / 100 if val > 1 else val
+        except ValueError:
+            pass
+    return stk_cd, None
+
+
 class KDaemon:
     """
     자동매매 데몬
@@ -45,8 +60,10 @@ class KDaemon:
         self.dry_run = dry_run
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
-        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10)
         self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
         try:
             self._conn.execute("ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER")
             self._conn.commit()
@@ -73,17 +90,20 @@ class KDaemon:
     async def _broadcast_state(self, action: str, memo: str):
         try:
             from backend.domains.infrahub.ws_manager import ws_manager
-            from backend.domains.kdaemon.auto_trader import get_available_cash
             clients = len(ws_manager._browser_clients)
             logger.info(f'kdaemon: broadcast {action} → {clients}개 클라이언트')
-            deposit = await get_available_cash()
             data: dict = {
                 'action': action,
                 'dt': datetime.now().strftime('%H:%M:%S'),
                 'memo': memo,
             }
-            if deposit is not None:
-                data['deposit'] = deposit
+            try:
+                from backend.domains.kdaemon.auto_trader import get_available_cash
+                deposit = await get_available_cash()
+                if deposit:
+                    data['deposit'] = deposit
+            except Exception:
+                pass
             await ws_manager.broadcast({
                 'broker': 'kdaemon',
                 'type': 'kdaemon_event',
@@ -116,8 +136,10 @@ class KDaemon:
             return
 
         lines = [l.strip() for l in data_path.read_text().splitlines() if l.strip()]
-        to_buy = [c for c in lines if c not in held][:empty_slots]
-        remaining = [c for c in lines if c not in to_buy]
+        parsed = [_parse_stock_line(l) for l in lines]
+        to_buy = [(cd, sr) for cd, sr in parsed if cd not in held][:empty_slots]
+        buy_codes = {cd for cd, _ in to_buy}
+        remaining = [l for l, (cd, _) in zip(lines, parsed) if cd not in buy_codes]
         data_path.write_text('\n'.join(remaining))
 
         if not to_buy:
@@ -125,7 +147,7 @@ class KDaemon:
             log_action(self._conn, 'FIND', memo='매수 종목 없음 (파일 비어있음 or 이미 보유)')
             return
 
-        stop_rate = _get_stop_rate(self._conn)
+        default_stop_rate = _get_stop_rate(self._conn)
         if self.dry_run:
             cash = 30_000_000
             logger.info(f'kdaemon: (DRY-RUN) 시뮬 예수금 {cash:,}원 사용')
@@ -148,7 +170,8 @@ class KDaemon:
         from backend.domains.infrahub.stock_resolver import StockResolver
         resolver = StockResolver.get()
 
-        for stk_cd in to_buy:
+        for stk_cd, per_stop_rate in to_buy:
+            effective_stop_rate = per_stop_rate if per_stop_rate is not None else default_stop_rate
             stk_nm = await resolver.get_stk_nm(stk_cd) or stk_cd
             cur_price = await get_current_price(stk_cd)
             if not cur_price:
@@ -160,13 +183,14 @@ class KDaemon:
                     log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo='현재가 조회 실패')
                     continue
             qty = effective_budget // cur_price
-            logger.info(f'kdaemon: {stk_nm}({stk_cd}) 가격={cur_price:,}원 → {qty}주 (예산={effective_budget:,}원)')
+            stop_pct = int(effective_stop_rate * 100)
+            logger.info(f'kdaemon: {stk_nm}({stk_cd}) 가격={cur_price:,}원 → {qty}주 (예산={effective_budget:,}원, stop={stop_pct}%)')
             if qty <= 0:
                 logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 예산 부족 price={cur_price:,} budget={effective_budget:,}')
                 log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo=f'예산 부족 price={cur_price:,}')
                 continue
             await buy_stock(self._conn, stk_cd, stk_nm, cur_price, qty,
-                            stop_rate=stop_rate, dry_run=self.dry_run)
+                            stop_rate=effective_stop_rate, dry_run=self.dry_run)
 
     # ── 제어 ───────────────────────────────────────────
 

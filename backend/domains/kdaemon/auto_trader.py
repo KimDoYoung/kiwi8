@@ -388,11 +388,14 @@ async def buy_stock(
         stop_rate=stop_rate,
     )
     insert_position(conn, pos)
-    deposit = await get_available_cash()
+    try:
+        deposit = await get_available_cash()
+    except Exception:
+        deposit = None
     log_action(conn, 'BUY', stk_cd=stk_cd, stk_nm=stk_nm,
                price=actual_price, qty=actual_qty, amount=amount,
                order_no=order_no if not dry_run else None,
-               deposit=deposit)
+               deposit=deposit or None)
     return order_no if not dry_run else None
 
 
@@ -444,12 +447,15 @@ async def sell_stock(
         logger.info(f'kdaemon: 매도 성공 {position.stk_nm}({position.stk_cd}) reason={reason}')
 
     delete_position(conn, position.stk_cd)
-    deposit = await get_available_cash()
+    try:
+        deposit = await get_available_cash()
+    except Exception:
+        deposit = None
     log_action(conn, 'SELL',
                stk_cd=position.stk_cd, stk_nm=position.stk_nm,
                price=cur_price, qty=position.qty, amount=cur_price * position.qty,
                profit=profit, profit_rate=profit_rate, sell_reason=reason,
-               deposit=deposit)
+               deposit=deposit or None)
     return True
 
 
@@ -489,9 +495,11 @@ def log_action(conn: sqlite3.Connection, action: str, **kwargs) -> None:
             },
         }
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(ws_manager.broadcast(msg))
+            loop = asyncio.get_running_loop()
+            loop.create_task(ws_manager.broadcast(msg))
+            logger.debug(f'kdaemon: ws broadcast scheduled {action}')
+        except RuntimeError:
+            pass  # 이벤트 루프 없는 컨텍스트 (테스트 등)
         except Exception as e:
             logger.warning(f'kdaemon: ws broadcast 실패: {e}')
 
