@@ -14,7 +14,7 @@ router = APIRouter()
 logger = get_logger(__name__)
 
 class CommandBody(BaseModel):
-    cmd: str  # 'start' | 'stop' | 'refresh'
+    cmd: str  # 'start' | 'stop' | 'refresh' | 'dry_run'
     args: dict | None = None
 
 def _conn():
@@ -26,27 +26,36 @@ def _conn():
 @router.post("/command")
 async def send_command(body: CommandBody):
     cmd = body.cmd.lower()
-    if cmd not in {"start", "stop", "refresh"}:
+    if cmd not in {"start", "stop", "refresh", "dry_run"}:
         raise HTTPException(400, detail="invalid cmd")
 
     _interval = 20 if config.KDAEMON_DRY_RUN else 60
     daemon = KDaemon.get(config.DB_PATH, poll_interval_sec=_interval, dry_run=config.KDAEMON_DRY_RUN)
+
     if cmd == "start":
         await daemon.start()
     elif cmd == "stop":
         await daemon.stop()
     elif cmd == "refresh":
         await daemon.refresh()
+    elif cmd == "dry_run":
+        value = bool((body.args or {}).get("value", True))
+        daemon.dry_run = value
+        daemon.poll_interval_sec = 20 if value else 60
+        with _conn() as c:
+            c.execute("UPDATE kdaemon_state SET dry_run=? WHERE id=1", (int(value),))
+            c.commit()
 
     return {"ok": True, "cmd": cmd}
 
 @router.get("/status")
 def status():
     with _conn() as c:
-        row = c.execute("SELECT status, updated_at FROM kdaemon_state WHERE id=1").fetchone()
+        row = c.execute("SELECT status, updated_at, dry_run FROM kdaemon_state WHERE id=1").fetchone()
     return {
         "status": row[0] if row else "unknown",
         "updated_at": row[1] if row else None,
+        "dry_run": bool(row[2]) if row and row[2] is not None else True,
     }
 
 @router.get("/conditions")
@@ -175,7 +184,8 @@ async def force_sell_position(stk_cd: str):
         if cur_price is None:
             raise HTTPException(502, detail=f"현재가 조회 실패: {stk_cd}")
 
-        dry_run = config.KDAEMON_DRY_RUN
+        daemon = KDaemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDAEMON_DRY_RUN)
+        dry_run = daemon.dry_run
         ok = await sell_stock(conn, pos, cur_price, reason='manual', dry_run=dry_run)
         if not ok:
             raise HTTPException(500, detail="매도 주문 실패")

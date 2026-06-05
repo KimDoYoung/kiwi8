@@ -3,15 +3,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Play, Square, RefreshCcw, Plus, Trash2, Pencil, Check, X } from 'lucide-react'
 import api from '@/lib/api'
 import { useWsStore, type KdaemonEvent } from '@/store/wsStore'
+import { Switch } from '@/shared/components/ui/switch'
 
 // ── API ────────────────────────────────────────────────────
 
 async function fetchStatus() {
     const res = await api.get('/api/v1/kdaemon/status')
-    return res.data as { status: string; updated_at: string | null }
+    return res.data as { status: string; updated_at: string | null; dry_run: boolean }
 }
-async function sendCommand(cmd: 'start' | 'stop') {
-    const res = await api.post('/api/v1/kdaemon/command', { cmd })
+async function sendCommand(cmd: string, args?: Record<string, unknown>) {
+    const res = await api.post('/api/v1/kdaemon/command', { cmd, args })
     return res.data
 }
 
@@ -110,10 +111,11 @@ export default function DaemonPage() {
         queryKey: ['kdaemonStatus'], queryFn: fetchStatus, refetchInterval: 5000,
     })
     const cmdMutation = useMutation({
-        mutationFn: sendCommand,
+        mutationFn: ({ cmd, args }: { cmd: string; args?: Record<string, unknown> }) => sendCommand(cmd, args),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdaemonStatus'] }),
     })
     const isRunning = statusData?.status === 'running'
+    const isDryRun = statusData?.dry_run !== false  // 기본 true
 
     // ── 전략 목록 ──
     const { data: strategies = [] } = useQuery({
@@ -189,11 +191,11 @@ export default function DaemonPage() {
                     <span className="font-medium">{statusLoading ? '...' : isRunning ? '실행 중' : '정지'}</span>
                     {statusData?.updated_at && <span className="text-xs text-gray-400 ml-1">{statusData.updated_at}</span>}
                 </div>
-                <button onClick={() => cmdMutation.mutate('start')} disabled={cmdMutation.isPending || isRunning}
+                <button onClick={() => cmdMutation.mutate({ cmd: 'start' })} disabled={cmdMutation.isPending || isRunning}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     <Play className="w-3.5 h-3.5" /> 시작
                 </button>
-                <button onClick={() => cmdMutation.mutate('stop')} disabled={cmdMutation.isPending || !isRunning}
+                <button onClick={() => cmdMutation.mutate({ cmd: 'stop' })} disabled={cmdMutation.isPending || !isRunning}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     <Square className="w-3.5 h-3.5" /> 정지
                 </button>
@@ -201,6 +203,19 @@ export default function DaemonPage() {
                     className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
                     <RefreshCcw className="w-4 h-4" />
                 </button>
+                <div className={`flex items-center gap-2 border rounded-md px-3 py-1.5 transition-colors ${isDryRun ? 'bg-gray-50' : 'bg-orange-50 border-orange-300'}`}>
+                    <span className={`text-xs font-semibold ${isDryRun ? 'text-gray-500' : 'text-orange-600'}`}>
+                        {isDryRun ? '연습' : '실제'}
+                    </span>
+                    <Switch
+                        checked={!isDryRun}
+                        onCheckedChange={(checked) =>
+                            cmdMutation.mutate({ cmd: 'dry_run', args: { value: !checked } })
+                        }
+                        disabled={cmdMutation.isPending}
+                        className="data-[state=checked]:bg-orange-500"
+                    />
+                </div>
                 <label className="flex items-center gap-2 ml-auto cursor-pointer select-none text-gray-600">
                     <input type="checkbox" checked={showEvents} onChange={e => setShowEvents(e.target.checked)}
                         className="w-4 h-4 accent-blue-600" />

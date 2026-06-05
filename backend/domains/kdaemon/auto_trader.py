@@ -82,7 +82,7 @@ async def get_available_cash() -> int:
         logger.error(f'kdaemon: 예수금 조회 실패: {resp.error_message}')
         return 0
     korea = KiwoomApiHelper.to_korea_data(resp.data, 'kt00001')
-    cash = parse_price(korea.get('주문가능금액(예수금)', 0))
+    cash = parse_price(korea.get('예수금', 0))
     logger.info(f'kdaemon: 주문가능금액 {cash:,}원')
     return cash
 

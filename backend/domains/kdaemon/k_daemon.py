@@ -64,11 +64,19 @@ class KDaemon:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
-        try:
-            self._conn.execute("ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER")
-            self._conn.commit()
-        except Exception:
-            pass  # column already exists
+        for migration in [
+            "ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER",
+            "ALTER TABLE kdaemon_state ADD COLUMN dry_run INTEGER DEFAULT 1",
+        ]:
+            try:
+                self._conn.execute(migration)
+                self._conn.commit()
+            except Exception:
+                pass
+        # DB 값 우선 적용 (config보다 DB가 우선)
+        row = self._conn.execute("SELECT dry_run FROM kdaemon_state WHERE id=1").fetchone()
+        if row and row['dry_run'] is not None:
+            self.dry_run = bool(row['dry_run'])
 
     @classmethod
     def get(cls, db_path: str, poll_interval_sec: int = 60, dry_run: bool = True) -> "KDaemon":
