@@ -68,6 +68,10 @@ async function fetchPositions(): Promise<Position[]> {
     const res = await api.get('/api/v1/kdaemon/positions')
     return res.data
 }
+async function forceSellPosition(stk_cd: string) {
+    const res = await api.post(`/api/v1/kdaemon/positions/${stk_cd}/sell`)
+    return res.data
+}
 async function createStrategy(body: Omit<Strategy, 'id'>) {
     const res = await api.post('/api/v1/kdaemon/strategies', body)
     return res.data
@@ -141,6 +145,17 @@ export default function DaemonPage() {
     const { data: positions = [] } = useQuery({
         queryKey: ['kdaemonPositions'], queryFn: fetchPositions, refetchInterval: 30000,
     })
+    const forceSellMut = useMutation({
+        mutationFn: forceSellPosition,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['kdaemonPositions'] })
+            queryClient.invalidateQueries({ queryKey: ['kdaemonLogs'] })
+        },
+    })
+    const handleForceSell = (stk_cd: string, stk_nm: string) => {
+        if (!window.confirm(`${stk_nm}(${stk_cd}) 강제매도 하시겠습니까?`)) return
+        forceSellMut.mutate(stk_cd)
+    }
 
     // WS 이벤트 수신 시 positions/manualStocks 자동 갱신
     const prevEvLen = useRef(0)
@@ -255,6 +270,7 @@ export default function DaemonPage() {
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">기준가</th>
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">손절가</th>
                                             <th className="px-2 py-1.5 text-center text-gray-500 font-semibold">Stop%</th>
+                                            <th className="px-2 py-1.5"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -269,6 +285,15 @@ export default function DaemonPage() {
                                                 <td className="px-2 py-1.5 text-right font-mono">{p.base_price.toLocaleString()}</td>
                                                 <td className="px-2 py-1.5 text-right font-mono text-red-600">{p.stop_price.toLocaleString()}</td>
                                                 <td className="px-2 py-1.5 text-center">{Math.round(p.stop_rate * 100)}%</td>
+                                                <td className="px-2 py-1.5 text-center">
+                                                    <button
+                                                        onClick={() => handleForceSell(p.stk_cd, p.stk_nm)}
+                                                        disabled={forceSellMut.isPending}
+                                                        className="px-1.5 py-0.5 text-xs text-red-600 border border-red-300 rounded hover:bg-red-50 disabled:opacity-40 transition-colors"
+                                                    >
+                                                        강제매도
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

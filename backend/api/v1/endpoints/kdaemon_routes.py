@@ -155,3 +155,27 @@ def list_logs(limit: int = Query(default=100, le=500)):
     if not cols:
         cols = ['id','dt','action','stk_cd','stk_nm','price','qty','amount','profit','profit_rate','sell_reason','order_no','memo']
     return [dict(zip(cols, r)) for r in rows]
+
+
+# ── 강제 매도 ─────────────────────────────────────────────
+
+@router.post("/positions/{stk_cd}/sell")
+async def force_sell_position(stk_cd: str):
+    from backend.domains.kdaemon.auto_trader import get_current_price, get_positions, sell_stock
+
+    with _conn() as conn:
+        positions = get_positions(conn)
+        pos = next((p for p in positions if p.stk_cd == stk_cd), None)
+        if pos is None:
+            raise HTTPException(404, detail=f"position not found: {stk_cd}")
+
+        cur_price = await get_current_price(stk_cd)
+        if cur_price is None:
+            raise HTTPException(502, detail=f"현재가 조회 실패: {stk_cd}")
+
+        dry_run = config.KDAEMON_DRY_RUN
+        ok = await sell_stock(conn, pos, cur_price, reason='manual', dry_run=dry_run)
+        if not ok:
+            raise HTTPException(500, detail="매도 주문 실패")
+
+    return {"ok": True, "stk_cd": stk_cd, "price": cur_price, "dry_run": dry_run}
