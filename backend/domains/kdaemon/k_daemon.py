@@ -245,6 +245,7 @@ class KDaemon:
     # ── 모니터링 루프 ───────────────────────────────────
 
     async def _run(self):
+        from backend.domains.infrahub.open_time_checker import OpenTimeChecker
         from backend.domains.kdaemon.auto_trader import (
             calc_trailing_stop,
             get_current_price,
@@ -254,7 +255,6 @@ class KDaemon:
             should_sell,
             update_position_trailing,
         )
-        from backend.domains.infrahub.open_time_checker import OpenTimeChecker
         checker = OpenTimeChecker.get()
 
         try:
