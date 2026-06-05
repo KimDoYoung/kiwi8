@@ -388,9 +388,11 @@ async def buy_stock(
         stop_rate=stop_rate,
     )
     insert_position(conn, pos)
+    deposit = await get_available_cash()
     log_action(conn, 'BUY', stk_cd=stk_cd, stk_nm=stk_nm,
                price=actual_price, qty=actual_qty, amount=amount,
-               order_no=order_no if not dry_run else None)
+               order_no=order_no if not dry_run else None,
+               deposit=deposit)
     return order_no if not dry_run else None
 
 
@@ -442,10 +444,12 @@ async def sell_stock(
         logger.info(f'kdaemon: 매도 성공 {position.stk_nm}({position.stk_cd}) reason={reason}')
 
     delete_position(conn, position.stk_cd)
+    deposit = await get_available_cash()
     log_action(conn, 'SELL',
                stk_cd=position.stk_cd, stk_nm=position.stk_nm,
                price=cur_price, qty=position.qty, amount=cur_price * position.qty,
-               profit=profit, profit_rate=profit_rate, sell_reason=reason)
+               profit=profit, profit_rate=profit_rate, sell_reason=reason,
+               deposit=deposit)
     return True
 
 
@@ -456,18 +460,19 @@ async def sell_stock(
 def log_action(conn: sqlite3.Connection, action: str, **kwargs) -> None:
     """auto_trade_log INSERT + logger kdaemon: prefix + ws broadcast"""
     fields = ['stk_cd', 'stk_nm', 'price', 'qty', 'amount',
-              'profit', 'profit_rate', 'sell_reason', 'order_no', 'memo']
+              'profit', 'profit_rate', 'sell_reason', 'order_no', 'memo', 'deposit']
     values = {f: kwargs.get(f) for f in fields}
     conn.execute(
         '''INSERT INTO auto_trade_log
-           (action, stk_cd, stk_nm, price, qty, amount, profit, profit_rate, sell_reason, order_no, memo)
+           (action, stk_cd, stk_nm, price, qty, amount, profit, profit_rate, sell_reason, order_no, memo, deposit)
            VALUES (:action, :stk_cd, :stk_nm, :price, :qty, :amount,
-                   :profit, :profit_rate, :sell_reason, :order_no, :memo)''',
+                   :profit, :profit_rate, :sell_reason, :order_no, :memo, :deposit)''',
         {'action': action, **values},
     )
     conn.commit()
+    deposit_str = f' 예수금={values["deposit"]:,}원' if values.get("deposit") else ''
     logger.info(f'kdaemon: {action} {kwargs.get("stk_nm","")}'
-                f'({kwargs.get("stk_cd","")}) {kwargs.get("memo","")}')
+                f'({kwargs.get("stk_cd","")}) {kwargs.get("memo","")}{deposit_str}')
 
     # BUY/SELL/ERROR 는 WebSocket으로 브라우저에 실시간 전송
     if action in ('BUY', 'SELL', 'ERROR', 'FIND'):

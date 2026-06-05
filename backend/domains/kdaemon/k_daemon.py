@@ -47,6 +47,11 @@ class KDaemon:
         self._stop_event = asyncio.Event()
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        try:
+            self._conn.execute("ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER")
+            self._conn.commit()
+        except Exception:
+            pass  # column already exists
 
     @classmethod
     def get(cls, db_path: str, poll_interval_sec: int = 60, dry_run: bool = True) -> "KDaemon":
@@ -68,16 +73,21 @@ class KDaemon:
     async def _broadcast_state(self, action: str, memo: str):
         try:
             from backend.domains.infrahub.ws_manager import ws_manager
+            from backend.domains.kdaemon.auto_trader import get_available_cash
             clients = len(ws_manager._browser_clients)
             logger.info(f'kdaemon: broadcast {action} → {clients}개 클라이언트')
+            deposit = await get_available_cash()
+            data: dict = {
+                'action': action,
+                'dt': datetime.now().strftime('%H:%M:%S'),
+                'memo': memo,
+            }
+            if deposit is not None:
+                data['deposit'] = deposit
             await ws_manager.broadcast({
                 'broker': 'kdaemon',
                 'type': 'kdaemon_event',
-                'data': {
-                    'action': action,
-                    'dt': datetime.now().strftime('%H:%M:%S'),
-                    'memo': memo,
-                },
+                'data': data,
             })
         except Exception as e:
             logger.warning(f'kdaemon: broadcast 실패: {e}')

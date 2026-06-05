@@ -488,7 +488,12 @@ function EventRow({ ev }: { ev: KdaemonEvent }) {
                 </span>
             )}
             {ev.sell_reason && <span className="text-gray-400">[{ev.sell_reason}]</span>}
-            {ev.memo && <span className="text-gray-400 ml-auto truncate">{ev.memo}</span>}
+            {ev.memo && <span className="text-gray-400 truncate">{ev.memo}</span>}
+            {ev.deposit != null && (
+                <span className="ml-auto text-gray-500 font-mono shrink-0">
+                    예수금 {ev.deposit.toLocaleString()}원
+                </span>
+            )}
         </div>
     )
 }

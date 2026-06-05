@@ -49,6 +49,7 @@ export interface KdaemonEvent {
   profit_rate?: number
   sell_reason?: string
   memo?: string
+  deposit?: number
 }
 
 export interface WsMessage {

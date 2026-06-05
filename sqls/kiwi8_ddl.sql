@@ -424,7 +424,8 @@ CREATE TABLE IF NOT EXISTS auto_trade_log (
     profit_rate REAL,               -- SELL 시만 (손익율 %)
     sell_reason TEXT,               -- trailing_stop | stop_loss | manual
     order_no    TEXT,               -- 주문번호
-    memo        TEXT
+    memo        TEXT,
+    deposit     INTEGER             -- 이벤트 직후 예수금 (원)
 );
 
 CREATE INDEX IF NOT EXISTS idx_auto_trade_log_dt ON auto_trade_log(dt);
