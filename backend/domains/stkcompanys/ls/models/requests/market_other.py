@@ -1572,7 +1572,7 @@ MARKET_OTHER_REQUESTS = {
     't4203': {
         'tr_cd': 't4203',
         'title': '업종차트(종합)',
-'url': '/stock/market-data',
+        'url': '/indtp/chart',
         'blocks': {
             't4203InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 3, 'required': True}, {'key': 'gubun', 'name': '주기구분(0:틱1:분2:일3:주4:월)', 'type': 'string', 'length': 1, 'desc': '0:틱<br/>1:분<br/>2:일<br/>3:주<br/>4:월', 'required': True}, {'key': 'ncnt', 'name': '틱개수', 'type': 'float', 'length': 4, 'required': True}, {'key': 'qrycnt', 'name': '건수', 'type': 'float', 'length': 4, 'desc': '1 이상 500 이하값만 유효', 'required': True}, {'key': 'tdgb', 'name': '당일구분(0:전체1:당일만)', 'type': 'string', 'length': 1, 'desc': '0:전체<br/>1:당일만', 'required': True}, {'key': 'sdate', 'name': '시작일자', 'type': 'string', 'length': 8, 'desc': '조회구간종료일<br/>Space:기본값', 'required': True}, {'key': 'edate', 'name': '종료일자', 'type': 'string', 'length': 8, 'desc': '처음조회기준일(LE)<br/>처음조회일 경우 이 값 기준으로 조회', 'required': True}, {'key': 'cts_date', 'name': '연속일자', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_date 값으로 설정', 'required': True}, {'key': 'cts_time', 'name': '연속시간', 'type': 'string', 'length': 10, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_time 값으로 설정', 'required': True}, {'key': 'cts_daygb', 'name': '연속당일구분(0:연속전체1:연속당일만2:연속전일만)', 'type': 'string', 'length': 1, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_daygb 값으로 설정', 'required': True}],

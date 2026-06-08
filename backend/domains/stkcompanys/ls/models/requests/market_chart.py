@@ -26,7 +26,7 @@ MARKET_CHART_REQUESTS = {
     't8411': {
         'tr_cd': 't8411',
         'title': '주식차트(틱/n틱)',
-'url': '/stock/chart',
+        'url': '/stock/chart',
         'blocks': {
             't8411InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'ncnt', 'name': '단위(n틱)', 'type': 'float', 'length': 4, 'required': True}, {'key': 'qrycnt', 'name': '요청건수(최대-압축:2000비압축:500)', 'type': 'float', 'length': 4, 'required': True}, {'key': 'nday', 'name': '조회영업일수(0:미사용1>=사용)', 'type': 'string', 'length': 1, 'required': True}, {'key': 'sdate', 'name': '시작일자', 'type': 'string', 'length': 8, 'desc': '기본값 : Space<br/>(edate(필수입력) 기준으로 qrycnt 만큼 조회)<br/>조회구간을 설정하여 필터링 하고 싶은 경우 입력', 'required': True}, {'key': 'stime', 'name': '시작시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'edate', 'name': '종료일자', 'type': 'string', 'length': 8, 'desc': '처음조회기준일(LE)<br/>처음조회일 경우 이 값 기준으로 조회<br/>("99999999" 혹은 \'당일\')', 'required': True}, {'key': 'etime', 'name': '종료시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'cts_date', 'name': '연속일자', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_date 값으로 설정', 'required': True}, {'key': 'cts_time', 'name': '연속시간', 'type': 'string', 'length': 10, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_time 값으로 설정', 'required': True}, {'key': 'comp_yn', 'name': '압축여부(Y:압축N:비압축)', 'type': 'string', 'length': 1, 'required': True}],
@@ -37,7 +37,7 @@ MARKET_CHART_REQUESTS = {
     't8412': {
         'tr_cd': 't8412',
         'title': '주식차트(N분)',
-'url': '/stock/chart',
+        'url': '/stock/chart',
         'blocks': {
             't8412InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 6, 'required': True}, {'key': 'ncnt', 'name': '단위(n분)', 'type': 'float', 'length': 4, 'required': True}, {'key': 'qrycnt', 'name': '요청건수(최대-압축:2000비압축:500)', 'type': 'float', 'length': 4, 'required': True}, {'key': 'nday', 'name': '조회영업일수(0:미사용1>=사용)', 'type': 'string', 'length': 1, 'required': True}, {'key': 'sdate', 'name': '시작일자', 'type': 'string', 'length': 8, 'desc': '기본값 : Space<br/>(edate(필수입력) 기준으로 qrycnt 만큼 조회)<br/>조회구간을 설정하여 필터링 하고 싶은 경우 입력', 'required': True}, {'key': 'stime', 'name': '시작시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'edate', 'name': '종료일자', 'type': 'string', 'length': 8, 'desc': '처음조회기준일(LE)<br/>처음조회일 경우 이 값 기준으로 조회<br/>("99999999" 혹은 \'당일\')', 'required': True}, {'key': 'etime', 'name': '종료시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'cts_date', 'name': '연속일자', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_date 값으로 설정', 'required': True}, {'key': 'cts_time', 'name': '연속시간', 'type': 'string', 'length': 10, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_time 값으로 설정', 'required': True}, {'key': 'comp_yn', 'name': '압축여부(Y:압축N:비압축)', 'type': 'string', 'length': 1, 'required': True}],
@@ -48,7 +48,7 @@ MARKET_CHART_REQUESTS = {
     't8417': {
         'tr_cd': 't8417',
         'title': '업종차트(틱/n틱)',
-'url': '/stock/market-data',
+        'url': '/indtp/chart',
         'blocks': {
             't8417InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 3, 'required': True}, {'key': 'ncnt', 'name': '단위(n틱)', 'type': 'float', 'length': 4, 'required': True}, {'key': 'qrycnt', 'name': '요청건수(최대-압축:2000비압축:500)', 'type': 'float', 'length': 4, 'desc': '요청건수 압축모듈인 경우 최대 2000건까지 조회가능. 비압축인 경우 최대 500건까지 조회가능', 'required': True}, {'key': 'nday', 'name': '조회영업일수(0:미사용1>=사용)', 'type': 'string', 'length': 1, 'desc': '0:미사용', 'required': True}, {'key': 'sdate', 'name': '시작일자', 'type': 'string', 'length': 8, 'desc': '기본값 : Space (edate(필수입력) 기준으로 qrycnt 만큼 조회)  조회구간을 설정하여 필터링 하고 싶은 경우 입력', 'required': True}, {'key': 'stime', 'name': '시작시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'edate', 'name': '종료일자', 'type': 'string', 'length': 8, 'desc': '처음조회기준일(LE) 처음조회일 경우 이 값 기준으로 조회 ("99999999" 혹은 \'당일\')', 'required': True}, {'key': 'etime', 'name': '종료시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'cts_date', 'name': '연속일자', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space 연속 조회시에 이전 조회한 OutBlock의 cts_date 값으로 설정', 'required': True}, {'key': 'cts_time', 'name': '연속시간', 'type': 'string', 'length': 10, 'required': True}, {'key': 'comp_yn', 'name': '압축여부(Y:압축N:비압축)', 'type': 'string', 'length': 1, 'desc': 'N:비압축 모듈 Y: 압 축 모듈', 'required': True}],
@@ -59,7 +59,7 @@ MARKET_CHART_REQUESTS = {
     't8418': {
         'tr_cd': 't8418',
         'title': '업종차트(N분)',
-'url': '/stock/market-data',
+        'url': '/indtp/chart',
         'blocks': {
             't8418InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 3, 'required': True}, {'key': 'ncnt', 'name': '단위(n분)', 'type': 'float', 'length': 4, 'desc': '0:30초<br/>1: 1분<br/>2: 2분<br/>.....<br/>n: n분', 'required': True}, {'key': 'qrycnt', 'name': '요청건수(최대-압축:2000비압축:500)', 'type': 'float', 'length': 4, 'desc': '요청건수<br/>압축모듈인 경우 최대 2000건까지 조회가능.<br/>비압축인 경우 최대 500건까지 조회가능', 'required': True}, {'key': 'nday', 'name': '조회영업일수(0:미사용1>=사용)', 'type': 'string', 'length': 1, 'desc': '0:미사용', 'required': True}, {'key': 'sdate', 'name': '시작일자', 'type': 'string', 'length': 8, 'desc': '기본값 : Space<br/>(edate(필수입력) 기준으로 qrycnt 만큼 조회)<br/><br/>조회구간을 설정하여 필터링 하고 싶은 경우 입력', 'required': True}, {'key': 'stime', 'name': '시작시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'edate', 'name': '종료일자', 'type': 'string', 'length': 8, 'desc': '처음조회기준일(LE)<br/>처음조회일 경우 이 값 기준으로 조회<br/>("99999999" 혹은 \'당일\')', 'required': True}, {'key': 'etime', 'name': '종료시간(현재미사용)', 'type': 'string', 'length': 6, 'required': True}, {'key': 'cts_date', 'name': '연속일자', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_date 값으로 설정', 'required': True}, {'key': 'cts_time', 'name': '연속시간', 'type': 'string', 'length': 10, 'required': True}, {'key': 'comp_yn', 'name': '압축여부(Y:압축N:비압축)', 'type': 'string', 'length': 1, 'desc': 'N:비압축 모듈<br/>Y: 압 축 모듈', 'required': True}],
@@ -70,7 +70,7 @@ MARKET_CHART_REQUESTS = {
     't8419': {
         'tr_cd': 't8419',
         'title': '업종차트(일주월)',
-'url': '/stock/market-data',
+        'url': '/indtp/chart',
         'blocks': {
             't8419InBlock': {
                 'fields': [{'key': 'shcode', 'name': '단축코드', 'type': 'string', 'length': 3, 'required': True}, {'key': 'gubun', 'name': '주기구분(2:일3:주4:월)', 'type': 'string', 'length': 1, 'required': True}, {'key': 'qrycnt', 'name': '요청건수(최대-압축:2000비압축:500)', 'type': 'float', 'length': 4, 'desc': '요청건수<br/>압축모듈인 경우 최대 2000건까지 조회가능.<br/>비압축인 경우 최대 500건까지 조회가능', 'required': True}, {'key': 'sdate', 'name': '시작일자', 'type': 'string', 'length': 8, 'desc': '기본값 : Space<br/>(edate(필수입력) 기준으로 qrycnt 만큼 조회)<br/><br/>조회구간을 설정하여 필터링 하고 싶은 경우 입력', 'required': True}, {'key': 'edate', 'name': '종료일자', 'type': 'string', 'length': 8, 'desc': '처음조회기준일(LE)<br/>처음조회일 경우 이 값 기준으로 조회<br/>("99999999" 혹은 \'당일\')', 'required': True}, {'key': 'cts_date', 'name': '연속일자', 'type': 'string', 'length': 8, 'desc': '처음 조회시는 Space<br/>연속 조회시에 이전 조회한 OutBlock의 cts_date 값으로 설정', 'required': True}, {'key': 'comp_yn', 'name': '압축여부(Y:압축N:비압축)', 'type': 'string', 'length': 1, 'desc': 'N:비압축 모듈<br/>Y: 압 축 모듈', 'required': True}],
