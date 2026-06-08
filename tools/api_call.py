@@ -167,12 +167,26 @@ def parse_args():
         print(f'[경고] definition 없음: {broker} / {api_id}', file=sys.stderr)
         api_def = {}
 
-    # key=value → payload
+    # definition 필드 타입 맵 (key → 'long'|'float'|'string')
+    field_types: dict[str, str] = {}
+    for f in extract_fields(api_def):
+        field_types[f['key']] = f.get('type', 'string')
+
+    # key=value → payload (타입 변환 적용)
     payload = {}
     for kv in extra:
         if '=' in kv:
             k, v = kv.split('=', 1)
-            payload[k] = v
+            ftype = field_types.get(k, 'string')
+            if v == '':
+                payload[k] = v  # 빈 값은 그대로
+            elif ftype in ('long', 'float'):
+                try:
+                    payload[k] = float(v) if '.' in v else int(v)
+                except ValueError:
+                    payload[k] = v
+            else:
+                payload[k] = v
         else:
             print(f'[경고] 파싱 불가 인수 무시: {kv}', file=sys.stderr)
 
