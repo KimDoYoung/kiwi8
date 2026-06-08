@@ -156,6 +156,19 @@ async def startup_event():
     logger.info(f'Log 파일 경로: {config.LOG_FILE}')
     asyncio.create_task(ws_manager.start())
 
+    # kdaemon: DB에 running 상태 저장돼 있으면 자동 재시작
+    import sqlite3 as _sqlite3
+    try:
+        with _sqlite3.connect(db_path) as _c:
+            _row = _c.execute("SELECT status FROM kdaemon_state WHERE id=1").fetchone()
+        if _row and _row[0] == 'running':
+            from backend.domains.kdaemon.k_daemon import KDaemon
+            _daemon = KDaemon.get(db_path, poll_interval_sec=60)
+            asyncio.create_task(_daemon.start())
+            logger.info('kdaemon: DB 상태 running → 자동 재시작')
+    except Exception as _e:
+        logger.warning(f'kdaemon 자동 재시작 실패: {_e}')
+
     global scheduler
     if config.SCHEDULER_ENABLED:
         logger.info('scheduler 시작함...')

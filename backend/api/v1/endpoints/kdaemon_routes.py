@@ -148,13 +148,25 @@ def save_manual_stocks(body: ManualStocksBody):
 # ── 포지션 / 로그 조회 ────────────────────────────────
 
 @router.get("/positions")
-def list_positions():
+async def list_positions():
     with _conn() as c:
         rows = c.execute("SELECT * FROM auto_trade_position ORDER BY bought_at DESC").fetchall()
         cols = [d[0] for d in c.execute("SELECT * FROM auto_trade_position LIMIT 0").description or []]
     if not cols:
-        cols = ['id','stk_cd','stk_nm','buy_price','qty','amount','base_price','stop_price','stop_rate','bought_at','updated_at']
-    return [dict(zip(cols, r)) for r in rows]
+        cols = ['id','stk_cd','stk_nm','buy_price','qty','amount','base_price','stop_price','stop_rate','cur_price','bought_at','updated_at']
+    result = [dict(zip(cols, r)) for r in rows]
+    # cur_price가 null인 포지션은 실시간 조회로 보강
+    null_positions = [p for p in result if not p.get('cur_price')]
+    if null_positions:
+        from backend.domains.kdaemon.auto_trader import get_current_price
+        from backend.domains.kdaemon.auto_trader import update_position_cur_price
+        with _conn() as c2:
+            for p in null_positions:
+                price = await get_current_price(p['stk_cd'])
+                if price:
+                    p['cur_price'] = price
+                    update_position_cur_price(c2, p['stk_cd'], price)
+    return result
 
 @router.get("/logs")
 def list_logs(limit: int = Query(default=100, le=500)):

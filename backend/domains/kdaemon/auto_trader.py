@@ -237,6 +237,15 @@ def update_position_trailing(
     conn.commit()
 
 
+def update_position_cur_price(conn: sqlite3.Connection, stk_cd: str, cur_price: int) -> None:
+    """현재가만 갱신 (매 모니터링 사이클)"""
+    conn.execute(
+        "UPDATE auto_trade_position SET cur_price=?, updated_at=datetime('now','localtime') WHERE stk_cd=?",
+        (cur_price, stk_cd),
+    )
+    conn.commit()
+
+
 # ─────────────────────────────────────────────────────────
 # Trailing Stop 계산 (순수함수)
 # ─────────────────────────────────────────────────────────

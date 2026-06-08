@@ -248,6 +248,7 @@ class KDaemon:
             log_action,
             sell_stock,
             should_sell,
+            update_position_cur_price,
             update_position_trailing,
         )
         checker = OpenTimeChecker.get()
@@ -278,6 +279,9 @@ class KDaemon:
                             log_action(self._conn, 'ERROR', stk_cd=pos.stk_cd, memo='현재가 조회 실패')
                         continue
 
+                    # 매 사이클 현재가 DB 반영 (REST API에서 즉시 조회 가능)
+                    update_position_cur_price(self._conn, pos.stk_cd, cur_price)
+
                     # 현재가/손절가 상태 브로드캐스트
                     log_action(self._conn, 'FIND',
                                stk_cd=pos.stk_cd, stk_nm=pos.stk_nm, price=cur_price,
@@ -287,7 +291,7 @@ class KDaemon:
                         pos.base_price, cur_price, pos.stop_rate
                     )
                     if new_base > pos.base_price:
-                        update_position_trailing(self._conn, pos.stk_cd, new_base, new_stop)
+                        update_position_trailing(self._conn, pos.stk_cd, new_base, new_stop, cur_price)
                         pos.base_price = new_base
                         pos.stop_price = new_stop
                         log_action(self._conn, 'FIND',

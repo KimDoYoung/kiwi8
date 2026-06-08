@@ -29,7 +29,7 @@ api_list = [
     ("73142d9f-1983-48d2-8543-89b75535d34c", "30b6dfd6-b0bd-4e63-a510-7d5d94edc740", "/stock/market-data"),  # t1901-t1906
     ("73142d9f-1983-48d2-8543-89b75535d34c", "8f027fa6-4177-43e3-9a7a-a76873efd47c", "/stock/market-data"),  # t1531-t8425
     ("73142d9f-1983-48d2-8543-89b75535d34c", "6b67369a-dc7a-4cc7-8c33-71bb6336b6bf", "/stock/market-data"),  # t1809-t1866
-    ("73142d9f-1983-48d2-8543-89b75535d34c", "d3d0ef41-6a0f-4bda-9e28-160071f66206", "/stock/market-data"),  # t1441-t1481
+    ("73142d9f-1983-48d2-8543-89b75535d34c", "d3d0ef41-6a0f-4bda-9e28-160071f66206", "/stock/high-item"),  # t1441-t1481
     ("73142d9f-1983-48d2-8543-89b75535d34c", "12320341-ad85-429a-90bd-5b3771c5e89f", "/stock/market-data"),  # t1665,t8451,t8452 + chart overrides
     ("73142d9f-1983-48d2-8543-89b75535d34c", "316495d3-6109-45a6-baaf-9e8a0261f30a", "/stock/market-data"),  # t1403,t1921 + chart overrides
     ("73142d9f-1983-48d2-8543-89b75535d34c", "9a2800c3-9bf2-4d67-8d83-905074f06646", "/stock/market-data"),  # B7_,DH1 등
