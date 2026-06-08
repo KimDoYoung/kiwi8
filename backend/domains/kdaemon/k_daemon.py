@@ -1,5 +1,4 @@
 import asyncio
-import random
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -184,13 +183,9 @@ class KDaemon:
             stk_nm = await resolver.get_stk_nm(stk_cd) or stk_cd
             cur_price = await get_current_price(stk_cd)
             if not cur_price:
-                if self.dry_run:
-                    cur_price = 50_000
-                    logger.info(f'kdaemon: (DRY-RUN) {stk_nm}({stk_cd}) 현재가 조회 실패 → 시뮬 가격 {cur_price:,}원 사용')
-                else:
-                    logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 현재가 조회 실패, skip')
-                    log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo='현재가 조회 실패')
-                    continue
+                logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 현재가 조회 실패, skip')
+                log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo='현재가 조회 실패')
+                continue
             qty = effective_budget // cur_price
             stop_pct = int(effective_stop_rate * 100)
             logger.info(f'kdaemon: {stk_nm}({stk_cd}) 가격={cur_price:,}원 → {qty}주 (예산={effective_budget:,}원, stop={stop_pct}%)')
@@ -277,13 +272,10 @@ class KDaemon:
                 logger.info(f'kdaemon: 모니터링 사이클 — 포지션 {len(positions)}개')
                 for pos in positions:
                     cur_price = await get_current_price(pos.stk_cd)
-                    if self.dry_run:
-                        # buy_price 기준 ±8% 랜덤 시뮬 가격
-                        sim_base = pos.buy_price or 50_000
-                        cur_price = int(sim_base * random.uniform(0.92, 1.08))
-                    elif cur_price is None:
+                    if not cur_price:
                         logger.warning(f'kdaemon: {pos.stk_cd} 현재가 없음, skip')
-                        log_action(self._conn, 'ERROR', stk_cd=pos.stk_cd, memo='현재가 조회 실패')
+                        if not self.dry_run:
+                            log_action(self._conn, 'ERROR', stk_cd=pos.stk_cd, memo='현재가 조회 실패')
                         continue
 
                     # 현재가/손절가 상태 브로드캐스트

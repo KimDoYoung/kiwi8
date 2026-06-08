@@ -29,8 +29,7 @@ async def send_command(body: CommandBody):
     if cmd not in {"start", "stop", "refresh", "dry_run"}:
         raise HTTPException(400, detail="invalid cmd")
 
-    _interval = 20 if config.KDAEMON_DRY_RUN else 60
-    daemon = KDaemon.get(config.DB_PATH, poll_interval_sec=_interval, dry_run=config.KDAEMON_DRY_RUN)
+    daemon = KDaemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDAEMON_DRY_RUN)
 
     if cmd == "start":
         await daemon.start()
@@ -41,7 +40,6 @@ async def send_command(body: CommandBody):
     elif cmd == "dry_run":
         value = bool((body.args or {}).get("value", True))
         daemon.dry_run = value
-        daemon.poll_interval_sec = 20 if value else 60
         with _conn() as c:
             c.execute("UPDATE kdaemon_state SET dry_run=? WHERE id=1", (int(value),))
             c.commit()
