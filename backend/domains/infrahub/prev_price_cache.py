@@ -301,29 +301,25 @@ class PrevPriceCache:
         return f"PrevPriceCache(count={len(self._cache)}, last_update={self._last_update})"
 
     async def get_last_price(self, stk_cd: str) -> float | None:
-        """종목의 최신 종가 조회 (어제 종가, 캐시 미스시 API 호출)
-
-        오늘은 시장이 아직 닫혀있지 않으므로 어제 종가를 반환
+        """종목의 최신 종가 조회 (전일 종가, 캐시 미스시 API 호출)
 
         Args:
             stk_cd: 종목코드
 
         Returns:
-            어제 종가 (prices[-2]) 또는 None
+            전일 종가 (prices[-2]) 또는 None
         """
-        # 어제 날짜 계산 (YYYYMMDD 형식)
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-        
+        # 주말/공휴일 다음날에도 캐시 유효하도록 7일 이내 날짜면 유효 처리
+        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
+
         # 캐시에서 먼저 조회
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            # 캐시된 데이터의 마지막 날짜가 어제인지 확인
-            if data.dates and self._normalize_date_for_sort(data.dates[-1]) == yesterday:
+            if data.dates and self._normalize_date_for_sort(data.dates[-1]) >= week_ago:
                 return data.prices[-2]
             else:
-                # 날짜가 맞지 않으면 캐시 무효화
                 await self.clear(stk_cd)
-                logger.debug(f"캐시 날짜 불일치로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}, 어제: {yesterday}")
+                logger.debug(f"캐시 만료로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}")
 
         # 캐시 미스 또는 날짜 불일치: API 호출로 10일 데이터 로드 (최대 3회 재시도)
         for attempt in range(3):
@@ -348,19 +344,17 @@ class PrevPriceCache:
         Returns:
             추세 문자열 또는 None
         """
-        # 어제 날짜 계산 (YYYYMMDD 형식)
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-        
+        # 주말/공휴일 다음날에도 캐시 유효하도록 7일 이내 날짜면 유효 처리
+        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
+
         # 캐시에서 먼저 조회 (추세 판단을 위해 최소 2일 데이터 필요)
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            # 캐시된 데이터의 마지막 날짜가 어제인지 확인
-            if data.dates and self._normalize_date_for_sort(data.dates[-1]) == yesterday:
+            if data.dates and self._normalize_date_for_sort(data.dates[-1]) >= week_ago:
                 return data.trend
             else:
-                # 날짜가 맞지 않으면 캐시 무효화
                 await self.clear(stk_cd)
-                logger.debug(f"캐시 날짜 불일치로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}, 어제: {yesterday}")
+                logger.debug(f"캐시 만료로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}")
 
         # 캐시 미스 또는 날짜 불일치: API 호출로 10일 데이터 로드 (최대 3회 재시도)
         for attempt in range(3):
@@ -384,10 +378,11 @@ class PrevPriceCache:
 
     async def get_price_and_trend(self, stk_cd: str) -> tuple[float, str]:
         """전일종가와 추세를 한 번의 캐시/API 조회로 반환"""
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        # 주말/공휴일 다음날에도 캐시 유효하도록 7일 이내 날짜면 유효 처리
+        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            if data.dates and self._normalize_date_for_sort(data.dates[-1]) == yesterday:
+            if data.dates and self._normalize_date_for_sort(data.dates[-1]) >= week_ago:
                 return data.prices[-2], data.trend
             else:
                 await self.clear(stk_cd)
@@ -404,8 +399,14 @@ class PrevPriceCache:
         logger.error(f"가격/추세 조회 최종 실패 ({stk_cd})")
         return 0, '-'
 
+    @property
+    def _semaphore(self) -> asyncio.Semaphore:
+        if not hasattr(self, '_sem') or self._sem is None:
+            self._sem = asyncio.Semaphore(5)
+        return self._sem
+
     async def _fetch_price_data(self, stk_cd: str) -> tuple[list[float] | None, list[str] | None]:
-        """3개 증권사 API 중 랜덤하게 선택하여 10일 가격 데이터 조회
+        """3개 증권사 API 중 랜덤하게 선택하여 10일 가격 데이터 조회. 동시 호출 최대 5개로 제한.
 
         Args:
             stk_cd: 종목코드
@@ -413,6 +414,10 @@ class PrevPriceCache:
         Returns:
             (가격 리스트, 날짜 리스트) 또는 (None, None)
         """
+        async with self._semaphore:
+            return await self._fetch_price_data_impl(stk_cd)
+
+    async def _fetch_price_data_impl(self, stk_cd: str) -> tuple[list[float] | None, list[str] | None]:
         # 랜덤 순서로 3개 API 시도
         apis = ['kiwoom', 'kis', 'ls']
         random.shuffle(apis)
@@ -533,6 +538,7 @@ class PrevPriceCache:
             dates = [d for d, _ in sorted_data]
             prices = [p for _, p in sorted_data]
 
+        await asyncio.sleep(random.uniform(0.4, 1.2))
         return prices, dates
 
     async def _fetch_from_ls(self, stk_cd: str) -> tuple[list[float], list[str]]:

@@ -2,6 +2,7 @@
 KIS(한국투자증권) REST API 클라이언트
 """
 import asyncio
+import json
 from datetime import datetime
 from typing import Any
 
@@ -24,6 +25,15 @@ logger = get_logger(__name__)
 
 class KisRestApi(StockApi):
     """한국투자증권 REST API 클라이언트"""
+
+    # 클래스 레벨 semaphore: 모든 KIS API 호출(계정 잔고, 시세 등) 동시 최대 3개로 제한
+    _global_semaphore: asyncio.Semaphore | None = None
+
+    @classmethod
+    def _get_global_semaphore(cls) -> asyncio.Semaphore:
+        if cls._global_semaphore is None:
+            cls._global_semaphore = asyncio.Semaphore(3)
+        return cls._global_semaphore
 
     def __init__(self, token_manager: KisTokenManager):
         super().__init__(
@@ -89,6 +99,10 @@ class KisRestApi(StockApi):
         API 요청 전송 및 응답 처리.
         토큰 만료 시 자동으로 재발급 후 1회 재시도합니다.
         """
+        async with self._get_global_semaphore():
+            return await self._send_request_impl(request)
+
+    async def _send_request_impl(self, request: KisRequest) -> KisResponse:
         request_time = datetime.now()
 
         try:
@@ -218,8 +232,16 @@ class KisRestApi(StockApi):
         # HTTP 상태 코드 확인
         if response.status != 200:
             error_text = await response.text()
+            # KIS는 rate limit 등 오류를 non-200 + JSON body로 반환 → msg_cd 추출
+            error_code = str(response.status)
+            try:
+                error_data = json.loads(error_text)
+                if 'msg_cd' in error_data:
+                    error_code = error_data['msg_cd']
+            except Exception:
+                pass
             return KisApiHelper.create_error_response(
-                error_code=str(response.status),
+                error_code=error_code,
                 error_message=f"HTTP 오류: {error_text}",
                 api_info=api_info,
                 request_time=request_time
