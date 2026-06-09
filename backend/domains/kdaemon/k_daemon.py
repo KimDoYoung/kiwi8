@@ -283,6 +283,15 @@ class KDaemon:
                         except TimeoutError:
                             continue
 
+                # 장외 시간 (09:00~15:30 외): 모니터링 불필요 — 대기
+                if not checker.isKrxTime():
+                    logger.debug('kdaemon: 장외시간 — 대기')
+                    try:
+                        await asyncio.wait_for(self._stop_event.wait(), timeout=self.poll_interval_sec)
+                        break
+                    except TimeoutError:
+                        continue
+
                 # 실제 매수/매도 허용 여부 (KRX 정규장 09:00~15:30)
                 allow_trade = self.dry_run or checker.isKrxTime()
 
