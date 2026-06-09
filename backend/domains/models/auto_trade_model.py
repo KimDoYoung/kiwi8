@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 AutoTradeAction = Literal['BUY', 'SELL', 'FIND', 'ERROR']
-SellReason = Literal['trailing_stop', 'stop_loss', 'manual']
+SellReason = Literal['trailing_stop', 'stop_loss', 'manual', 'trend_reversal']
 
 
 @dataclass
@@ -24,6 +24,7 @@ class AutoTradePosition:
     id: int | None = None
     bought_at: str | None = None
     updated_at: str | None = None
+    max_volume_1min: int = 0
 
 
 @dataclass

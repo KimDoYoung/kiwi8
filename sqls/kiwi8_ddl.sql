@@ -431,6 +431,19 @@ CREATE TABLE IF NOT EXISTS auto_trade_log (
 CREATE INDEX IF NOT EXISTS idx_auto_trade_log_dt ON auto_trade_log(dt);
 CREATE INDEX IF NOT EXISTS idx_auto_trade_log_stk_cd ON auto_trade_log(stk_cd);
 
+-- kdaemon 1분 tick 데이터 (추세 분석용)
+CREATE TABLE IF NOT EXISTS auto_trade_price_tick (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    stk_cd          TEXT NOT NULL,
+    price           INTEGER NOT NULL,
+    volume_1min     INTEGER,           -- 1분간 거래량 (누적거래량 diff)
+    vol_power       REAL,              -- 체결강도 % (LS 정규장)
+    orderbook_ratio REAL,              -- 총매도잔량/총매수잔량 (LS 정규장)
+    recorded_at     TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS ix_pricetick_stk ON auto_trade_price_tick(stk_cd, recorded_at DESC);
+
 -- kdaemon 매수 전략 (조건식 + 시간 + 파라미터)
 CREATE TABLE IF NOT EXISTS auto_trade_buy_strategy (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,

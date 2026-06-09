@@ -42,6 +42,7 @@ from datetime import time
 from backend.core.logger import get_logger
 from backend.domains.infrahub.cache_keys import CacheKey
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker, now_kst
+from backend.domains.infrahub.tick_data import TickData
 
 logger = get_logger(__name__)
 
@@ -74,6 +75,8 @@ class CurrentPricer:
         # 메모리 캐시: {stk_cd: price}
         # 장이 닫혔을 때 재사용
         self._mem_cache: dict[str, int] = {}
+        # 1분 거래량 계산용 누적거래량 이전값 캐시
+        self._prev_acml_vol: dict[str, int] = {}
 
     @classmethod
     def get(cls) -> CurrentPricer:
@@ -96,19 +99,25 @@ class CurrentPricer:
         Returns:
             현재가 (int). 조회 실패 시 0 반환.
         """
-        result = await self.get_price_multi([stk_cd])
-        return result.get(stk_cd, 0)
+        return (await self.get_tick1(stk_cd)).price
+
+    async def get_tick1(self, stk_cd: str) -> TickData:
+        """단일 종목 TickData 조회 (price + volume_1min + vol_power + orderbook_ratio)"""
+        result = await self.get_tick_multi([stk_cd])
+        return result.get(stk_cd, TickData(price=0))
+
+    async def get_tick_multi(self, stk_cds: list[str]) -> dict[str, TickData]:
+        """복수 종목 TickData 조회"""
+        raw = await self._get_price_multi_internal(stk_cds)
+        return raw
 
     async def get_price_multi(self, stk_cds: list[str]) -> dict[str, int]:
-        """
-        복수 종목 현재가 조회
+        """복수 종목 현재가 조회 (price만 반환, 하위호환 유지)"""
+        ticks = await self._get_price_multi_internal(stk_cds)
+        return {cd: t.price for cd, t in ticks.items()}
 
-        Args:
-            stk_cds: 종목코드 리스트 (최대 50개 권장)
-
-        Returns:
-            {stk_cd: 현재가(int)} 딕셔너리. 조회 실패 종목은 0.
-        """
+    async def _get_price_multi_internal(self, stk_cds: list[str]) -> dict[str, TickData]:
+        """복수 종목 TickData 조회 (내부 공통 로직)"""
         if not stk_cds:
             return {}
 
@@ -121,40 +130,34 @@ class CurrentPricer:
 
         # --- 시장 상황 판별 ---
         if not is_open or _is_all_market_closed(t_now):
-            # 휴장일이거나 모든 장이 종료된 시간 → 캐시 우선
             logger.debug(f"[CurrentPricer] 캐시 우선 모드 (is_open={is_open}, t={t_now})")
             return await self._get_with_cache_first(stk_cds, market_div="NX")
 
         if price_market == "KRX":
-            # KRX 정규장 시간 (09:00~15:30) → LS 멀티 조회 우선
             logger.debug(f"[CurrentPricer] KRX 정규장 모드 (t={t_now})")
             return await self._get_krx_prices(stk_cds)
 
-        # NXT 시간대 (Pre market 또는 After market)
+        # NXT 시간대
         mode = "NXT After market" if _is_after_market_active(t_now) else "NXT Pre market"
         logger.debug(f"[CurrentPricer] {mode} 모드 (t={t_now})")
-        prices = await self._get_from_kis_multi(stk_cds, market_div="NX", use_cache=False)
+        ticks = await self._get_from_kis_multi(stk_cds, market_div="NX", use_cache=False)
 
-        # NXT 불가 종목(가격=0)은 KRX(J)로 단일 재시도
-        failed = [cd for cd, p in prices.items() if p == 0]
+        # NXT 불가 종목(price=0)은 KRX(J)로 단일 재시도
+        failed = [cd for cd, t in ticks.items() if t.price == 0]
         if failed:
             logger.info(f"[CurrentPricer] NXT 불가 종목 KRX(J) 단일 재시도: {failed}")
             retry = await self._get_from_kis_multi(failed, market_div="J", use_cache=True)
-            prices.update({cd: p for cd, p in retry.items() if p > 0})
-        return prices
+            ticks.update({cd: t for cd, t in retry.items() if t.price > 0})
+        return ticks
 
     # ------------------------------------------------------------------
     # 내부 조회 메서드
     # ------------------------------------------------------------------
 
-    async def _get_krx_prices(self, stk_cds: list[str]) -> dict[str, int]:
-        """
-        KRX 정규장 시간: LS t8407 멀티 조회 우선.
-        50개 초과 시 분할 처리. LS 실패 시 KIS로 fallback.
-        """
-        result: dict[str, int] = {}
+    async def _get_krx_prices(self, stk_cds: list[str]) -> dict[str, TickData]:
+        """KRX 정규장: LS t8407 멀티 조회 우선, 실패 시 KIS fallback."""
+        result: dict[str, TickData] = {}
 
-        # 50개씩 분할
         chunks = [stk_cds[i:i + _LS_MAX_CODES] for i in range(0, len(stk_cds), _LS_MAX_CODES)]
 
         for chunk in chunks:
@@ -163,76 +166,61 @@ class CurrentPricer:
                 result.update(chunk_result)
             except Exception as e:
                 logger.warning(f"[CurrentPricer] LS t8407 조회 실패, KIS로 fallback: {e}")
-                # LS 실패 종목만 KIS로 재조회
-                failed_codes = [c for c in chunk if c not in result or result[c] == 0]
+                failed_codes = [c for c in chunk if c not in result or result[c].price == 0]
                 if failed_codes:
                     fallback = await self._get_from_kis_multi(failed_codes, market_div="J", use_cache=False)
                     result.update(fallback)
 
-        # 조회되지 않은 종목 0으로 채움
         for code in stk_cds:
-            result.setdefault(code, 0)
+            result.setdefault(code, TickData(price=0))
 
         return result
 
     async def _get_with_cache_first(
         self, stk_cds: list[str], market_div: str
-    ) -> dict[str, int]:
-        """
-        캐시 우선 조회.
-        캐시 히트: 캐시 값 반환.
-        캐시 미스: KIS API 조회 후 캐시 저장.
-        """
-        result: dict[str, int] = {}
+    ) -> dict[str, TickData]:
+        """캐시 우선 조회. 캐시 히트: TickData(price=cached). 미스: KIS 조회."""
+        result: dict[str, TickData] = {}
         miss_codes: list[str] = []
 
         for stk_cd in stk_cds:
             cached = await self._load_from_cache(stk_cd)
             if cached is not None:
-                result[stk_cd] = cached
+                result[stk_cd] = TickData(price=cached)
             else:
                 miss_codes.append(stk_cd)
 
         if miss_codes:
-            # 캐시 미스 종목은 KIS로 조회
             fetched = await self._get_from_kis_multi(miss_codes, market_div=market_div, use_cache=True)
             result.update(fetched)
-            # NXT 불가 종목(가격=0) KRX(J) 단일 재시도
             if market_div == "NX":
-                failed = [cd for cd, p in fetched.items() if p == 0]
+                failed = [cd for cd, t in fetched.items() if t.price == 0]
                 if failed:
                     logger.info(f"[CurrentPricer] 캐시미스 NXT 불가 종목 KRX(J) 재시도: {failed}")
                     retry = await self._get_from_kis_multi(failed, market_div="J", use_cache=True)
-                    result.update({cd: p for cd, p in retry.items() if p > 0})
+                    result.update({cd: t for cd, t in retry.items() if t.price > 0})
 
         for code in stk_cds:
-            result.setdefault(code, 0)
+            result.setdefault(code, TickData(price=0))
 
         return result
 
-    async def _get_from_ls_t8407(self, stk_cds: list[str]) -> dict[str, int]:
-        """
-        LS증권 t8407 (API용 주식 멀티현재가조회) 호출.
-        종목코드를 붙여서 입력 (6자리 * n개).
-        """
+    async def _get_from_ls_t8407(self, stk_cds: list[str]) -> dict[str, TickData]:
+        """LS t8407 멀티현재가조회. price + volume_1min + vol_power + orderbook_ratio 파싱."""
         from backend.domains.stkcompanys.ls.ls_service import get_ls_api
         from backend.domains.stkcompanys.ls.models.ls_schema import LsRequest
 
-        # 6자리로 zero-padding 후 연결
         shcode = "".join(c.zfill(6) for c in stk_cds)
 
         request = LsRequest(
             api_id="t8407",
-            payload={
-                "nrec": len(stk_cds),
-                "shcode": shcode,
-            },
+            payload={"nrec": len(stk_cds), "shcode": shcode},
         )
 
         ls_api = await get_ls_api()
         response = await ls_api.send_request(request)
 
-        result: dict[str, int] = {}
+        result: dict[str, TickData] = {}
 
         if not response.success:
             logger.error(f"[CurrentPricer] LS t8407 실패: {response.error_message}")
@@ -243,17 +231,32 @@ class CurrentPricer:
             blocks = [blocks] if blocks else []
 
         for item in blocks:
-            code = str(item.get("shcode", "")).strip().lstrip("0").zfill(6)
-            # 실제 종목코드 매핑 (요청한 코드 기준)
-            price_raw = item.get("price", 0)
-            try:
-                price = int(float(price_raw))
-            except (ValueError, TypeError):
-                price = 0
-
-            # shcode를 키로 저장 (요청 코드와 동일 형식)
             raw_code = str(item.get("shcode", "")).strip()
-            result[raw_code] = price
+
+            def _parse_int(d: dict, key: str) -> int:
+                try: return int(float(d.get(key, 0)))
+                except: return 0
+
+            def _parse_float(d: dict, key: str) -> float | None:
+                try:
+                    v = float(d.get(key, 0))
+                    return v if v > 0 else None
+                except: return None
+
+            price = _parse_int(item, "price")
+            acml_vol = _parse_int(item, "volume")
+            volume_1min = self._calc_vol_1min(raw_code, acml_vol)
+            vol_power = _parse_float(item, "chdegree")
+            totofferrem = _parse_int(item, "totofferrem")
+            totbidrem = _parse_int(item, "totbidrem")
+            orderbook_ratio = round(totofferrem / totbidrem, 3) if totbidrem > 0 else None
+
+            result[raw_code] = TickData(
+                price=price,
+                volume_1min=volume_1min,
+                vol_power=vol_power,
+                orderbook_ratio=orderbook_ratio,
+            )
 
         logger.info(f"[CurrentPricer] LS t8407 조회 완료: {len(result)}개 종목")
         return result
@@ -263,42 +266,25 @@ class CurrentPricer:
         stk_cds: list[str],
         market_div: str,
         use_cache: bool = False,
-    ) -> dict[str, int]:
-        """
-        KIS FHKST01010100을 사용해 복수 종목 현재가 조회 (개별 호출).
-
-        Args:
-            stk_cds: 종목코드 리스트
-            market_div: "J" (KRX), "NX" (NXT), "UN" (통합)
-            use_cache: True이면 조회 결과를 캐시에 저장
-        """
+    ) -> dict[str, TickData]:
+        """KIS FHKST01010100 복수 종목 조회 (개별 호출)."""
         tasks = [self._get_from_kis_single(code, market_div, use_cache) for code in stk_cds]
-        prices = await asyncio.gather(*tasks, return_exceptions=True)
+        ticks = await asyncio.gather(*tasks, return_exceptions=True)
 
-        result: dict[str, int] = {}
-        for code, price in zip(stk_cds, prices):
-            if isinstance(price, Exception):
-                logger.warning(f"[CurrentPricer] KIS 단일 조회 실패 {code}: {price}")
-                result[code] = 0
+        result: dict[str, TickData] = {}
+        for code, tick in zip(stk_cds, ticks):
+            if isinstance(tick, Exception):
+                logger.warning(f"[CurrentPricer] KIS 단일 조회 실패 {code}: {tick}")
+                result[code] = TickData(price=0)
             else:
-                result[code] = price  # type: ignore[assignment]
+                result[code] = tick  # type: ignore[assignment]
 
         return result
 
     async def _get_from_kis_single(
         self, stk_cd: str, market_div: str, use_cache: bool
-    ) -> int:
-        """
-        KIS FHKST01010100 단일 종목 현재가 조회.
-
-        Args:
-            stk_cd: 종목코드
-            market_div: "J" (KRX), "NX" (NXT), "UN" (통합)
-            use_cache: True이면 결과를 캐시에 저장(메모리/DB), False이면 캐시 쓰기 금지
-
-        Returns:
-            현재가 (int). 실패 시 0.
-        """
+    ) -> TickData:
+        """KIS FHKST01010100 단일 종목 조회. price + volume_1min 파싱."""
         from backend.domains.stkcompanys.kis.kis_service import get_kis_api
         from backend.domains.stkcompanys.kis.models.kis_schema import KisRequest
 
@@ -318,24 +304,30 @@ class CurrentPricer:
                 logger.warning(
                     f"[CurrentPricer] KIS FHKST01010100 실패 {stk_cd}: {response.error_message}"
                 )
-                return 0
+                return TickData(price=0)
 
             output = (response.data or {}).get("output", {})
-            stck_prpr = output.get("stck_prpr", "0")
             try:
-                price = int(stck_prpr)
+                price = int(output.get("stck_prpr", "0"))
             except (ValueError, TypeError):
                 price = 0
+
+            acml_vol_raw = output.get("acml_vol", "0")
+            try:
+                acml_vol = int(acml_vol_raw)
+            except (ValueError, TypeError):
+                acml_vol = 0
+            volume_1min = self._calc_vol_1min(stk_cd, acml_vol)
 
             if use_cache and price > 0:
                 await self._save_to_cache(stk_cd, price)
 
             logger.debug(f"[CurrentPricer] KIS 조회 완료: {stk_cd} = {price:,}원")
-            return price
+            return TickData(price=price, volume_1min=volume_1min)
 
         except Exception as e:
             logger.error(f"[CurrentPricer] KIS 조회 예외 {stk_cd}: {e}")
-            return 0
+            return TickData(price=0)
 
     # ------------------------------------------------------------------
     # 캐시 관련
@@ -377,7 +369,16 @@ class CurrentPricer:
         except Exception as e:
             logger.debug(f"[CurrentPricer] 캐시 저장 실패 {stk_cd}: {e}")
 
+    def _calc_vol_1min(self, stk_cd: str, acml_vol: int) -> int | None:
+        """누적거래량 diff로 1분 거래량 계산. 첫 사이클은 None."""
+        prev = self._prev_acml_vol.get(stk_cd)
+        self._prev_acml_vol[stk_cd] = acml_vol
+        if prev is None or acml_vol < prev:
+            return None
+        return acml_vol - prev
+
     def clear_mem_cache(self) -> None:
-        """메모리 캐시 초기화 (장 시작 전 호출 권장)"""
+        """메모리 캐시 + 누적거래량 캐시 초기화 (장 시작 전 호출 권장)"""
         self._mem_cache.clear()
+        self._prev_acml_vol.clear()
         logger.info("[CurrentPricer] 메모리 캐시 초기화 완료")

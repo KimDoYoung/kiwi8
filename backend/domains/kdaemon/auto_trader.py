@@ -15,6 +15,7 @@ import websockets
 
 from backend.core.logger import get_logger
 from backend.domains.infrahub.current_pricer import CurrentPricer
+from backend.domains.infrahub.tick_data import TickData
 from backend.domains.models.auto_trade_model import AutoTradePosition
 from backend.utils.common_utils import parse_price
 
@@ -194,6 +195,7 @@ def get_positions(conn: sqlite3.Connection) -> list[AutoTradePosition]:
             buy_price=d['buy_price'], qty=d['qty'], amount=d['amount'],
             base_price=d['base_price'], stop_price=d['stop_price'],
             stop_rate=d['stop_rate'], bought_at=d['bought_at'], updated_at=d['updated_at'],
+            max_volume_1min=d.get('max_volume_1min') or 0,
         ))
     return result
 
@@ -244,6 +246,104 @@ def update_position_cur_price(conn: sqlite3.Connection, stk_cd: str, cur_price: 
         (cur_price, stk_cd),
     )
     conn.commit()
+
+
+# ─────────────────────────────────────────────────────────
+# Tick 데이터 DB
+# ─────────────────────────────────────────────────────────
+
+def insert_price_tick(conn: sqlite3.Connection, stk_cd: str, tick: TickData) -> None:
+    conn.execute(
+        '''INSERT INTO auto_trade_price_tick
+           (stk_cd, price, volume_1min, vol_power, orderbook_ratio)
+           VALUES (?,?,?,?,?)''',
+        (stk_cd, tick.price, tick.volume_1min, tick.vol_power, tick.orderbook_ratio),
+    )
+
+
+def get_recent_ticks(conn: sqlite3.Connection, stk_cd: str, n: int = 5) -> list[TickData]:
+    """최근 n개 tick을 시간 오름차순(오래된 것 먼저)으로 반환"""
+    cur = conn.cursor()
+    cur.execute(
+        '''SELECT price, volume_1min, vol_power, orderbook_ratio
+           FROM auto_trade_price_tick
+           WHERE stk_cd=?
+           ORDER BY recorded_at DESC
+           LIMIT ?''',
+        (stk_cd, n),
+    )
+    rows = cur.fetchall()
+    return [
+        TickData(price=r[0], volume_1min=r[1], vol_power=r[2], orderbook_ratio=r[3])
+        for r in reversed(rows)
+    ]
+
+
+def update_position_max_volume(conn: sqlite3.Connection, stk_cd: str, vol: int) -> None:
+    conn.execute(
+        'UPDATE auto_trade_position SET max_volume_1min=? WHERE stk_cd=?',
+        (vol, stk_cd),
+    )
+
+
+def cleanup_old_ticks(conn: sqlite3.Connection, keep_hours: int = 8) -> None:
+    conn.execute(
+        "DELETE FROM auto_trade_price_tick WHERE recorded_at < datetime('now','localtime',?)",
+        (f'-{keep_hours} hours',),
+    )
+
+
+_SELL_REASON_KR: dict[str, str] = {
+    'signal_a': '호가창 매도압력 추세 매도',
+    'signal_b': '체결강도 붕괴 추세 매도',
+    'signal_c': '고점 거래량 소멸 매도',
+    'trend_reversal': '수익권 추적 손절',
+    'trailing_stop': '추적 손절',
+    'stop_loss': '손절',
+    'manual': '수동 매도',
+}
+
+
+def analyze_trend_signal(ticks: list[TickData], pos: AutoTradePosition) -> str | None:
+    """복합 신호 기반 추세 반전 감지. 수익권에서만 호출할 것."""
+    if len(ticks) < 3:
+        return None
+
+    cur   = ticks[-1]
+    prev  = ticks[-2]
+    prev2 = ticks[-3]
+    highest = pos.base_price
+    max_vol = pos.max_volume_1min or 0
+
+    if cur.price <= highest * (1 - pos.stop_rate):
+        return 'trend_reversal'
+
+    # [Signal A] 호가창 매도압력 3틱 연속 증가 + 가격 정체 — 설거지 의심
+    if (cur.orderbook_ratio is not None
+            and prev.orderbook_ratio is not None
+            and prev2.orderbook_ratio is not None
+            and cur.orderbook_ratio > prev.orderbook_ratio > prev2.orderbook_ratio
+            and cur.price <= prev.price):
+        return 'signal_a'
+
+    # [Signal B] 체결강도 3틱 연속 감소 + 고점권 — 절대값 아닌 추세만
+    if (cur.vol_power is not None
+            and prev.vol_power is not None
+            and prev2.vol_power is not None
+            and cur.vol_power < prev.vol_power < prev2.vol_power
+            and cur.price >= highest * 0.97):
+        return 'signal_b'
+
+    # [Signal C] 연속 2틱 저거래량 — 일시적 감소 오발동 방지
+    if (cur.volume_1min is not None
+            and prev.volume_1min is not None
+            and max_vol > 0
+            and cur.price >= highest * 0.98
+            and cur.volume_1min < max_vol * 0.20
+            and prev.volume_1min < max_vol * 0.20):
+        return 'signal_c'
+
+    return None
 
 
 # ─────────────────────────────────────────────────────────
@@ -460,10 +560,12 @@ async def sell_stock(
         deposit = await get_available_cash()
     except Exception:
         deposit = None
+    reason_kr = _SELL_REASON_KR.get(reason, reason)
     log_action(conn, 'SELL',
                stk_cd=position.stk_cd, stk_nm=position.stk_nm,
                price=cur_price, qty=position.qty, amount=cur_price * position.qty,
                profit=profit, profit_rate=profit_rate, sell_reason=reason,
+               memo=reason_kr,
                deposit=deposit or None)
     return True
 

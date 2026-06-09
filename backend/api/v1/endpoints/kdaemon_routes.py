@@ -158,8 +158,7 @@ async def list_positions():
     # cur_price가 null인 포지션은 실시간 조회로 보강
     null_positions = [p for p in result if not p.get('cur_price')]
     if null_positions:
-        from backend.domains.kdaemon.auto_trader import get_current_price
-        from backend.domains.kdaemon.auto_trader import update_position_cur_price
+        from backend.domains.kdaemon.auto_trader import get_current_price, update_position_cur_price
         with _conn() as c2:
             for p in null_positions:
                 price = await get_current_price(p['stk_cd'])
@@ -201,3 +200,19 @@ async def force_sell_position(stk_cd: str):
             raise HTTPException(500, detail="매도 주문 실패")
 
     return {"ok": True, "stk_cd": stk_cd, "price": cur_price, "dry_run": dry_run}
+
+
+@router.get("/positions/{stk_cd}/ticks")
+def get_position_ticks(stk_cd: str, n: int = Query(default=10, le=50)):
+    from backend.domains.kdaemon.auto_trader import get_recent_ticks
+    with _conn() as conn:
+        ticks = get_recent_ticks(conn, stk_cd, n)
+    return [
+        {
+            'price': t.price,
+            'volume_1min': t.volume_1min,
+            'vol_power': t.vol_power,
+            'orderbook_ratio': t.orderbook_ratio,
+        }
+        for t in ticks
+    ]

@@ -67,6 +67,17 @@ class KDaemon:
             "ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER",
             "ALTER TABLE kdaemon_state ADD COLUMN dry_run INTEGER DEFAULT 1",
             "ALTER TABLE auto_trade_position ADD COLUMN cur_price INTEGER",
+            "ALTER TABLE auto_trade_position ADD COLUMN max_volume_1min INTEGER DEFAULT 0",
+            """CREATE TABLE IF NOT EXISTS auto_trade_price_tick (
+               id              INTEGER PRIMARY KEY AUTOINCREMENT,
+               stk_cd          TEXT NOT NULL,
+               price           INTEGER NOT NULL,
+               volume_1min     INTEGER,
+               vol_power       REAL,
+               orderbook_ratio REAL,
+               recorded_at     TEXT DEFAULT (datetime('now','localtime'))
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_pricetick_stk ON auto_trade_price_tick(stk_cd, recorded_at DESC)",
         ]:
             try:
                 self._conn.execute(migration)
@@ -240,18 +251,24 @@ class KDaemon:
     # ── 모니터링 루프 ───────────────────────────────────
 
     async def _run(self):
+        from backend.domains.infrahub.current_pricer import CurrentPricer
         from backend.domains.infrahub.open_time_checker import OpenTimeChecker
         from backend.domains.kdaemon.auto_trader import (
+            analyze_trend_signal,
             calc_trailing_stop,
-            get_current_price,
+            cleanup_old_ticks,
             get_positions,
+            get_recent_ticks,
+            insert_price_tick,
             log_action,
             sell_stock,
             should_sell,
             update_position_cur_price,
+            update_position_max_volume,
             update_position_trailing,
         )
         checker = OpenTimeChecker.get()
+        ticker = CurrentPricer.get()
 
         try:
             while not self._stop_event.is_set():
@@ -272,15 +289,24 @@ class KDaemon:
                 positions = get_positions(self._conn)
                 logger.info(f'kdaemon: 모니터링 사이클 — 포지션 {len(positions)}개')
                 for pos in positions:
-                    cur_price = await get_current_price(pos.stk_cd)
+                    tick = await ticker.get_tick1(pos.stk_cd)
+                    cur_price = tick.price
                     if not cur_price:
                         logger.warning(f'kdaemon: {pos.stk_cd} 현재가 없음, skip')
                         if not self.dry_run:
                             log_action(self._conn, 'ERROR', stk_cd=pos.stk_cd, memo='현재가 조회 실패')
                         continue
 
-                    # 매 사이클 현재가 DB 반영 (REST API에서 즉시 조회 가능)
+                    # 매 사이클 현재가 + tick 기록 (commit은 아래에서 한 번만)
                     update_position_cur_price(self._conn, pos.stk_cd, cur_price)
+                    insert_price_tick(self._conn, pos.stk_cd, tick)
+
+                    # max_volume_1min 갱신
+                    if tick.volume_1min and tick.volume_1min > pos.max_volume_1min:
+                        update_position_max_volume(self._conn, pos.stk_cd, tick.volume_1min)
+                        pos.max_volume_1min = tick.volume_1min
+
+                    self._conn.commit()
 
                     # 현재가/손절가 상태 브로드캐스트
                     log_action(self._conn, 'FIND',
@@ -298,6 +324,19 @@ class KDaemon:
                                    stk_cd=pos.stk_cd, stk_nm=pos.stk_nm, price=cur_price,
                                    memo=f'기준가↑ {new_base:,}원 → 손절가↑ {new_stop:,}원')
 
+                    # 추세 반전 신호 (수익권일 때만)
+                    if cur_price > pos.buy_price and allow_trade:
+                        recent_ticks = get_recent_ticks(self._conn, pos.stk_cd, n=5)
+                        trend_reason = analyze_trend_signal(recent_ticks, pos)
+                        if trend_reason:
+                            logger.info(
+                                f'kdaemon: {pos.stk_cd} 추세 반전 신호 — '
+                                f'cur={cur_price:,} highest={pos.base_price:,}'
+                            )
+                            await sell_stock(self._conn, pos, cur_price,
+                                             trend_reason, dry_run=self.dry_run)
+                            continue
+
                     if should_sell(pos, cur_price):
                         if allow_trade:
                             logger.info(
@@ -311,6 +350,10 @@ class KDaemon:
                                 f'kdaemon: {pos.stk_cd} trailing stop 조건 충족 '
                                 f'(cur={cur_price:,} stop={pos.stop_price:,}) — 장외시간 대기'
                             )
+
+                # 오래된 tick 정리 + 배치 commit
+                cleanup_old_ticks(self._conn, keep_hours=8)
+                self._conn.commit()
 
                 # 매도 후 포지션 재조회 → 빈 슬롯 있으면 auto_trade.data에서 보충
                 positions = get_positions(self._conn)

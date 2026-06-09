@@ -70,6 +70,18 @@ async function fetchPositions(): Promise<Position[]> {
     const res = await api.get('/api/v1/kdaemon/positions')
     return res.data
 }
+
+interface TickSnapshot {
+    price: number
+    volume_1min: number | null
+    vol_power: number | null
+    orderbook_ratio: number | null
+}
+async function fetchLastTick(stk_cd: string): Promise<TickSnapshot | null> {
+    const res = await api.get(`/api/v1/kdaemon/positions/${stk_cd}/ticks`, { params: { n: 5 } })
+    const ticks: TickSnapshot[] = res.data
+    return ticks.length > 0 ? ticks[ticks.length - 1] : null
+}
 async function forceSellPosition(stk_cd: string) {
     const res = await api.post(`/api/v1/kdaemon/positions/${stk_cd}/sell`)
     return res.data
@@ -148,6 +160,12 @@ export default function DaemonPage() {
     const { data: positions = [] } = useQuery({
         queryKey: ['kdaemonPositions'], queryFn: fetchPositions, refetchInterval: 30000,
     })
+    const [tickMap, setTickMap] = useState<Record<string, TickSnapshot | null>>({})
+    useEffect(() => {
+        positions.forEach(p => {
+            fetchLastTick(p.stk_cd).then(t => setTickMap(prev => ({ ...prev, [p.stk_cd]: t })))
+        })
+    }, [positions])
     const forceSellMut = useMutation({
         mutationFn: forceSellPosition,
         onSuccess: () => {
@@ -292,6 +310,7 @@ export default function DaemonPage() {
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">기준가</th>
                                             <th className="px-2 py-1.5 text-right text-gray-500 font-semibold">손절가</th>
                                             <th className="px-2 py-1.5 text-center text-gray-500 font-semibold">Stop%</th>
+                                            <th className="px-2 py-1.5 text-center text-gray-500 font-semibold">신호</th>
                                             <th className="px-2 py-1.5"></th>
                                         </tr>
                                     </thead>
@@ -316,6 +335,9 @@ export default function DaemonPage() {
                                                 <td className="px-2 py-1.5 text-right font-mono">{p.base_price.toLocaleString()}</td>
                                                 <td className="px-2 py-1.5 text-right font-mono text-red-600">{p.stop_price.toLocaleString()}</td>
                                                 <td className="px-2 py-1.5 text-center">{Math.round(p.stop_rate * 100)}%</td>
+                                                <td className="px-2 py-1.5 text-center">
+                                                    <TickSignal tick={tickMap[p.stk_cd] ?? null} />
+                                                </td>
                                                 <td className="px-2 py-1.5 text-center">
                                                     <button
                                                         onClick={() => handleForceSell(p.stk_cd, p.stk_nm)}
@@ -493,6 +515,30 @@ function StrategyFormRow({
     )
 }
 
+// ── Tick 신호 표시 ───────────────────────────────────────
+
+function TickSignal({ tick }: { tick: TickSnapshot | null }) {
+    if (!tick) return <span className="text-gray-300 text-xs">—</span>
+
+    const warnings: string[] = []
+    if (tick.orderbook_ratio !== null && tick.orderbook_ratio < 0.8)
+        warnings.push(`호가역전 ${tick.orderbook_ratio.toFixed(2)}`)
+    if (tick.vol_power !== null && tick.vol_power < 95)
+        warnings.push(`체결강도 ${tick.vol_power.toFixed(1)}%`)
+
+    if (warnings.length > 0) {
+        return (
+            <span title={warnings.join(' | ')} className="text-red-500 font-bold text-xs cursor-help">
+                ⚠
+            </span>
+        )
+    }
+    if (tick.vol_power !== null && tick.vol_power >= 100) {
+        return <span className="text-green-500 text-xs">↑</span>
+    }
+    return <span className="text-gray-400 text-xs">→</span>
+}
+
 // ── 이벤트 행 ────────────────────────────────────────────
 
 function EventRow({ ev }: { ev: KdaemonEvent }) {
@@ -518,13 +564,7 @@ function EventRow({ ev }: { ev: KdaemonEvent }) {
                     {ev.profit >= 0 ? '+' : ''}{ev.profit.toLocaleString()}원{ev.profit_rate != null && ` (${ev.profit_rate}%)`}
                 </span>
             )}
-            {ev.sell_reason && <span className="text-gray-400">[{ev.sell_reason}]</span>}
             {ev.memo && <span className="text-gray-400 truncate">{ev.memo}</span>}
-            {ev.deposit != null && (
-                <span className="ml-auto text-gray-500 font-mono shrink-0">
-                    예수금 {ev.deposit.toLocaleString()}원
-                </span>
-            )}
         </div>
     )
 }
