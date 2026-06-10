@@ -26,14 +26,16 @@ logger = get_logger(__name__)
 class KisRestApi(StockApi):
     """한국투자증권 REST API 클라이언트"""
 
-    # 클래스 레벨 semaphore: 모든 KIS API 호출(계정 잔고, 시세 등) 동시 최대 3개로 제한
-    _global_semaphore: asyncio.Semaphore | None = None
+    # KIS 원장 초당 1건 제한 — 직렬화 lock + 마지막 호출 시각 추적
+    _rate_lock: asyncio.Lock | None = None
+    _last_call_time: float = 0.0
+    _MIN_INTERVAL: float = 1.1  # 초당 1건 + 여유 0.1s
 
     @classmethod
-    def _get_global_semaphore(cls) -> asyncio.Semaphore:
-        if cls._global_semaphore is None:
-            cls._global_semaphore = asyncio.Semaphore(3)
-        return cls._global_semaphore
+    def _get_rate_lock(cls) -> asyncio.Lock:
+        if cls._rate_lock is None:
+            cls._rate_lock = asyncio.Lock()
+        return cls._rate_lock
 
     def __init__(self, token_manager: KisTokenManager):
         super().__init__(
@@ -97,9 +99,14 @@ class KisRestApi(StockApi):
     async def send_request(self, request: KisRequest) -> KisResponse:
         """
         API 요청 전송 및 응답 처리.
-        토큰 만료 시 자동으로 재발급 후 1회 재시도합니다.
+        KIS 원장 초당 1건 제한 준수: lock으로 직렬화 + 최소 1.1초 간격 보장.
         """
-        async with self._get_global_semaphore():
+        async with self._get_rate_lock():
+            now = asyncio.get_event_loop().time()
+            wait = KisRestApi._MIN_INTERVAL - (now - KisRestApi._last_call_time)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            KisRestApi._last_call_time = asyncio.get_event_loop().time()
             return await self._send_request_impl(request)
 
     async def _send_request_impl(self, request: KisRequest) -> KisResponse:
