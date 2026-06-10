@@ -333,14 +333,15 @@ class KDaemon:
                                    stk_cd=pos.stk_cd, stk_nm=pos.stk_nm, price=cur_price,
                                    memo=f'기준가↑ {new_base:,}원 → 손절가↑ {new_stop:,}원')
 
-                    # 추세 반전 신호 (수익권일 때만)
-                    if cur_price > pos.buy_price and allow_trade:
+                    # 추세 반전 신호 (최소 3.0% 수익권일 때만)
+                    _profit_pct = (cur_price - pos.buy_price) / pos.buy_price * 100
+                    if _profit_pct >= 3.0 and allow_trade:
                         recent_ticks = get_recent_ticks(self._conn, pos.stk_cd, n=5)
                         trend_reason = analyze_trend_signal(recent_ticks, pos)
                         if trend_reason:
                             logger.info(
                                 f'kdaemon: {pos.stk_cd} 추세 반전 신호 — '
-                                f'cur={cur_price:,} highest={pos.base_price:,}'
+                                f'cur={cur_price:,} highest={pos.base_price:,} profit={_profit_pct:.2f}%'
                             )
                             await sell_stock(self._conn, pos, cur_price,
                                              trend_reason, dry_run=self.dry_run)

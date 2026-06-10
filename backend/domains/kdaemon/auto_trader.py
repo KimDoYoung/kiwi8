@@ -318,20 +318,22 @@ def analyze_trend_signal(ticks: list[TickData], pos: AutoTradePosition) -> str |
     if cur.price <= highest * (1 - pos.stop_rate):
         return 'trend_reversal'
 
-    # [Signal A] 호가창 매도압력 3틱 연속 증가 + 가격 정체 — 설거지 의심
+    # [Signal A] 호가창 매도압력 3틱 연속 증가 + cur >= 1.5 (강한 매도압력) + 가격 정체
     if (cur.orderbook_ratio is not None
             and prev.orderbook_ratio is not None
             and prev2.orderbook_ratio is not None
             and cur.orderbook_ratio > prev.orderbook_ratio > prev2.orderbook_ratio
+            and cur.orderbook_ratio >= 1.5
             and cur.price <= prev.price):
         return 'signal_a'
 
-    # [Signal B] 체결강도 3틱 연속 감소 + 5포인트 이상 하락 + 고점권
+    # [Signal B] 체결강도 3틱 연속 감소 + 전체 5p 이상 하락 + 마지막 틱 3p 이상 하락 + 고점권
     if (cur.vol_power is not None
             and prev.vol_power is not None
             and prev2.vol_power is not None
             and cur.vol_power < prev.vol_power < prev2.vol_power
             and (prev2.vol_power - cur.vol_power) >= 5.0
+            and (prev.vol_power - cur.vol_power) >= 3.0
             and cur.price >= highest * 0.97):
         return 'signal_b'
 
