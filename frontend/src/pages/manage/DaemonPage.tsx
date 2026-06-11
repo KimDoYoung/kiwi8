@@ -202,7 +202,8 @@ export default function DaemonPage() {
                     className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
                     <RefreshCcw className="w-4 h-4" />
                 </button>
-                <div className={`flex items-center gap-2 border rounded-md px-3 py-1.5 transition-colors ${isDryRun ? 'bg-gray-50' : 'bg-orange-50 border-orange-300'}`}>
+                <div className={`flex items-center gap-2 border rounded-md px-3 py-1.5 transition-colors ${isDryRun ? 'bg-gray-50' : 'bg-orange-50 border-orange-300'} ${positions.length > 0 ? 'opacity-50' : ''}`}
+                    title={positions.length > 0 ? '포지션 보유 중에는 모드 전환 불가' : undefined}>
                     <span className={`text-xs font-semibold ${isDryRun ? 'text-gray-500' : 'text-orange-600'}`}>
                         {isDryRun ? '연습' : '실제'}
                     </span>
@@ -211,7 +212,7 @@ export default function DaemonPage() {
                         onCheckedChange={(checked) =>
                             cmdMutation.mutate({ cmd: 'dry_run', args: { value: !checked } })
                         }
-                        disabled={cmdMutation.isPending}
+                        disabled={cmdMutation.isPending || positions.length > 0}
                         className="data-[state=checked]:bg-orange-500"
                     />
                 </div>

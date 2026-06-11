@@ -167,6 +167,18 @@ async def list_positions():
                     update_position_cur_price(c2, p['stk_cd'], price)
     return result
 
+@router.get("/results")
+def list_results(limit: int = Query(default=200, le=1000), offset: int = Query(default=0)):
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT * FROM auto_trade_results ORDER BY bought_at DESC LIMIT ? OFFSET ?",
+            (limit, offset)
+        ).fetchall()
+        desc = c.execute("SELECT * FROM auto_trade_results LIMIT 0").description or []
+        cols = [d[0] for d in desc]
+    return [dict(zip(cols, r)) for r in rows]
+
+
 @router.get("/logs")
 def list_logs(limit: int = Query(default=100, le=500)):
     with _conn() as c:

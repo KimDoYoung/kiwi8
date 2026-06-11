@@ -437,6 +437,7 @@ async def buy_stock(
     qty: int,
     stop_rate: float = 0.05,
     dry_run: bool = True,
+    buy_strategy: str = '직접 매수',
 ) -> str | None:
     """
     kt10000 시장가 매수주문 → order_no 반환 (실패/dry_run 시 None)
@@ -509,6 +510,16 @@ async def buy_stock(
                price=actual_price, qty=actual_qty, amount=amount,
                order_no=order_no if not dry_run else None,
                deposit=deposit or None)
+    from backend.core.config import config as _cfg
+    buy_fee = int(amount * _cfg.BUY_FEE_RATE)
+    conn.execute(
+        """INSERT INTO auto_trade_results
+           (stk_cd, stk_nm, buy_price, qty, buy_amount, buy_fee, buy_strategy, buy_order_no, bought_at, dry_run)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?)""",
+        (stk_cd, stk_nm, actual_price, actual_qty, amount, buy_fee, buy_strategy,
+         order_no if not dry_run else None, int(dry_run))
+    )
+    conn.commit()
     return order_no if not dry_run else None
 
 
@@ -567,10 +578,22 @@ async def sell_stock(
     reason_kr = _SELL_REASON_KR.get(reason, reason)
     log_action(conn, 'SELL',
                stk_cd=position.stk_cd, stk_nm=position.stk_nm,
-               price=cur_price, qty=position.qty, amount=cur_price * position.qty,
+               price=cur_price, qty=position.qty, amount=sell_amount,
                profit=profit, profit_rate=profit_rate, sell_reason=reason,
                memo=reason_kr,
                deposit=deposit or None)
+    gross_profit = sell_amount - position.buy_price * position.qty
+    conn.execute(
+        """UPDATE auto_trade_results SET
+           sell_price=?, sell_amount=?, sell_fee=?, sell_reason=?,
+           sold_at=datetime('now','localtime'),
+           profit=?, profit_net=?, profit_rate=?, deposit_after=?
+           WHERE stk_cd=? AND sold_at IS NULL""",
+        (cur_price, sell_amount, sell_fee, reason,
+         gross_profit, profit, profit_rate, deposit,
+         position.stk_cd)
+    )
+    conn.commit()
     return True
 
 

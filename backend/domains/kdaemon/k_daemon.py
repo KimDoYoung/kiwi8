@@ -79,6 +79,29 @@ class KDaemon:
                recorded_at     TEXT DEFAULT (datetime('now','localtime'))
             )""",
             "CREATE INDEX IF NOT EXISTS ix_pricetick_stk ON auto_trade_price_tick(stk_cd, recorded_at DESC)",
+            """CREATE TABLE IF NOT EXISTS auto_trade_results (
+               id              INTEGER PRIMARY KEY AUTOINCREMENT,
+               stk_cd          TEXT NOT NULL,
+               stk_nm          TEXT NOT NULL,
+               buy_price       INTEGER NOT NULL,
+               qty             INTEGER NOT NULL,
+               buy_amount      INTEGER NOT NULL,
+               buy_fee         INTEGER NOT NULL DEFAULT 0,
+               buy_strategy    TEXT NOT NULL DEFAULT '직접 매수',
+               buy_order_no    TEXT,
+               bought_at       TEXT NOT NULL,
+               sell_price      INTEGER,
+               sell_amount     INTEGER,
+               sell_fee        INTEGER DEFAULT 0,
+               sell_reason     TEXT,
+               sell_order_no   TEXT,
+               sold_at         TEXT,
+               profit          INTEGER,
+               profit_net      INTEGER,
+               profit_rate     REAL,
+               dry_run         INTEGER NOT NULL DEFAULT 1,
+               deposit_after   INTEGER
+            )""",
         ]:
             try:
                 self._conn.execute(migration)

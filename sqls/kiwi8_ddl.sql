@@ -21,15 +21,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 
 
-
--- auto_trade_state: 데몬 상태(싱글톤 1row)
-CREATE TABLE IF NOT EXISTS auto_trade_state (
-  id             INTEGER PRIMARY KEY CHECK (id = 1),
-  status         TEXT NOT NULL,  -- 'stopped' | 'running'
-  updated_at     TEXT NOT NULL
-);
-INSERT OR IGNORE INTO auto_trade_state (id, status, updated_at) VALUES (1, 'stopped', '20000101000000');
-
 CREATE TABLE IF NOT EXISTS market_jisu (
   id             INTEGER PRIMARY KEY CHECK (id = 1),
   kospi          REAL NOT NULL,
@@ -351,6 +342,7 @@ CREATE TABLE IF NOT EXISTS account_history (
 
 CREATE INDEX IF NOT EXISTS idx_account_history_date ON account_history (record_date);
 
+
 -- ---------------------------------------------------------------
 -- stk_news : LS WS로 수신한 뉴스 (종목 관련 뉴스만 저장)
 -- ---------------------------------------------------------------
@@ -394,6 +386,16 @@ END;
 -- ============================================================
 -- 자동매매(도박2) 테이블
 -- ============================================================
+
+
+-- auto_trade_state: 데몬 상태(싱글톤 1row)
+CREATE TABLE IF NOT EXISTS auto_trade_state (
+  id             INTEGER PRIMARY KEY CHECK (id = 1),
+  status         TEXT NOT NULL,  -- 'stopped' | 'running'
+  updated_at     TEXT NOT NULL,
+  dry_run        INTEGER DEFAULT 1
+);
+INSERT OR IGNORE INTO auto_trade_state (id, status, updated_at, dry_run) VALUES (1, 'stopped', '20000101000000', 1);
 
 -- kdaemon 현재 보유 포지션 + trailing stop 상태
 CREATE TABLE IF NOT EXISTS auto_trade_position (
@@ -457,7 +459,38 @@ CREATE TABLE IF NOT EXISTS auto_trade_buy_strategy (
     is_active     INTEGER NOT NULL DEFAULT 1         -- 1:활성 0:비활성
 );
 
+ CREATE TABLE IF NOT EXISTS auto_trade_results (
+     id              INTEGER PRIMARY KEY AUTOINCREMENT,
+     stk_cd          TEXT NOT NULL,
+     stk_nm          TEXT NOT NULL,
+     -- 매수
+     buy_price       INTEGER NOT NULL,
+     qty             INTEGER NOT NULL,
+     buy_amount      INTEGER NOT NULL,        -- buy_price * qty
+     buy_fee         INTEGER NOT NULL DEFAULT 0,   -- 매수 수수료
+     buy_strategy    TEXT NOT NULL DEFAULT '직접 매수',  -- 전략명 or '직접 매수'
+     buy_order_no    TEXT,
+     bought_at       TEXT NOT NULL,
+     -- 매도 (NULL = 보유 중)
+     sell_price      INTEGER,
+     sell_amount     INTEGER,                 -- sell_price * qty
+     sell_fee        INTEGER DEFAULT 0,       -- 매도 수수료 + 증권거래세
+     sell_reason     TEXT,                    -- signal_a/b/c | trailing_stop | manual
+     sell_order_no   TEXT,
+     sold_at         TEXT,
+     -- 손익
+     profit          INTEGER,                 -- sell_amount - buy_amount (수수료 제외 gross)
+     profit_net      INTEGER,                 -- profit - buy_fee - sell_fee (실수익)
+     profit_rate     REAL,                    -- profit_net / buy_amount * 100 (%)
+     -- 메타
+     dry_run         INTEGER NOT NULL DEFAULT 1,
+     deposit_after   INTEGER
+ );
+
+
+-- ---------------------------------------------------------------
 -- 메뉴를 모두 지우고 다시 삽입 (초기화)
+-- ---------------------------------------------------------------
 DELETE FROM menus;
 
 -- 1. 대분류 (Level 1)
