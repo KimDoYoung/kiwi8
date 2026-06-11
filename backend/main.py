@@ -160,7 +160,7 @@ async def startup_event():
     import sqlite3 as _sqlite3
     try:
         with _sqlite3.connect(db_path) as _c:
-            _row = _c.execute("SELECT status FROM kdaemon_state WHERE id=1").fetchone()
+            _row = _c.execute("SELECT status FROM auto_trade_state WHERE id=1").fetchone()
         if _row and _row[0] == 'running':
             from backend.domains.kdaemon.k_daemon import KDaemon
             _daemon = KDaemon.get(db_path, poll_interval_sec=60)

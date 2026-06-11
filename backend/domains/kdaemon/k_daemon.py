@@ -59,13 +59,14 @@ class KDaemon:
         self.dry_run = dry_run
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
+        self._tick_count: dict[str, int] = {}  # 시작 후 종목별 틱 누적 (재시작 시 리셋)
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
         for migration in [
             "ALTER TABLE auto_trade_log ADD COLUMN deposit INTEGER",
-            "ALTER TABLE kdaemon_state ADD COLUMN dry_run INTEGER DEFAULT 1",
+            "ALTER TABLE auto_trade_state ADD COLUMN dry_run INTEGER DEFAULT 1",
             "ALTER TABLE auto_trade_position ADD COLUMN cur_price INTEGER",
             "ALTER TABLE auto_trade_position ADD COLUMN max_volume_1min INTEGER DEFAULT 0",
             """CREATE TABLE IF NOT EXISTS auto_trade_price_tick (
@@ -85,7 +86,7 @@ class KDaemon:
             except Exception:
                 pass
         # DB 값 우선 적용 (config보다 DB가 우선)
-        row = self._conn.execute("SELECT dry_run FROM kdaemon_state WHERE id=1").fetchone()
+        row = self._conn.execute("SELECT dry_run FROM auto_trade_state WHERE id=1").fetchone()
         if row and row['dry_run'] is not None:
             self.dry_run = bool(row['dry_run'])
 
@@ -99,7 +100,7 @@ class KDaemon:
 
     def _set_state(self, status: str):
         self._conn.execute(
-            "UPDATE kdaemon_state SET status=?, updated_at=? WHERE id=1",
+            "UPDATE auto_trade_state SET status=?, updated_at=? WHERE id=1",
             (status, now_ymdhms())
         )
         self._conn.commit()
@@ -215,6 +216,7 @@ class KDaemon:
             return
 
         self._stop_event.clear()
+        self._tick_count = {}
         self._set_state('running')
 
         from backend.domains.kdaemon.auto_trader import get_positions
@@ -309,6 +311,7 @@ class KDaemon:
                     # 매 사이클 현재가 + tick 기록 (commit은 아래에서 한 번만)
                     update_position_cur_price(self._conn, pos.stk_cd, cur_price)
                     insert_price_tick(self._conn, pos.stk_cd, tick)
+                    self._tick_count[pos.stk_cd] = self._tick_count.get(pos.stk_cd, 0) + 1
 
                     # max_volume_1min 갱신
                     if tick.volume_1min and tick.volume_1min > pos.max_volume_1min:
@@ -333,9 +336,15 @@ class KDaemon:
                                    stk_cd=pos.stk_cd, stk_nm=pos.stk_nm, price=cur_price,
                                    memo=f'기준가↑ {new_base:,}원 → 손절가↑ {new_stop:,}원')
 
-                    # 추세 반전 신호 (최소 3.0% 수익권일 때만)
+                    # 추세 반전 신호 (최소 3.0% 수익권 + 재시작 후 3틱 이상 쌓인 후에만)
                     _profit_pct = (cur_price - pos.buy_price) / pos.buy_price * 100
-                    if _profit_pct >= 3.0 and allow_trade:
+                    _ticks_ok = self._tick_count.get(pos.stk_cd, 0) >= 3
+                    if not _ticks_ok:
+                        logger.debug(
+                            f'kdaemon: {pos.stk_cd} signal 대기 '
+                            f'({self._tick_count.get(pos.stk_cd, 0)}/3틱)'
+                        )
+                    if _profit_pct >= 3.0 and _ticks_ok and allow_trade:
                         recent_ticks = get_recent_ticks(self._conn, pos.stk_cd, n=5)
                         trend_reason = analyze_trend_signal(recent_ticks, pos)
                         if trend_reason:

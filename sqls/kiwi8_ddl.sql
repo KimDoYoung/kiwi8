@@ -22,13 +22,13 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 
 
 
--- kdaemon_state: 데몬 상태(싱글톤 1row)
-CREATE TABLE IF NOT EXISTS kdaemon_state (
+-- auto_trade_state: 데몬 상태(싱글톤 1row)
+CREATE TABLE IF NOT EXISTS auto_trade_state (
   id             INTEGER PRIMARY KEY CHECK (id = 1),
   status         TEXT NOT NULL,  -- 'stopped' | 'running'
   updated_at     TEXT NOT NULL
 );
-INSERT OR IGNORE INTO kdaemon_state (id, status, updated_at) VALUES (1, 'stopped', '20000101000000');
+INSERT OR IGNORE INTO auto_trade_state (id, status, updated_at) VALUES (1, 'stopped', '20000101000000');
 
 CREATE TABLE IF NOT EXISTS market_jisu (
   id             INTEGER PRIMARY KEY CHECK (id = 1),

@@ -41,7 +41,7 @@ async def send_command(body: CommandBody):
         value = bool((body.args or {}).get("value", True))
         daemon.dry_run = value
         with _conn() as c:
-            c.execute("UPDATE kdaemon_state SET dry_run=? WHERE id=1", (int(value),))
+            c.execute("UPDATE auto_trade_state SET dry_run=? WHERE id=1", (int(value),))
             c.commit()
 
     return {"ok": True, "cmd": cmd}
@@ -49,7 +49,7 @@ async def send_command(body: CommandBody):
 @router.get("/status")
 def status():
     with _conn() as c:
-        row = c.execute("SELECT status, updated_at, dry_run FROM kdaemon_state WHERE id=1").fetchone()
+        row = c.execute("SELECT status, updated_at, dry_run FROM auto_trade_state WHERE id=1").fetchone()
     return {
         "status": row[0] if row else "unknown",
         "updated_at": row[1] if row else None,
