@@ -1,5 +1,6 @@
 import asyncio
 import sqlite3
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -9,6 +10,18 @@ from backend.core.logger import get_logger
 logger = get_logger(__name__)
 
 MAX_POSITIONS = 3
+BUY_TIMEOUT_TICKS = 10    # 10틱(약 10분) 신호 없으면 포기
+BUY_PRICE_DRIFT = 1.02    # 진입가 대비 +2% 이상 오르면 포기
+
+
+@dataclass
+class PendingStock:
+    stk_cd: str
+    stk_nm: str
+    stop_rate: float
+    effective_budget: int   # 수수료 차감 후 종목당 예산
+    entry_price: int        # 큐 진입 시 현재가 (이탈 기준)
+    tick_count: int = field(default=0)
 
 
 def now_ymdhms() -> str:
@@ -59,7 +72,8 @@ class KDaemon:
         self.dry_run = dry_run
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
-        self._tick_count: dict[str, int] = {}  # 시작 후 종목별 틱 누적 (재시작 시 리셋)
+        self._tick_count: dict[str, int] = {}   # 시작 후 종목별 틱 누적 (재시작 시 리셋)
+        self._pending_buy: dict[str, PendingStock] = {}  # 매수 타이밍 대기 큐
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
@@ -163,13 +177,12 @@ class KDaemon:
         읽은 종목은 파일에서 삭제
         """
         from backend.domains.kdaemon.auto_trader import (
-            buy_stock,
             get_available_cash,
             get_current_price,
             log_action,
         )
 
-        empty_slots = MAX_POSITIONS - len(existing)
+        empty_slots = MAX_POSITIONS - len(existing) - len(self._pending_buy)
         held = {p.stk_cd for p in existing}
 
         data_path = Path(config.BASE_DIR) / 'db' / 'auto_trade.data'
@@ -180,7 +193,7 @@ class KDaemon:
 
         lines = [l.strip() for l in data_path.read_text().splitlines() if l.strip()]
         parsed = [_parse_stock_line(l) for l in lines]
-        to_buy = [(cd, sr) for cd, sr in parsed if cd not in held][:empty_slots]
+        to_buy = [(cd, sr) for cd, sr in parsed if cd not in held and cd not in self._pending_buy][:empty_slots]
         buy_codes = {cd for cd, _ in to_buy}
         remaining = [l for l, (cd, _) in zip(lines, parsed) if cd not in buy_codes]
         data_path.write_text('\n'.join(remaining))
@@ -228,8 +241,101 @@ class KDaemon:
                 logger.warning(f'kdaemon: {stk_nm}({stk_cd}) 예산 부족 price={cur_price:,} budget={effective_budget:,}')
                 log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=stk_nm, memo=f'예산 부족 price={cur_price:,}')
                 continue
-            await buy_stock(self._conn, stk_cd, stk_nm, cur_price, qty,
-                            stop_rate=effective_stop_rate, dry_run=self.dry_run)
+            self._pending_buy[stk_cd] = PendingStock(
+                stk_cd=stk_cd, stk_nm=stk_nm,
+                stop_rate=effective_stop_rate,
+                effective_budget=effective_budget,
+                entry_price=cur_price,
+            )
+            logger.info(
+                f'kdaemon: {stk_nm}({stk_cd}) 매수 대기 큐 진입 '
+                f'현재가={cur_price:,}원 예산={effective_budget:,}원'
+            )
+            log_action(self._conn, 'FIND', stk_cd=stk_cd, stk_nm=stk_nm, price=cur_price,
+                       memo=f'매수 대기 시작 — 타이밍 신호 대기 (최대 {BUY_TIMEOUT_TICKS}틱)')
+
+    # ── 매수 타이밍 처리 ────────────────────────────────
+
+    async def _process_pending_buys(self, allow_trade: bool) -> None:
+        """pending 큐 종목 틱 수집 → 매수 신호 감지 → 매수 or 포기"""
+        if not self._pending_buy:
+            return
+
+        from backend.domains.infrahub.current_pricer import CurrentPricer
+        from backend.domains.kdaemon.auto_trader import (
+            analyze_buy_signal,
+            buy_stock,
+            get_recent_ticks,
+            insert_price_tick,
+            log_action,
+        )
+        ticker = CurrentPricer.get()
+
+        for stk_cd, pending in list(self._pending_buy.items()):
+            tick = await ticker.get_tick1(stk_cd)
+            cur_price = tick.price
+            if not cur_price:
+                logger.warning(f'kdaemon: pending {pending.stk_nm}({stk_cd}) 현재가 없음, skip')
+                continue
+
+            insert_price_tick(self._conn, stk_cd, tick)
+            pending.tick_count += 1
+
+            # 가격 이탈: entry_price 대비 +2% 이상 → 포기
+            drift_pct = (cur_price / pending.entry_price - 1) * 100
+            if cur_price > pending.entry_price * BUY_PRICE_DRIFT:
+                logger.info(
+                    f'kdaemon: {pending.stk_nm}({stk_cd}) 매수 포기 — '
+                    f'가격 이탈 +{drift_pct:.1f}% ({pending.entry_price:,}→{cur_price:,}원)'
+                )
+                log_action(self._conn, 'FIND', stk_cd=stk_cd, stk_nm=pending.stk_nm,
+                           price=cur_price, memo=f'매수 포기 — 가격 이탈 +{drift_pct:.1f}%')
+                del self._pending_buy[stk_cd]
+                continue
+
+            # 타임아웃
+            if pending.tick_count >= BUY_TIMEOUT_TICKS:
+                logger.info(
+                    f'kdaemon: {pending.stk_nm}({stk_cd}) 매수 포기 — '
+                    f'{BUY_TIMEOUT_TICKS}틱 타임아웃 (신호 없음)'
+                )
+                log_action(self._conn, 'FIND', stk_cd=stk_cd, stk_nm=pending.stk_nm,
+                           price=cur_price, memo=f'매수 포기 — {BUY_TIMEOUT_TICKS}틱 타임아웃')
+                del self._pending_buy[stk_cd]
+                continue
+
+            if pending.tick_count < 3:
+                logger.debug(f'kdaemon: {stk_cd} 매수 대기 {pending.tick_count}/3틱')
+                continue
+
+            recent = get_recent_ticks(self._conn, stk_cd, n=5)
+            signal = analyze_buy_signal(recent)
+            if signal:
+                qty = pending.effective_budget // cur_price
+                if qty <= 0:
+                    logger.warning(f'kdaemon: {pending.stk_nm}({stk_cd}) 예산 부족 — 매수 포기')
+                    log_action(self._conn, 'ERROR', stk_cd=stk_cd, stk_nm=pending.stk_nm,
+                               memo=f'예산 부족 price={cur_price:,}')
+                    del self._pending_buy[stk_cd]
+                    continue
+                logger.info(
+                    f'kdaemon: {pending.stk_nm}({stk_cd}) 매수 신호 [{signal}] — '
+                    f'{cur_price:,}원 × {qty}주'
+                )
+                if allow_trade:
+                    await buy_stock(
+                        self._conn, stk_cd, pending.stk_nm, cur_price, qty,
+                        stop_rate=pending.stop_rate, dry_run=self.dry_run,
+                        buy_strategy=f'직접 매수({signal})',
+                    )
+                    del self._pending_buy[stk_cd]
+            else:
+                logger.debug(
+                    f'kdaemon: {pending.stk_nm}({stk_cd}) 매수 신호 대기 '
+                    f'({pending.tick_count}/{BUY_TIMEOUT_TICKS}틱)'
+                )
+
+        self._conn.commit()
 
     # ── 제어 ───────────────────────────────────────────
 
@@ -240,6 +346,7 @@ class KDaemon:
 
         self._stop_event.clear()
         self._tick_count = {}
+        self._pending_buy = {}
         self._set_state('running')
 
         from backend.domains.kdaemon.auto_trader import get_positions
@@ -393,14 +500,21 @@ class KDaemon:
                                 f'(cur={cur_price:,} stop={pos.stop_price:,}) — 장외시간 대기'
                             )
 
+                # 매수 타이밍 대기 큐 처리
+                await self._process_pending_buys(allow_trade)
+
                 # 오래된 tick 정리 + 배치 commit
                 cleanup_old_ticks(self._conn, keep_hours=8)
                 self._conn.commit()
 
                 # 매도 후 포지션 재조회 → 빈 슬롯 있으면 auto_trade.data에서 보충
                 positions = get_positions(self._conn)
-                if len(positions) < MAX_POSITIONS and allow_trade:
-                    logger.info(f'kdaemon: 포지션 {len(positions)}/{MAX_POSITIONS} → 신규 종목 보충 시도')
+                effective_slots = len(positions) + len(self._pending_buy)
+                if effective_slots < MAX_POSITIONS and allow_trade:
+                    logger.info(
+                        f'kdaemon: 포지션 {len(positions)}/{MAX_POSITIONS} '
+                        f'(대기 {len(self._pending_buy)}개) → 신규 종목 보충 시도'
+                    )
                     await self._initial_buy(existing=positions)
 
                 # stop_event 대기 — set되면 즉시 루프 탈출

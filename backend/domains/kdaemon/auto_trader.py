@@ -304,6 +304,49 @@ _SELL_REASON_KR: dict[str, str] = {
 }
 
 
+def analyze_buy_signal(ticks: list[TickData]) -> str | None:
+    """매수 타이밍 신호 (매도 신호 대칭). 3틱 이상일 때만 호출할 것."""
+    if len(ticks) < 3:
+        return None
+
+    cur   = ticks[-1]
+    prev  = ticks[-2]
+    prev2 = ticks[-3]
+
+    # 데이터 없으면 즉시 매수 (LS 외 브로커 / 데이터 미제공)
+    if cur.orderbook_ratio is None and cur.vol_power is None and cur.volume_1min is None:
+        return 'signal_buy_immediate'
+
+    # [Signal Buy A] 호가창 매수압력 3틱 연속 증가 (ratio 감소) + ratio <= 0.5 + 급락 아님
+    if (cur.orderbook_ratio is not None
+            and prev.orderbook_ratio is not None
+            and prev2.orderbook_ratio is not None
+            and cur.orderbook_ratio < prev.orderbook_ratio < prev2.orderbook_ratio
+            and cur.orderbook_ratio <= 0.5
+            and cur.price >= prev.price * 0.998):
+        return 'signal_buy_a'
+
+    # [Signal Buy B] 체결강도 3틱 연속 증가 + 총 5p 이상 + 가격 상승 중
+    if (cur.vol_power is not None
+            and prev.vol_power is not None
+            and prev2.vol_power is not None
+            and cur.vol_power > prev.vol_power > prev2.vol_power
+            and (cur.vol_power - prev2.vol_power) >= 5.0
+            and cur.price >= prev.price):
+        return 'signal_buy_b'
+
+    # [Signal Buy C] 거래량 3틱 연속 증가 + 마지막 틱 30% 이상 급증
+    if (cur.volume_1min is not None
+            and prev.volume_1min is not None
+            and prev2.volume_1min is not None
+            and prev2.volume_1min > 0
+            and cur.volume_1min > prev.volume_1min > prev2.volume_1min
+            and cur.volume_1min >= prev.volume_1min * 1.3):
+        return 'signal_buy_c'
+
+    return None
+
+
 def analyze_trend_signal(ticks: list[TickData], pos: AutoTradePosition) -> str | None:
     """복합 신호 기반 추세 반전 감지. 수익권에서만 호출할 것."""
     if len(ticks) < 3:
