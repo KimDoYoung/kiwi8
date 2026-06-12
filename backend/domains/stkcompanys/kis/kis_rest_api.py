@@ -106,8 +106,13 @@ class KisRestApi(StockApi):
             wait = KisRestApi._MIN_INTERVAL - (now - KisRestApi._last_call_time)
             if wait > 0:
                 await asyncio.sleep(wait)
-            KisRestApi._last_call_time = asyncio.get_event_loop().time()
-            return await self._send_request_impl(request)
+            try:
+                return await self._send_request_impl(request)
+            finally:
+                # EGW00201 재시도 포함 실제 마지막 API 호출 완료 후 기록.
+                # 이전 코드는 요청 전에 기록해서, 재시도(1s sleep) 종료 후
+                # 다음 요청이 wait=0 으로 즉시 나가는 cascading EGW00201 버그 발생.
+                KisRestApi._last_call_time = asyncio.get_event_loop().time()
 
     async def _send_request_impl(self, request: KisRequest) -> KisResponse:
         request_time = datetime.now()

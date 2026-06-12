@@ -50,6 +50,18 @@ async function saveManualStocks(lines: string[]) {
     return res.data
 }
 
+interface PendingBuy {
+    stk_cd: string
+    stk_nm: string
+    entry_price: number
+    tick_count: number
+    stop_rate: number
+}
+async function fetchPendingBuys(): Promise<PendingBuy[]> {
+    const res = await api.get('/api/v1/kdaemon/pending-buys')
+    return res.data
+}
+
 // ── 포지션 ────────────────────────────────────────────
 
 async function fetchPositions(): Promise<Position[]> {
@@ -136,6 +148,11 @@ export default function DaemonPage() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kdaemonManualStocks'] }),
     })
 
+    // ── 매수 타이밍 대기 ──
+    const { data: pendingBuys = [] } = useQuery({
+        queryKey: ['kdaemonPendingBuys'], queryFn: fetchPendingBuys, refetchInterval: 5000,
+    })
+
     // ── 포지션 ──
     const { data: positions = [] } = useQuery({
         queryKey: ['kdaemonPositions'], queryFn: fetchPositions, refetchInterval: 30000,
@@ -179,6 +196,11 @@ export default function DaemonPage() {
 
     const startEdit = (s: Strategy) => { setEditingId(s.id); setEditForm({ ...s }) }
     const cancelEdit = () => { setEditingId(null); setEditForm(null) }
+
+    const totalSlots = strategies
+        .filter(s => s.is_active === 1)
+        .reduce((sum, s) => sum + s.max_positions, 0)
+    const emptySlots = totalSlots - positions.length - manualLines.length - pendingBuys.length
 
     return (
         <div className="flex flex-col h-full p-4 gap-4 overflow-auto text-sm">
@@ -236,24 +258,41 @@ export default function DaemonPage() {
                                 직접 매수 큐
                                 {manualLines.length > 0 && <span className="ml-2 text-orange-500 font-mono">{manualLines.length}</span>}
                             </p>
-                            <button onClick={() => refetchManual()} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors">
-                                <RefreshCcw className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {totalSlots > 0 && (
+                                    <span className={`text-xs font-mono ${emptySlots > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                        {emptySlots > 0 ? `빈 슬롯 ${emptySlots}개` : '슬롯없음'}
+                                    </span>
+                                )}
+                                <button onClick={() => refetchManual()} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors">
+                                    <RefreshCcw className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                         </div>
                         <div className="flex flex-wrap gap-1.5 mb-2 min-h-[24px]">
+                            {pendingBuys.map(p => (
+                                <span key={p.stk_cd} className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-xs font-mono text-blue-700">
+                                    <span className="text-blue-400 text-[10px] font-normal animate-pulse">신호탐색</span>
+                                    <span className="font-semibold">{p.stk_cd}</span>
+                                    {p.stk_nm && <span className="text-blue-500">{p.stk_nm}</span>}
+                                    <span className="text-blue-300">{p.tick_count}틱</span>
+                                </span>
+                            ))}
                             {manualLines.map(line => {
                                 const [cd, sr] = line.split(',')
                                 const stopLabel = sr ? ` ${parseFloat(sr) > 1 ? sr : String(parseFloat(sr) * 100)}%` : ''
                                 return (
                                     <span key={line} className="flex items-center gap-1 px-2 py-0.5 bg-orange-50 border border-orange-200 rounded text-xs font-mono text-orange-700">
-                                        {cd}{stopLabel && <span className="text-orange-400">{stopLabel}</span>}
+                                        <span className="text-orange-300 text-[10px] font-normal">매수대기</span>
+                                        <span className="font-semibold">{cd}</span>
+                                        {stopLabel && <span className="text-orange-400">{stopLabel}</span>}
                                         <button onClick={() => removeCode(line)} className="text-orange-400 hover:text-orange-700">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </span>
                                 )
                             })}
-                            {manualLines.length === 0 && <span className="text-xs text-gray-400">큐 비어있음</span>}
+                            {manualLines.length === 0 && pendingBuys.length === 0 && <span className="text-xs text-gray-400">큐 비어있음</span>}
                         </div>
                         <div className="flex gap-1.5">
                             <input

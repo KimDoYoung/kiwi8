@@ -128,9 +128,9 @@ export default function KisAccountPage() {
     ], [filteredStocks, totalMaeip, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
-        const allCols: (ColDef & { simple?: boolean })[] = [
+        const allCols: ColDef[] = [
             {
-                headerName: '종목코드', width: 100, pinned: 'left', simple: true,
+                headerName: '종목코드', width: 100, pinned: 'left', context: { simple: true },
                 valueGetter: (p) => {
                     if (p.data?._isSummary) return ''
                     const code = String(p.data?.상품번호 ?? '')
@@ -139,9 +139,9 @@ export default function KisAccountPage() {
                 cellRenderer: CodeCell,
                 comparator: (a: string, b: string) => a.localeCompare(b),
             },
-            { field: '상품명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
+            { field: '상품명', headerName: '종목명', width: 150, pinned: 'left', context: { simple: true } },
             {
-                field: '전일대비', headerName: '전일대비', width: 130, simple: true,
+                field: '전일대비', headerName: '전일대비', width: 130, context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <PrevDayCell value={toNum(p.value)} rate={toNum(p.data?.전일대비율)} />,
                 comparator: numComparator,
             },
@@ -151,7 +151,7 @@ export default function KisAccountPage() {
                 comparator: numComparator,
             },
             {
-                field: '현재가', headerName: '현재가', width: 100, type: 'numericColumn', simple: true,
+                field: '현재가', headerName: '현재가', width: 100, type: 'numericColumn', context: { simple: true },
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
             },
@@ -159,13 +159,13 @@ export default function KisAccountPage() {
                 field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '보유수량', headerName: '수량', width: 70, type: 'numericColumn',
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 headerName: '비중(%)', width: 85, type: 'numericColumn',
@@ -182,19 +182,19 @@ export default function KisAccountPage() {
                 field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn',
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '평가손익금액', headerName: '손익금액', width: 120, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '평가손익율', headerName: '손익율(%)', width: 95, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             { 
                 field: '가격추세', headerName: '추세', width: 106, sortable: false,
@@ -225,8 +225,7 @@ export default function KisAccountPage() {
             },
         ]
 
-        const strip = (cols: (ColDef & { simple?: boolean })[]) => cols.map(({ simple: _, ...col }) => col)
-        return isSimpleView ? strip(allCols.filter(col => col.simple)) : strip(allCols)
+        return isSimpleView ? allCols.filter(col => col.context?.simple) : allCols
     }, [openOrderModal, isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({

@@ -145,6 +145,22 @@ def save_manual_stocks(body: ManualStocksBody):
     return {"ok": True}
 
 
+# ── 매수 타이밍 대기 ─────────────────────────────────
+
+@router.get("/pending-buys")
+def get_pending_buys():
+    daemon = KDaemon.get(config.DB_PATH, poll_interval_sec=60, dry_run=config.KDAEMON_DRY_RUN)
+    return [
+        {
+            "stk_cd": p.stk_cd,
+            "stk_nm": p.stk_nm,
+            "entry_price": p.entry_price,
+            "tick_count": p.tick_count,
+            "stop_rate": p.stop_rate,
+        }
+        for p in daemon._pending_buy.values()
+    ]
+
 # ── 포지션 / 로그 조회 ────────────────────────────────
 
 @router.get("/positions")

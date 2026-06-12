@@ -132,45 +132,98 @@ export default function DaemonResultPage() {
 // ── 자동매매 결과 탭 ──────────────────────────────────────
 
 function ResultsTab({ results }: { results: TradeResult[] }) {
+    const [stkQuery, setStkQuery] = useState('')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+
+    const filtered = results.filter(r => {
+        if (stkQuery) {
+            const q = stkQuery.trim().toLowerCase()
+            if (!r.stk_nm.toLowerCase().includes(q) && !r.stk_cd.includes(q)) return false
+        }
+        if (dateFrom && r.bought_at < dateFrom) return false
+        if (dateTo   && r.bought_at > dateTo + ' 23:59:59') return false
+        return true
+    })
+
+    const reset = () => { setStkQuery(''); setDateFrom(''); setDateTo('') }
+    const hasFilter = stkQuery || dateFrom || dateTo
+
     if (results.length === 0) {
         return <Empty msg="자동매매 이력 없음" />
     }
     return (
-        <div className="overflow-auto max-h-[580px]">
-            <Table headers={[
-                '종목명', '매수가', '매도가', '수량', '매수금액', '매도금액',
-                '매수수수료', '매도수수료', '실수익', '수익률', '매수전략', '매도이유',
-                '매수일시', '매도일시',
-            ]}>
-                {results.map(r => {
-                    const open = r.sold_at == null
-                    const rowCls = open
-                        ? 'border-b border-gray-100 bg-yellow-50 hover:bg-yellow-100'
-                        : 'border-b border-gray-100 hover:bg-blue-50'
-                    return (
-                        <tr key={r.id} className={rowCls}>
-                            <Td cls="font-medium whitespace-nowrap">
-                                {r.stk_nm}
-                                {open && <span className="ml-1 text-[10px] text-yellow-600 font-bold">보유중</span>}
-                                {r.dry_run === 1 && <span className="ml-1 text-[10px] text-gray-400">DRY</span>}
-                            </Td>
-                            <Td>{r.buy_price.toLocaleString()}</Td>
-                            <Td>{r.sell_price?.toLocaleString() ?? '-'}</Td>
-                            <Td>{r.qty.toLocaleString()}</Td>
-                            <Td>{r.buy_amount.toLocaleString()}</Td>
-                            <Td>{r.sell_amount?.toLocaleString() ?? '-'}</Td>
-                            <Td cls="text-gray-400">{r.buy_fee.toLocaleString()}</Td>
-                            <Td cls="text-gray-400">{r.sell_fee?.toLocaleString() ?? '-'}</Td>
-                            <Td cls={colorProfit(r.profit_net)}>{fmtMoney(r.profit_net)}</Td>
-                            <Td cls={colorProfit(r.profit_rate)}>{fmtRate(r.profit_rate)}</Td>
-                            <Td cls="text-gray-500">{r.buy_strategy}</Td>
-                            <Td cls="text-gray-500">{r.sell_reason ? (REASON_KR[r.sell_reason] ?? r.sell_reason) : '-'}</Td>
-                            <Td cls="text-gray-400 whitespace-nowrap">{r.bought_at}</Td>
-                            <Td cls="text-gray-400 whitespace-nowrap">{r.sold_at ?? '-'}</Td>
-                        </tr>
-                    )
-                })}
-            </Table>
+        <div className="space-y-2">
+            {/* 검색 조건 */}
+            <div className="flex flex-wrap items-center gap-2 px-1">
+                <input
+                    value={stkQuery}
+                    onChange={e => setStkQuery(e.target.value)}
+                    placeholder="종목명 / 코드"
+                    className="border rounded px-2 py-1 text-xs w-32 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+                <span className="text-xs text-gray-400">매수일</span>
+                <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={e => setDateFrom(e.target.value)}
+                    className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+                <span className="text-xs text-gray-400">~</span>
+                <input
+                    type="date"
+                    value={dateTo}
+                    onChange={e => setDateTo(e.target.value)}
+                    className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+                {hasFilter && (
+                    <button onClick={reset} className="text-xs text-gray-400 hover:text-red-500 transition-colors px-1.5 py-1 rounded hover:bg-red-50">
+                        초기화
+                    </button>
+                )}
+                <span className="text-xs text-gray-400 ml-auto">{filtered.length} / {results.length}건</span>
+            </div>
+
+            <div className="overflow-auto max-h-[540px]">
+                {filtered.length === 0 ? (
+                    <Empty msg="검색 결과 없음" />
+                ) : (
+                    <Table headers={[
+                        '종목명', '매수가', '매도가', '수량', '매수금액', '매도금액',
+                        '매수수수료', '매도수수료', '실수익', '수익률', '매수전략', '매도이유',
+                        '매수일시', '매도일시',
+                    ]}>
+                        {filtered.map(r => {
+                            const open = r.sold_at == null
+                            const rowCls = open
+                                ? 'border-b border-gray-100 bg-yellow-50 hover:bg-yellow-100'
+                                : 'border-b border-gray-100 hover:bg-blue-50'
+                            return (
+                                <tr key={r.id} className={rowCls}>
+                                    <Td cls="font-medium whitespace-nowrap">
+                                        {r.stk_nm}
+                                        {open && <span className="ml-1 text-[10px] text-yellow-600 font-bold">보유중</span>}
+                                        {r.dry_run === 1 && <span className="ml-1 text-[10px] text-gray-400">DRY</span>}
+                                    </Td>
+                                    <Td>{r.buy_price.toLocaleString()}</Td>
+                                    <Td>{r.sell_price?.toLocaleString() ?? '-'}</Td>
+                                    <Td>{r.qty.toLocaleString()}</Td>
+                                    <Td>{r.buy_amount.toLocaleString()}</Td>
+                                    <Td>{r.sell_amount?.toLocaleString() ?? '-'}</Td>
+                                    <Td cls="text-gray-400">{r.buy_fee.toLocaleString()}</Td>
+                                    <Td cls="text-gray-400">{r.sell_fee?.toLocaleString() ?? '-'}</Td>
+                                    <Td cls={colorProfit(r.profit_net)}>{fmtMoney(r.profit_net)}</Td>
+                                    <Td cls={colorProfit(r.profit_rate)}>{fmtRate(r.profit_rate)}</Td>
+                                    <Td cls="text-gray-500">{r.buy_strategy}</Td>
+                                    <Td cls="text-gray-500">{r.sell_reason ? (REASON_KR[r.sell_reason] ?? r.sell_reason) : '-'}</Td>
+                                    <Td cls="text-gray-400 whitespace-nowrap">{r.bought_at}</Td>
+                                    <Td cls="text-gray-400 whitespace-nowrap">{r.sold_at ?? '-'}</Td>
+                                </tr>
+                            )
+                        })}
+                    </Table>
+                )}
+            </div>
         </div>
     )
 }

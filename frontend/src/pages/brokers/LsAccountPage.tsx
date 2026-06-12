@@ -129,16 +129,16 @@ export default function LsAccountPage() {
     ], [stocks, totalMaeip, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
-        const allCols: (ColDef & { simple?: boolean })[] = [
+        const allCols: ColDef[] = [
             {
-                headerName: '종목코드', width: 100, pinned: 'left', simple: true,
+                headerName: '종목코드', width: 100, pinned: 'left', context: { simple: true },
                 valueGetter: (p) => p.data?._isSummary ? '' : (p.data?.종목번호 ?? p.data?.종목코드 ?? ''),
                 cellRenderer: CodeCell,
                 comparator: (a: string, b: string) => a.localeCompare(b),
             },
-            { field: '종목명', headerName: '종목명', width: 150, pinned: 'left', simple: true },
+            { field: '종목명', headerName: '종목명', width: 150, pinned: 'left', context: { simple: true } },
             {
-                field: '전일대비', headerName: '전일대비', width: 130, simple: true,
+                field: '전일대비', headerName: '전일대비', width: 130, context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <PrevDayCell value={toNum(p.value)} rate={toNum(p.data?.전일대비율)} />,
                 comparator: numComparator,
             },
@@ -148,22 +148,22 @@ export default function LsAccountPage() {
                 comparator: numComparator,
             },
             {
-                field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn', simple: true,
+                field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn', context: { simple: true },
                 valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
             },
             {
-                field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn', simple: true,
+                field: '1주당', headerName: '1주당', width: 100, type: 'numericColumn', context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
             },
             {
-                field: '잔고수량', headerName: '수량', width: 80, type: 'numericColumn', simple: true,
+                field: '잔고수량', headerName: '수량', width: 80, type: 'numericColumn', context: { simple: true },
                 valueFormatter: ({ value, data }) => (data?._isSummary || toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
             },
             {
-                headerName: '비중(%)', width: 85, type: 'numericColumn', simple: false,
+                headerName: '비중(%)', width: 85, type: 'numericColumn',
                 valueGetter: (p) => p.data?._weight ?? 0,
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && p.value === 0) ? '' : <WeightCell {...p} />,
                 comparator: numComparator,
@@ -174,17 +174,17 @@ export default function LsAccountPage() {
                 comparator: numComparator,
             },
             {
-                field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn', simple: true,
+                field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn', context: { simple: true },
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
             },
             {
-                field: '평가손익', headerName: '손익금액', width: 120, type: 'numericColumn', simple: true,
+                field: '평가손익', headerName: '손익금액', width: 120, type: 'numericColumn', context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
             },
             {
-                field: '수익율', headerName: '손익율(%)', width: 95, type: 'numericColumn', simple: true,
+                field: '수익율', headerName: '손익율(%)', width: 95, type: 'numericColumn', context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} />,
                 comparator: numComparator,
             },
@@ -193,7 +193,7 @@ export default function LsAccountPage() {
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
             },
             {
-                headerName: '', width: 145, sortable: false, resizable: false, simple: false,
+                headerName: '', width: 145, sortable: false, resizable: false,
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? null : (
                     <ActionCell 
                         onBuy={() => openOrderModal({
@@ -217,8 +217,7 @@ export default function LsAccountPage() {
             },
         ]
 
-        const strip = (cols: (ColDef & { simple?: boolean })[]) => cols.map(({ simple: _, ...col }) => col)
-        return isSimpleView ? strip(allCols.filter(col => col.simple)) : strip(allCols)
+        return isSimpleView ? allCols.filter(col => col.context?.simple) : allCols
     }, [openOrderModal, isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({
