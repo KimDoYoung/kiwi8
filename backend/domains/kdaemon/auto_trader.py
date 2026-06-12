@@ -363,12 +363,26 @@ def analyze_trend_signal(ticks: list[TickData], pos: AutoTradePosition) -> str |
 
     # [Signal A] 호가창 매도압력 3틱 연속 증가 + cur >= 2.0 (강한 매도압력) + 가격 정체/하락
     # 0.2% 이내 상승은 노이즈(틱 2~3개)로 간주해 정체로 취급
+    #
+    # [vol_power 가드] orderbook_ratio가 높아도 vol_power(체결강도)가 여전히 상승 중이면
+    # 매수세가 매도잔량을 실시간으로 소화하고 있는 상태이므로 매도 신호를 차단한다.
+    # 실제 사례(042700, 2026-06-12): ratio=4.988(급증)에 signal_a 발동 → 매도 311,000원.
+    # 그러나 당시 vol_power=124.11(직전 대비 +2.37p 상승) → 강세 지속, 이후 322,500까지 상승.
+    # 판단 기준: cur.vol_power <= prev.vol_power + 1.0 이면 하락/보합(매도 유효),
+    #            그보다 크면 체결강도 상승 중(매수세 우세) → signal_a 억제.
+    # vol_power가 None(KIS 브로커 등 미제공)이거나 이미 115 이하(약세)면 가드 없이 허용.
+    vol_not_surging = (
+        cur.vol_power is None or prev.vol_power is None
+        or cur.vol_power <= 115.0                # 이미 약세 구간 — 매도 압력 유효
+        or cur.vol_power <= prev.vol_power + 1.0  # 하락 또는 보합(+1p 노이즈 허용)
+    )
     if (cur.orderbook_ratio is not None
             and prev.orderbook_ratio is not None
             and prev2.orderbook_ratio is not None
             and cur.orderbook_ratio > prev.orderbook_ratio > prev2.orderbook_ratio
             and cur.orderbook_ratio >= 2.0
-            and cur.price <= prev.price * 1.002):
+            and cur.price <= prev.price * 1.002
+            and vol_not_surging):
         return 'signal_a'
 
     # [Signal B] 체결강도 3틱 연속 감소 + 전체 5p 이상 하락 + 마지막 틱 3p 이상 하락 + 고점권
