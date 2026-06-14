@@ -7,7 +7,8 @@ from bs4 import BeautifulSoup
 # ==============================================================================
 # CONFIGURATION CONSTANTS (설정 상수)
 # ==============================================================================
-DB_URL = "ipo_stock.db"      # SQLite3 데이터베이스 파일 경로
+
+DB_URL = "/home/kdy987/work/kiwi8/data/db/kiwi8.db"  # SQLite 데이터베이스 파일 경로
 DB_TABLENAME = "ipo_data"    # 저장할 테이블 이름
 SCRAPE_PAGES = 3             # 스크래핑할 리스트 페이지 수
 
