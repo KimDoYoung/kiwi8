@@ -22,6 +22,8 @@ import SchedulerPage from '@/pages/manage/SchedulerPage'
 import DaemonPage from '@/pages/manage/DaemonPage'
 import DaemonResultPage from '@/pages/manage/DaemonResultPage'
 import LlmTalkPage from '@/pages/llm/LlmTalkPage'
+import IpoCalendarPage from '@/pages/ipo/Calendar1Page'
+import IpoListPage from '@/pages/ipo/IpoListPage'
 
 // screen_no → React 컴포넌트 매핑
 // 향후 실제 페이지 구현 시 PlaceholderPage를 교체
@@ -40,6 +42,9 @@ const registry: Record<string, React.ComponentType<{ screenNo?: string; title?: 
   '1204': MyStockPage,
   '1205': ThemePage,
   '1206': StockNewsPage,
+  // [1400 공모주]
+  '1401': IpoCalendarPage,
+  '1402': IpoListPage,
   // [1300 주문 센터]
   '1301': PlaceholderPage,
   '1302': PlaceholderPage,

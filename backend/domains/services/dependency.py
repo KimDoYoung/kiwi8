@@ -36,7 +36,8 @@ def get_service(name: str):
     from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
     from backend.domains.services.stk_words_service import StkWordsService
     from backend.domains.services.tokens_service import TokensService
-    
+    from backend.domains.services.ipo_service import IpoService
+
     # 서비스 클래스 매핑
     service_classes = {
         'my_stock': MyStockService,
@@ -54,6 +55,7 @@ def get_service(name: str):
         'layout_preset': LayoutPresetService,
         'market': MarketService,
         'judal_theme': JudalThemeService,
+        'ipo': IpoService,
     }
     
     if name not in service_classes:

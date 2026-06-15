@@ -12,6 +12,7 @@ import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.system_init  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
+import backend.jobs.ipo_scrap  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.ai_routes import router as ai_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
@@ -32,6 +33,7 @@ from backend.api.v1.endpoints.stock_routes import router as stock_router
 from backend.api.v1.endpoints.trend_routes import router as trend_router
 from backend.api.v1.endpoints.websocket_routes import router as ws_router
 from backend.api.v1.endpoints.words_routes import router as words_router
+from backend.api.v1.endpoints.ipo_routes import router as ipo_router
 from backend.core.config import config
 from backend.core.exception_handler import add_exception_handlers
 from backend.core.jwtmiddleware import JWTAuthMiddleware
@@ -130,6 +132,7 @@ def add_routes(app: FastAPI):
     app.include_router(scheduler_router, prefix='/api/v1/scheduler', tags=['scheduler'])
     app.include_router(menus_router, prefix='/api/v1/menus', tags=['menus'])
     app.include_router(layout_preset_router, prefix='/api/v1/layout-presets', tags=['layout-presets'])
+    app.include_router(ipo_router, prefix='/api/v1/ipo', tags=['ipo'])
 
 
 def add_event_handlers(app: FastAPI):
@@ -231,6 +234,16 @@ async def startup_event():
             schedule_expr="0 4 * * *",
             enabled=True,
             timeout_sec=300,
+            overlap_policy="skip",
+        ))
+
+        scheduler.upsert_job(Job(
+            name="scrap_ipo",
+            func_name="scrap_ipo",
+            schedule_type="cron",
+            schedule_expr="10 8 * * *",
+            enabled=True,
+            timeout_sec=600,
             overlap_policy="skip",
         ))
 
