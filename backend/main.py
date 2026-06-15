@@ -12,7 +12,7 @@ import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.system_init  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
-import backend.jobs.ipo_scrap  # noqa: F401
+import backend.jobs.ipostock_scrap  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.ai_routes import router as ai_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router

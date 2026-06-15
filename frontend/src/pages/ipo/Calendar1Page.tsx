@@ -215,13 +215,15 @@ export default function Calendar1Page() {
                                 {day.events.map((ev, idx) => {
                                     const s = EVENT_STYLE[ev.event_type]
                                     return (
-                                        <div key={`${ev.track_id}-${ev.event_type}-${idx}`}
+                                        <a key={`${ev.track_id}-${ev.event_type}-${idx}`}
+                                            href={`http://www.ipostock.co.kr/view_pg/view_01.asp?code=${ev.track_id}`}
+                                            target="_blank" rel="noopener noreferrer"
                                             title={`${ev.stock_name} — ${s.label}`}
-                                            className={`text-xs font-medium px-1.5 py-0.5 rounded border truncate leading-tight
+                                            className={`block text-xs font-medium px-1.5 py-0.5 rounded border truncate leading-tight cursor-pointer hover:brightness-95
                                                 ${s.bg} ${s.text} ${s.border}`}>
                                             {stripIlSuffix(ev.stock_name)}
                                             <span className="ml-1 opacity-60 text-[11px]">({s.label})</span>
-                                        </div>
+                                        </a>
                                     )
                                 })}
                             </div>

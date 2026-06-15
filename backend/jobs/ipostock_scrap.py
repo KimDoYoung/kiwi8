@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
 ipostock.co.kr 공모주 데이터 수집 → ipo_data 테이블 upsert.
-tools/ipostock_scrap.py 에서 이관; DB 경로는 config.DB_PATH 사용.
+스케줄러 잡(scrap_ipo) 등록 포함.
 """
+import asyncio
 import sqlite3
 import datetime
 import requests
 from bs4 import BeautifulSoup
 
 from backend.core.config import config
+from backend.core.logger import get_logger
+from backend.domains.kscheduler.k_scheduler import job_registry
+
+logger = get_logger(__name__)
 
 DB_TABLENAME = "ipo_data"
 SCRAPE_PAGES = 3
@@ -291,6 +296,15 @@ class IpoRepository:
                     inserted += 1
             conn.commit()
         return inserted, updated, skipped
+
+
+@job_registry.register('scrap_ipo')
+async def scrap_ipo_job(_payload: dict) -> None:
+    """매일 08:10 ipostock.co.kr 공모주 데이터 수집."""
+    logger.info('[ipo_scrap] 수집 시작')
+    loop = asyncio.get_event_loop()
+    inserted, updated, skipped = await loop.run_in_executor(None, collect_ipo)
+    logger.info(f'[ipo_scrap] 완료 — 신규={inserted} 업데이트={updated} 건너뜀={skipped}')
 
 
 def collect_ipo() -> tuple[int, int, int]:

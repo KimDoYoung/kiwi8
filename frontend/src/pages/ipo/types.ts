@@ -1,0 +1,31 @@
+export interface IpoRow {
+    track_id: string
+    stock_name: string
+    status: string
+    market_type: string
+    stock_code: string
+    industry: string
+    ceo: string
+    business_type: string
+    headquarters_location: string
+    website: string
+    phone_number: string
+    major_shareholder: string
+    revenue: string
+    pre_tax_continuing_operations_profit: string
+    net_profit: string
+    capital: string
+    total_ipo_shares: string
+    face_value: string
+    desired_ipo_price: string
+    subscription_competition_rate: string
+    final_ipo_price: string
+    ipo_proceeds: string
+    lead_manager: string
+    demand_forecast_date: string
+    ipo_subscription_date: string
+    payment_date: string
+    refund_date: string
+    listing_date: string
+    ir_data: string
+}
