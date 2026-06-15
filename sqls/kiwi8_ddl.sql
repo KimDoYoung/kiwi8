@@ -1,3 +1,18 @@
+-- -----------------------------------------------------
+-- holidays: 공휴일 테이블 (선거일, 대체공휴일 등 포함)
+-- -----------------------------------------------------
+ CREATE TABLE IF NOT EXISTS holidays (
+     ymd   TEXT    NOT NULL,   -- '20260603'
+     name  TEXT    NOT NULL,   -- '선거일'
+     year  INTEGER NOT NULL,
+     month INTEGER NOT NULL,
+     PRIMARY KEY (ymd)
+ );
+ CREATE INDEX IF NOT EXISTS idx_holidays_ym ON holidays(year, month);
+
+-- -----------------------------------------------------
+-- ipo_data: 공모주 정보 테이블 (ipostock 크롤링 결과 저장용)
+-- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS ipo_data (
     track_id TEXT,                               -- 트랙 ID (ipostock URL code)
     stock_name TEXT,                             -- 종목명

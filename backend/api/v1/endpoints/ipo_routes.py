@@ -1,7 +1,9 @@
 """
 IPO(공모주) 관련 API 엔드포인트
 """
+import asyncio
 import re
+from datetime import date, timedelta
 from fastapi import APIRouter, Query
 
 from backend.core.logger import get_logger
@@ -9,6 +11,14 @@ from backend.domains.services.dependency import get_service
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+_FIELD_MAP = [
+    ('ipo_subscription_date', 'subscription'),
+    ('payment_date',          'payment'),
+    ('refund_date',           'refund'),
+    ('listing_date',          'listing'),
+    ('demand_forecast_date',  'demand_forecast'),
+]
 
 
 def _parse_date_range(date_str: str, year: int) -> list[str]:
@@ -27,7 +37,6 @@ def _parse_date_range(date_str: str, year: int) -> list[str]:
             return []
         start_raw, end_raw = parts[0], parts[1]
 
-        # start: '2026.07.01' or '07.01'
         start_match = re.match(r'(\d{4})\.(\d{2})\.(\d{2})', start_raw)
         if start_match:
             sy, sm, sd = start_match.groups()
@@ -48,7 +57,6 @@ def _parse_date_range(date_str: str, year: int) -> list[str]:
             ey = sy
             em, ed = m.groups()
 
-        from datetime import date, timedelta
         try:
             start_dt = date(int(sy), int(sm), int(sd))
             end_dt = date(int(ey), int(em), int(ed))
@@ -70,39 +78,70 @@ def _parse_date_range(date_str: str, year: int) -> list[str]:
         return [f'{y}{mo}{d}']
 
 
+async def _build_holiday_info_for_range(
+    start_ymd: str, end_ymd: str
+) -> tuple[set[str], dict[str, str]]:
+    """start_ymd~end_ymd 범위의 (주말+공휴일 집합, 공휴일명 dict) 반환."""
+    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
+
+    start = date(int(start_ymd[:4]), int(start_ymd[4:6]), int(start_ymd[6:8]))
+    end   = date(int(end_ymd[:4]),   int(end_ymd[4:6]),   int(end_ymd[6:8]))
+
+    # 범위 내 (year, month) 목록
+    months: list[tuple[int, int]] = []
+    cur = start.replace(day=1)
+    while cur <= end:
+        months.append((cur.year, cur.month))
+        cur = (cur.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+    holiday_names: dict[str, str] = {}
+    try:
+        checker = OpenTimeChecker.get()
+        for y, m in months:
+            names = await checker.get_month_holiday_names(y, m)
+            holiday_names.update(names)
+    except Exception:
+        pass
+
+    holiday_set: set[str] = set(holiday_names.keys())
+    cur_date = start
+    while cur_date <= end:
+        if cur_date.weekday() >= 5:
+            holiday_set.add(cur_date.strftime('%Y%m%d'))
+        cur_date += timedelta(days=1)
+
+    return holiday_set, holiday_names
+
+
 @router.get('/calendar')
 async def get_ipo_calendar(
-    year: int = Query(..., description='연도 (e.g. 2026)'),
-    month: int = Query(..., description='월 (1~12)'),
+    start_ymd: str = Query(..., description='달력 그리드 시작일 (yyyyMMdd)'),
+    end_ymd:   str = Query(..., description='달력 그리드 종료일 (yyyyMMdd)'),
 ):
     """
-    지정 연/월에 일정이 있는 IPO 데이터를 달력 이벤트 형태로 반환.
-    각 이벤트: { ymd, stock_name, event_type, track_id }
-    event_type: 'subscription' | 'payment' | 'refund' | 'listing' | 'demand_forecast'
+    start_ymd~end_ymd 그리드 범위의 IPO 이벤트 반환.
+    주말·공휴일 날짜 이벤트 제외.
+    응답: { data: IpoEvent[], holidays: {ymd: name} }
     """
     service = get_service('ipo')
-    rows = await service.get_ipo_by_month(year, month)
+    results = await asyncio.gather(
+        service.get_ipo_by_range(start_ymd, end_ymd),
+        _build_holiday_info_for_range(start_ymd, end_ymd),
+    )
+    rows = results[0]
+    holiday_set, holiday_names = results[1]
 
-    ym = f'{year:04d}{month:02d}'
-
+    year = int(start_ymd[:4])
     events: list[dict] = []
-
-    field_map = [
-        ('ipo_subscription_date', 'subscription'),
-        ('payment_date',          'payment'),
-        ('refund_date',           'refund'),
-        ('listing_date',          'listing'),
-        ('demand_forecast_date',  'demand_forecast'),
-    ]
 
     for row in rows:
         stock_name = row.get('stock_name', '')
         track_id   = row.get('track_id', '')
 
-        for field, event_type in field_map:
+        for field, event_type in _FIELD_MAP:
             date_str = row.get(field, '') or ''
             for ymd in _parse_date_range(date_str, year):
-                if ymd.startswith(ym):
+                if start_ymd <= ymd <= end_ymd and ymd not in holiday_set:
                     events.append({
                         'ymd': ymd,
                         'stock_name': stock_name,
@@ -110,7 +149,7 @@ async def get_ipo_calendar(
                         'track_id': track_id,
                     })
 
-    return {'success': True, 'data': events}
+    return {'success': True, 'data': events, 'holidays': holiday_names}
 
 
 @router.get('/list')

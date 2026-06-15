@@ -247,8 +247,17 @@ class OpenTimeChecker:
         nm_month = 1 if d.month == 12 else d.month + 1
         _ = await self._get_month_holidays(nm_year, nm_month, today_ymd=today_ymd)
 
+    async def get_month_holiday_names(self, year: int, month: int) -> dict[str, str]:
+        """해당 월 공휴일 {ymd: 이름} 반환 (주말 제외, API 공휴일만)."""
+        return await self._fetch_holiday_names_from_api(year, month)
+
     async def _fetch_holidays_from_api(self, year: int, month: int) -> set[str]:
         """공공데이터 API를 통한 공휴일 정보 조회"""
+        names = await self._fetch_holiday_names_from_api(year, month)
+        return set(names.keys())
+
+    async def _fetch_holiday_names_from_api(self, year: int, month: int) -> dict[str, str]:
+        """공공데이터 API → {ymd: dateName} 반환. 실패 시 빈 dict."""
         await asyncio.sleep(1) # Rate-limit 고려
         params = {
             "serviceKey": self._api_key,
@@ -259,16 +268,17 @@ class OpenTimeChecker:
             async with aiohttp.ClientSession() as session:
                 async with session.get(self._api_url, params=params, ssl=False) as resp:
                     if resp.status != 200:
-                        return set()
+                        return {}
                     text = await resp.text()
-        except Exception:
-            return set()
 
-        root = ET.fromstring(text)
-        holidays = set()
-        for item in root.findall(".//item"):
-            if item.findtext("isHoliday") == "Y":
-                loc = item.findtext("locdate")
-                if loc:
-                    holidays.add(loc.strip())
-        return holidays
+            root = ET.fromstring(text)
+            result: dict[str, str] = {}
+            for item in root.findall(".//item"):
+                if item.findtext("isHoliday") == "Y":
+                    loc  = item.findtext("locdate")
+                    name = item.findtext("dateName") or ""
+                    if loc:
+                        result[loc.strip()] = name.strip()
+            return result
+        except Exception:
+            return {}

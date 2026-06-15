@@ -23,6 +23,11 @@ interface IpoEvent {
     track_id: string
 }
 
+interface CalendarResponse {
+    data: IpoEvent[]
+    holidays: Record<string, string>  // { '20260603': '선거일', ... }
+}
+
 interface CalendarDay {
     ymd: string
     day: number
@@ -46,9 +51,9 @@ function getStartEndYmd(year: number, month: number): [string, string] {
     return [format(startDate, 'yyyyMMdd'), format(endDate, 'yyyyMMdd')]
 }
 
-async function fetchIpoCalendar(year: number, month: number): Promise<IpoEvent[]> {
-    const res = await api.get('/api/v1/ipo/calendar', { params: { year, month } })
-    return res.data?.data ?? []
+async function fetchIpoCalendar(startYmd: string, endYmd: string): Promise<CalendarResponse> {
+    const res = await api.get('/api/v1/ipo/calendar', { params: { start_ymd: startYmd, end_ymd: endYmd } })
+    return { data: res.data?.data ?? [], holidays: res.data?.holidays ?? {} }
 }
 
 const todayYmd = format(new Date(), 'yyyyMMdd')
@@ -57,26 +62,30 @@ export default function Calendar1Page() {
     const today = new Date()
     const [currentYear, setCurrentYear]   = useState(today.getFullYear())
     const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1)
-
-    const { data: events = [] } = useQuery<IpoEvent[]>({
-        queryKey: ['ipo-calendar', currentYear, currentMonth],
-        queryFn: () => fetchIpoCalendar(currentYear, currentMonth),
-        staleTime: 1000 * 60 * 5,
-    })
+    const [showDemandForecast, setShowDemandForecast] = useState(false)
 
     const [startYmd, endYmd] = useMemo(
         () => getStartEndYmd(currentYear, currentMonth),
         [currentYear, currentMonth],
     )
 
+    const { data: calData } = useQuery<CalendarResponse>({
+        queryKey: ['ipo-calendar', startYmd, endYmd],
+        queryFn: () => fetchIpoCalendar(startYmd, endYmd),
+        staleTime: 1000 * 60 * 5,
+    })
+    const events   = calData?.data     ?? []
+    const holidays = calData?.holidays ?? {}
+
     const eventMap = useMemo(() => {
         const map: Record<string, IpoEvent[]> = {}
         for (const ev of events) {
+            if (!showDemandForecast && ev.event_type === 'demand_forecast') continue
             if (!map[ev.ymd]) map[ev.ymd] = []
             map[ev.ymd].push(ev)
         }
         return map
-    }, [events])
+    }, [events, showDemandForecast])
 
     const days = useMemo<CalendarDay[]>(() => {
         const result: CalendarDay[] = []
@@ -141,6 +150,21 @@ export default function Calendar1Page() {
                 <div className="flex items-center gap-2 flex-wrap text-xs">
                     {(Object.keys(EVENT_STYLE) as EventType[]).map(type => {
                         const s = EVENT_STYLE[type]
+                        if (type === 'demand_forecast') {
+                            return (
+                                <label key={type}
+                                    className={`flex items-center gap-1 px-2 py-0.5 rounded border font-medium cursor-pointer select-none
+                                        ${showDemandForecast ? `${s.bg} ${s.text} ${s.border}` : 'bg-white/10 text-white/50 border-white/20'}`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={showDemandForecast}
+                                        onChange={e => setShowDemandForecast(e.target.checked)}
+                                        className="accent-purple-500 w-3 h-3"
+                                    />
+                                    {s.label}
+                                </label>
+                            )
+                        }
                         return (
                             <span key={type}
                                 className={`px-2 py-0.5 rounded border font-medium ${s.bg} ${s.text} ${s.border}`}>
@@ -155,7 +179,7 @@ export default function Calendar1Page() {
             <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50 flex-shrink-0">
                 {['일', '월', '화', '수', '목', '금', '토'].map((w, i) => (
                     <div key={w}
-                        className={`py-2 text-center text-sm font-bold border-r border-gray-100 last:border-0
+                        className={`py-2 text-center text-[15px] font-bold border-r border-gray-100 last:border-0
                             ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-600'}`}>
                         {w}
                     </div>
@@ -167,16 +191,23 @@ export default function Calendar1Page() {
                 <div className="grid grid-cols-7 gap-px bg-gray-200 border-x border-b border-gray-200 min-h-full">
                     {days.map(day => (
                         <div key={day.ymd}
-                            className={`min-h-[110px] bg-white p-1.5
-                                ${day.isToday ? 'bg-yellow-50' : ''}
-                                ${!day.isThisMonth ? 'opacity-40' : ''}`}>
+                            className={`min-h-[110px] p-1.5
+                                ${!day.isThisMonth ? 'bg-gray-100 text-gray-300' :
+                                  day.isToday ? 'bg-yellow-50 bg-white' : 'bg-white'}`}>
 
-                            {/* 날짜 숫자 */}
-                            <div className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-1
-                                ${day.isToday ? 'bg-indigo-600 text-white' :
-                                  day.isSunday ? 'text-red-500' :
-                                  day.isSaturday ? 'text-blue-500' : 'text-gray-700'}`}>
-                                {day.day}
+                            {/* 날짜 숫자 + 공휴일명 */}
+                            <div className="flex items-center gap-1 mb-1">
+                                <div className={`text-[15px] font-bold w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0
+                                    ${day.isToday ? 'bg-indigo-600 text-white' :
+                                      (day.isSunday || !!holidays[day.ymd]) ? 'text-red-500' :
+                                      day.isSaturday ? 'text-blue-500' : 'text-gray-700'}`}>
+                                    {day.day}
+                                </div>
+                                {holidays[day.ymd] && (
+                                    <span className="text-[11px] text-red-500 font-medium truncate leading-tight">
+                                        {holidays[day.ymd]}
+                                    </span>
+                                )}
                             </div>
 
                             {/* 이벤트 뱃지 */}
@@ -186,10 +217,10 @@ export default function Calendar1Page() {
                                     return (
                                         <div key={`${ev.track_id}-${ev.event_type}-${idx}`}
                                             title={`${ev.stock_name} — ${s.label}`}
-                                            className={`text-[11px] font-medium px-1.5 py-0.5 rounded border truncate leading-tight
+                                            className={`text-xs font-medium px-1.5 py-0.5 rounded border truncate leading-tight
                                                 ${s.bg} ${s.text} ${s.border}`}>
                                             {stripIlSuffix(ev.stock_name)}
-                                            <span className="ml-1 opacity-60 text-[10px]">({s.label})</span>
+                                            <span className="ml-1 opacity-60 text-[11px]">({s.label})</span>
                                         </div>
                                     )
                                 })}
