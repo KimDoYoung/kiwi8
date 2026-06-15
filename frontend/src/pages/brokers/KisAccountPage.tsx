@@ -58,6 +58,13 @@ export default function KisAccountPage() {
         if (latestKisOrderKey) refetch()
     }, [latestKisOrderKey, refetch])
 
+    useEffect(() => {
+        if (data?.success === false && String(data?.error_message ?? '').includes('EGW00215')) {
+            const timer = setTimeout(() => refetch(), 3000)
+            return () => clearTimeout(timer)
+        }
+    }, [data, refetch])
+
     const { data: marketStatus } = useQuery({
         queryKey: ['marketStatus'],
         queryFn: getMarketStatus,

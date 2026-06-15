@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS ipo_data (
-    track_id TEXT,                               -- 트랙 ID
+    track_id TEXT,                               -- 트랙 ID (ipostock URL code)
     stock_name TEXT,                             -- 종목명
     status TEXT,                                 -- 진행상황
     market_type TEXT,                            -- 시장구분
@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS ipo_data (
     capital TEXT,                                -- 자본금
     total_ipo_shares TEXT,                       -- 총공모주식수
     face_value TEXT,                             -- 액면가
-    listing_ipo TEXT,                            -- 상장공모
     desired_ipo_price TEXT,                      -- 희망공모가액
     subscription_competition_rate TEXT,          -- 청약경쟁률
     final_ipo_price TEXT,                        -- 확정공모가
@@ -25,14 +24,10 @@ CREATE TABLE IF NOT EXISTS ipo_data (
     lead_manager TEXT,                           -- 주간사
     demand_forecast_date TEXT,                   -- 수요예측일
     ipo_subscription_date TEXT,                  -- 공모청약일
-    newspaper_allocation_announcement_date TEXT, -- 배정공고일(신문)
     payment_date TEXT,                           -- 납입일
     refund_date TEXT,                            -- 환불일
     listing_date TEXT,                           -- 상장일
-    ir_data TEXT,                                -- IR일자
-    ir_location_time TEXT,                       -- IR장소/시간
-    institutional_competition_rate TEXT,         -- 기관경쟁률
-    lock_up_agreement TEXT                       -- 의무보유확약
+    ir_data TEXT                                 -- IR일자
 );
 
 -- settings table 실상은 name value
@@ -542,7 +537,8 @@ INSERT INTO menus (id, parent_id, level, screen_no, title, url, icon, sort_order
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
 (11, 1, 2, '1100', '자산 현황', NULL, 1),
 (12, 1, 2, '1200', '시장 분석', NULL, 2),
-(13, 1, 2, '1300', '주문 센터', NULL, 3);
+(13, 1, 2, '1300', '주문 센터', NULL, 3),
+(14, 1, 2, '1400', '공모주', NULL, 4);
 
 -- 3000번대: 증권사별 채널 하위
 INSERT INTO menus (id, parent_id, level, screen_no, title, url, sort_order) VALUES 
@@ -577,6 +573,12 @@ INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
 (13, 3, '1301', '통합 매수 주문', '/order/buy', 1),
 (13, 3, '1302', '통합 매도 주문', '/order/sell', 2);
+
+-- [1400 공모주] 하위
+INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
+(14, 3, '1401', '공모주 달력', '/ipo/schedule', 1),
+(14, 3, '1402', '공모주 리스트', '/ipo/list', 2);
+
 
 -- [2000 KIS] 특화
 INSERT INTO menus (parent_id, level, screen_no, title, url, sort_order) VALUES 
