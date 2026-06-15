@@ -1,5 +1,8 @@
 
-from fastapi import APIRouter
+import asyncio
+import sqlite3
+
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from backend.api.common.stock_functions import stk_info_fill
@@ -65,6 +68,82 @@ async def change_password(body: ChangePasswordBody):
     logger.info("비밀번호 변경 완료")
     return KiwoomApiHelper.create_success_response(data={"message": "비밀번호가 변경되었습니다."})
 
+@router.get("/holidays")
+async def get_holidays_range():
+    """holidays 테이블의 현재 저장 범위(min/max YYYYMM) 반환."""
+    from backend.core.config import config
+    try:
+        with sqlite3.connect(config.DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT MIN(year * 100 + month), MAX(year * 100 + month), COUNT(*) FROM holidays"
+            )
+            row = cur.fetchone()
+            if row and row[0]:
+                return KiwoomApiHelper.create_success_response(data={
+                    'min_ym': f'{row[0]:06d}',
+                    'max_ym': f'{row[1]:06d}',
+                    'count':  row[2],
+                })
+            return KiwoomApiHelper.create_success_response(data={'min_ym': None, 'max_ym': None, 'count': 0})
+    except Exception as e:
+        return KiwoomApiHelper.create_error_response(error_code="HOLIDAYS_RANGE_ERROR", error_message=str(e))
+
+
+@router.post("/holidays")
+async def fetch_holidays(
+    start_ym: str = Query(..., description='시작 연월 (YYYYMM)'),
+    end_ym:   str = Query(..., description='종료 연월 (YYYYMM)'),
+):
+    """godata API에서 start_ym~end_ym 공휴일 수집 → holidays 테이블 저장."""
+    from datetime import date
+    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
+    from backend.core.config import config
+
+    try:
+        sy, sm = int(start_ym[:4]), int(start_ym[4:6])
+        ey, em = int(end_ym[:4]),   int(end_ym[4:6])
+    except (ValueError, IndexError):
+        return KiwoomApiHelper.create_error_response(
+            error_code="INVALID_PARAM", error_message="start_ym/end_ym은 YYYYMM 형식이어야 합니다."
+        )
+
+    months: list[tuple[int, int]] = []
+    cur_d = date(sy, sm, 1)
+    end_d = date(ey, em, 1)
+    while cur_d <= end_d:
+        months.append((cur_d.year, cur_d.month))
+        cur_d = date(cur_d.year + (cur_d.month == 12), (cur_d.month % 12) + 1, 1)
+
+    checker = OpenTimeChecker.get()
+    total = 0
+    try:
+        with sqlite3.connect(config.DB_PATH) as conn:
+            cur = conn.cursor()
+            for y, m in months:
+                try:
+                    names = await checker._fetch_holiday_names_from_api(y, m)  # 내부 1초 sleep 포함
+                except Exception as e:
+                    logger.warning(f"[holidays] {y}-{m:02d} API 실패: {e}")
+                    names = {}
+                cur.execute("DELETE FROM holidays WHERE year=? AND month=?", (y, m))
+                for ymd, name in names.items():
+                    cur.execute(
+                        "INSERT OR REPLACE INTO holidays (ymd, name, year, month) VALUES (?, ?, ?, ?)",
+                        (ymd, name, y, m),
+                    )
+                    total += 1
+                checker._month_names_cache.pop((y, m), None)
+                logger.info(f"[holidays] {y}-{m:02d} {len(names)}건")
+            conn.commit()
+    except Exception as e:
+        logger.error(f"[holidays] DB 오류: {e}", exc_info=True)
+        return KiwoomApiHelper.create_error_response(error_code="HOLIDAYS_DB_ERROR", error_message=str(e))
+
+    logger.info(f"[holidays] {start_ym}~{end_ym} 공휴일 {total}건 저장 완료")
+    return KiwoomApiHelper.create_success_response(data={"start_ym": start_ym, "end_ym": end_ym, "count": total})
+
+
 @router.put("/{setting_key}")
 async def update_setting(setting_key: str, body: SettingValueBody):
     """특정 설정값 저장"""
@@ -80,6 +159,7 @@ async def get_setting(setting_key: str):
     if value is None:
         return KiwoomApiHelper.create_error_response(error_code="SETTING_NOT_FOUND", error_message=f"설정값을 찾을 수 없습니다: {setting_key}")
     return {"key": setting_key, "value": value, "exists": True}
+
 
 @router.delete("/cache")
 async def delete_all_cache():

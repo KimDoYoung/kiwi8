@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
-import { RefreshCw, Trash2, Database, Key, CheckCircle2, AlertCircle } from 'lucide-react'
+import { RefreshCw, Trash2, Database, Key, CheckCircle2, AlertCircle, CalendarDays } from 'lucide-react'
 import api from '@/lib/api'
 
 type StatusMessage = {
@@ -21,6 +21,13 @@ export default function SettingsPage() {
     const [isTokenLoading, setIsTokenLoading] = useState(false)
     const [isCacheLoading, setIsCacheLoading] = useState(false)
     const [isSettingsLoading, setIsSettingsLoading] = useState(false)
+    const [isHolidayLoading, setIsHolidayLoading] = useState(false)
+    const thisYear = new Date().getFullYear()
+    const [startYear,  setStartYear]  = useState(thisYear)
+    const [startMonth, setStartMonth] = useState(1)
+    const [endYear,    setEndYear]    = useState(thisYear)
+    const [endMonth,   setEndMonth]   = useState(12)
+    const [holidayRange, setHolidayRange] = useState<{min_ym: string|null, max_ym: string|null, count: number} | null>(null)
     const [selectedTokenBrokers, setSelectedTokenBrokers] = useState<string[]>(['kiwoom', 'kis', 'ls'])
     const [allSettings, setAllSettings] = useState<SettingItem[]>([])
     
@@ -28,9 +35,11 @@ export default function SettingsPage() {
     const [tokenStatus, setTokenStatus] = useState<StatusMessage>(null)
     const [stkStatus, setStkStatus] = useState<StatusMessage>(null)
     const [cacheStatus, setCacheStatus] = useState<StatusMessage>(null)
+    const [holidayStatus, setHolidayStatus] = useState<StatusMessage>(null)
 
     useEffect(() => {
         fetchSettings()
+        fetchHolidayRange()
     }, [])
 
     const fetchSettings = async () => {
@@ -114,6 +123,42 @@ export default function SettingsPage() {
             showStatus(setStkStatus, '종목 정보 업데이트 중 오류 발생: ' + (error as Error).message, 'error')
         } finally {
             setIsStkLoading(false)
+        }
+    }
+
+    const fetchHolidayRange = async () => {
+        try {
+            const res = await api.get('/api/v1/settings/holidays')
+            if (res.data?.success) setHolidayRange(res.data.data)
+        } catch { /* silent */ }
+    }
+
+    const fmtYm = (ym: string | null) => {
+        if (!ym) return '없음'
+        return `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4, 6))}월`
+    }
+
+    const handleFetchHolidays = async () => {
+        const startYm = `${startYear}${String(startMonth).padStart(2, '0')}`
+        const endYm   = `${endYear}${String(endMonth).padStart(2, '0')}`
+        if (startYm > endYm) {
+            showStatus(setHolidayStatus, '시작이 종료보다 늦습니다.', 'error')
+            return
+        }
+        setIsHolidayLoading(true)
+        setHolidayStatus(null)
+        try {
+            const res = await api.post(`/api/v1/settings/holidays?start_ym=${startYm}&end_ym=${endYm}`)
+            if (res.data?.success) {
+                showStatus(setHolidayStatus, `${startYm}~${endYm} 공휴일 ${res.data.data?.count ?? 0}건 저장 완료`, 'success')
+                await fetchHolidayRange()
+            } else {
+                showStatus(setHolidayStatus, res.data?.error_message || '저장 실패', 'error')
+            }
+        } catch (error: unknown) {
+            showStatus(setHolidayStatus, '오류: ' + (error as Error).message, 'error')
+        } finally {
+            setIsHolidayLoading(false)
         }
     }
 
@@ -259,6 +304,68 @@ export default function SettingsPage() {
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
                             전체 캐시 삭제
+                        </Button>
+                    </CardContent>
+                </Card>
+                {/* 공휴일 데이터 */}
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CalendarDays className="w-5 h-5 text-primary" />
+                            공휴일 데이터
+                        </CardTitle>
+                        <CardDescription>godata API에서 공휴일을 수집해 holidays 테이블에 저장합니다.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="mt-auto space-y-4">
+                        {/* 현재 DB 저장 범위 */}
+                        <div className="flex items-center justify-between p-2 bg-muted rounded-md text-xs">
+                            <span className="text-muted-foreground font-medium uppercase tracking-wider">저장 범위</span>
+                            <span className="font-mono">
+                                {holidayRange
+                                    ? holidayRange.min_ym
+                                        ? `${fmtYm(holidayRange.min_ym)} ~ ${fmtYm(holidayRange.max_ym)} (${holidayRange.count}건)`
+                                        : '데이터 없음'
+                                    : '조회 중…'}
+                            </span>
+                        </div>
+
+                        {/* 수집 범위 선택 */}
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 shrink-0">시작</span>
+                                <input type="number" value={startYear} onChange={e => setStartYear(Number(e.target.value))}
+                                    className="border rounded px-2 py-1 w-20 font-mono text-sm" min={2020} max={2035} />
+                                <span>년</span>
+                                <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))}
+                                    className="border rounded px-2 py-1 font-mono text-sm">
+                                    {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                                        <option key={m} value={m}>{m}월</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 shrink-0">종료</span>
+                                <input type="number" value={endYear} onChange={e => setEndYear(Number(e.target.value))}
+                                    className="border rounded px-2 py-1 w-20 font-mono text-sm" min={2020} max={2035} />
+                                <span>년</span>
+                                <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))}
+                                    className="border rounded px-2 py-1 font-mono text-sm">
+                                    {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                                        <option key={m} value={m}>{m}월</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <StatusDisplay status={holidayStatus} />
+                        <Button
+                            variant="outline"
+                            onClick={handleFetchHolidays}
+                            disabled={isHolidayLoading}
+                            className="w-full"
+                        >
+                            <RefreshCw className={`mr-2 h-4 w-4 ${isHolidayLoading ? 'animate-spin' : ''}`} />
+                            공휴일 수집
                         </Button>
                     </CardContent>
                 </Card>

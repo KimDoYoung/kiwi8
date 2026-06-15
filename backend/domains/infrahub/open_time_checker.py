@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
@@ -71,6 +72,7 @@ class OpenTimeChecker:
         self._today_key: str | None = None
         self._today_is_holiday: bool | None = None
         self._month_cache: dict[tuple[int, int], _MonthCache] = {}
+        self._month_names_cache: dict[tuple[int, int], dict[str, str]] = {}
         self._api_url = getattr(
             config, 
             "GODATA_URL",
@@ -216,6 +218,7 @@ class OpenTimeChecker:
         self._today_key = None
         self._today_is_holiday = None
         self._month_cache.clear()
+        self._month_names_cache.clear()
 
     def _set_today_cache(self, key: str, value: bool):
         self._today_key = key
@@ -248,8 +251,36 @@ class OpenTimeChecker:
         _ = await self._get_month_holidays(nm_year, nm_month, today_ymd=today_ymd)
 
     async def get_month_holiday_names(self, year: int, month: int) -> dict[str, str]:
-        """해당 월 공휴일 {ymd: 이름} 반환 (주말 제외, API 공휴일만)."""
-        return await self._fetch_holiday_names_from_api(year, month)
+        """해당 월 공휴일 {ymd: 이름} 반환. L1(메모리) → L2(DB) → L3(API) 순으로 조회."""
+        k = (year, month)
+        # L1: 메모리 캐시
+        if k in self._month_names_cache:
+            return self._month_names_cache[k]
+        # L2: DB
+        db_result = self._load_holidays_from_db(year, month)
+        if db_result is not None:
+            self._month_names_cache[k] = db_result
+            return db_result
+        # L3: 외부 API
+        result = await self._fetch_holiday_names_from_api(year, month)
+        self._month_names_cache[k] = result
+        return result
+
+    def _load_holidays_from_db(self, year: int, month: int) -> dict[str, str] | None:
+        """DB holidays 테이블에서 해당 월 공휴일 조회.
+        해당 연도 데이터가 DB에 없으면 None(API 폴백), 있으면 빈 dict(공휴일 0개 포함) 반환."""
+        try:
+            with sqlite3.connect(config.DB_PATH) as conn:
+                cur = conn.cursor()
+                # 연도 전체 rows를 한 번에 가져옴 → COUNT 별도 쿼리 불필요
+                cur.execute("SELECT month, ymd, name FROM holidays WHERE year=?", (year,))
+                rows = cur.fetchall()
+                if not rows:
+                    return None  # 해당 연도 미수집
+                # 요청 월만 필터링해서 반환
+                return {ymd: name for m, ymd, name in rows if m == month}
+        except Exception:
+            return None
 
     async def _fetch_holidays_from_api(self, year: int, month: int) -> set[str]:
         """공공데이터 API를 통한 공휴일 정보 조회"""

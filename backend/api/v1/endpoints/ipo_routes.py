@@ -97,9 +97,13 @@ async def _build_holiday_info_for_range(
     holiday_names: dict[str, str] = {}
     try:
         checker = OpenTimeChecker.get()
-        for y, m in months:
-            names = await checker.get_month_holiday_names(y, m)
-            holiday_names.update(names)
+        results = await asyncio.gather(
+            *[checker.get_month_holiday_names(y, m) for y, m in months],
+            return_exceptions=True,
+        )
+        for r in results:
+            if isinstance(r, dict):
+                holiday_names.update(r)
     except Exception:
         pass
 
