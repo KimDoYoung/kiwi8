@@ -21,9 +21,16 @@ import { useQuery } from '@tanstack/react-query'
 import { Loader2, AlertCircle, CheckCircle2, XIcon } from 'lucide-react'
 import api from '@/lib/api'
 
+const BUY_FEE_RATE = 0.00015
+
 async function fetchCash(broker: string): Promise<number> {
   const res = await api.get('/api/v1/stkcompany/cash', { params: { broker } })
   return res.data.cash ?? 0
+}
+
+async function fetchCurrentPrice(stk_cd: string): Promise<number> {
+  const res = await api.get('/api/v1/stkcompany/price', { params: { stk_cd } })
+  return res.data.price ?? 0
 }
 
 function extractOrderNo(broker: string, data: unknown): string {
@@ -64,7 +71,14 @@ export default function OrderModal() {
     queryKey: ['marketStatus'],
     queryFn: getMarketStatus,
     enabled: isOrderModalOpen,
-    refetchInterval: 1000 * 30, // 30초마다 갱신
+    refetchInterval: 1000 * 30,
+  })
+
+  const { data: cash, isLoading: cashLoading } = useQuery({
+    queryKey: ['order-modal-cash', broker],
+    queryFn: () => fetchCash(broker),
+    enabled: isOrderModalOpen,
+    staleTime: 1000 * 10,
   })
 
   const form = useForm<OrderFormValues>({
@@ -76,6 +90,15 @@ export default function OrderModal() {
       qty: 1,
       price: 0,
     },
+  })
+
+  const stk_cd = form.watch('pdno')
+  const { data: livePrice, isLoading: priceLoading } = useQuery({
+    queryKey: ['order-modal-price', stk_cd],
+    queryFn: () => fetchCurrentPrice(stk_cd),
+    enabled: isOrderModalOpen && !!stk_cd,
+    refetchInterval: 1000 * 10,
+    staleTime: 1000 * 5,
   })
 
   useEffect(() => {
@@ -177,6 +200,14 @@ export default function OrderModal() {
 
   const isMarketClosed = marketStatus?.is_open === false || marketStatus?.trade_market === null
 
+  const fillMaxQty = () => {
+    const price = form.getValues('price') || livePrice || 0
+    if (!price || !cash) return
+    const budget = Math.floor(cash / (1 + BUY_FEE_RATE))
+    const qty = Math.max(1, Math.floor(budget / price) - 2)
+    form.setValue('qty', qty)
+  }
+
   return (
     <Dialog open={isOrderModalOpen} onOpenChange={(open) => !open && closeOrderModal()}>
       <DialogContent 
@@ -202,15 +233,38 @@ export default function OrderModal() {
           </DialogHeader>
 
           <div className="p-6 flex flex-col flex-1 overflow-y-auto">
-            {/* 증권사 선택 */}
+            {/* 증권사 선택 + 예수금 */}
             <div className="mb-6 shrink-0">
               <Label className="mb-2 block">증권사</Label>
-              <ToggleGroup type="single" value={broker} onValueChange={(v) => v && setBroker(v as 'kis' | 'kiwoom' | 'ls')} className="justify-start">
-                <ToggleGroupItem value="kis" className="px-4">KIS</ToggleGroupItem>
-                <ToggleGroupItem value="kiwoom" className="px-4">키움</ToggleGroupItem>
-                <ToggleGroupItem value="ls" className="px-4">LS</ToggleGroupItem>
-              </ToggleGroup>
+              <div className="flex items-center gap-3">
+                <ToggleGroup type="single" value={broker} onValueChange={(v) => v && setBroker(v as 'kis' | 'kiwoom' | 'ls')} className="justify-start">
+                  <ToggleGroupItem value="kis" className="px-4">KIS</ToggleGroupItem>
+                  <ToggleGroupItem value="kiwoom" className="px-4">키움</ToggleGroupItem>
+                  <ToggleGroupItem value="ls" className="px-4">LS</ToggleGroupItem>
+                </ToggleGroup>
+                <div className="ml-auto text-right">
+                  <p className="text-[10px] text-gray-400">주문가능</p>
+                  <p className="text-sm font-mono font-semibold text-blue-600">
+                    {cashLoading ? '...' : cash != null ? cash.toLocaleString() + '원' : '-'}
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* 현재가 표시 */}
+            {stk_cd && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-gray-50 rounded-md text-xs">
+                <span className="text-gray-500">현재가</span>
+                <span className="font-mono font-semibold text-orange-600">
+                  {priceLoading ? '...' : livePrice ? livePrice.toLocaleString() + '원' : '-'}
+                </span>
+                {livePrice && cash ? (
+                  <span className="ml-auto text-gray-400">
+                    최대 {Math.max(1, Math.floor(Math.floor(cash / (1 + BUY_FEE_RATE)) / livePrice) - 2).toLocaleString()}주
+                  </span>
+                ) : null}
+              </div>
+            )}
 
             <form className="space-y-6">
               {/* 시장 선택 */}
@@ -289,13 +343,23 @@ export default function OrderModal() {
                 <label htmlFor="confirmed" className="text-sm text-slate-700 cursor-pointer select-none">
                   수량 및 가격 확인 함
                 </label>
-                <button
-                  type="button"
-                  onClick={() => form.setValue('price', 0)}
-                  className="ml-auto text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600"
-                >
-                  시장가
-                </button>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={fillMaxQty}
+                    disabled={!cash || (!form.getValues('price') && !livePrice)}
+                    className="text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    최대갯수
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('price', 0)}
+                    className="text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600"
+                  >
+                    시장가
+                  </button>
+                </div>
               </div>
 
               {/* 메시지 영역 */}

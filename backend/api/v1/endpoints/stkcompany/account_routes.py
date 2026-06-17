@@ -53,6 +53,13 @@ async def get_cash(broker: str = Query(..., description='kiwoom | kis | ls')):
     return {'broker': broker, 'cash': cash}
 
 
+@router.get('/price')
+async def get_stock_price(stk_cd: str = Query(..., description='종목코드')):
+    """종목 현재가 조회"""
+    price = await CurrentPricer.get().get_price1(stk_cd)
+    return {'stk_cd': stk_cd, 'price': price or 0}
+
+
 @router.get('/summary')
 async def get_summary():
     """계좌 요약 정보 조회"""
