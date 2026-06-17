@@ -7,7 +7,7 @@ GET /api/v1/stkcompany/ls/account/list
 
 import asyncio
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from backend.core.config import config
 from backend.core.logger import get_logger
@@ -43,6 +43,14 @@ from backend.utils.common_utils import parse_price
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+
+@router.get('/cash')
+async def get_cash(broker: str = Query(..., description='kiwoom | kis | ls')):
+    """증권사별 현금 주문가능금액 조회"""
+    from backend.domains.infrahub.account_resolver import AccountResolver
+    cash = await AccountResolver.get().get_cash(broker)
+    return {'broker': broker, 'cash': cash}
 
 
 @router.get('/summary')

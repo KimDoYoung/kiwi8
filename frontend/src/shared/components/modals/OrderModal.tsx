@@ -19,6 +19,12 @@ import { useModalStore } from '@/store/modalStore'
 import { getMarketStatus, sendOrder } from '@/services/stockService'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, AlertCircle, CheckCircle2, XIcon } from 'lucide-react'
+import api from '@/lib/api'
+
+async function fetchCash(broker: string): Promise<number> {
+  const res = await api.get('/api/v1/stkcompany/cash', { params: { broker } })
+  return res.data.cash ?? 0
+}
 
 function extractOrderNo(broker: string, data: unknown): string {
   if (!data || typeof data !== 'object') return '-'

@@ -28,6 +28,10 @@ async function fetchLsAccount() {
     const res = await api.get('/api/v1/stkcompany/ls/account/list')
     return res.data
 }
+async function fetchLsCash(): Promise<number> {
+    const res = await api.get('/api/v1/stkcompany/cash', { params: { broker: 'ls' } })
+    return res.data.cash ?? 0
+}
 
 export default function LsAccountPage() {
     const gridRef = useRef<AgGridReact>(null)
@@ -45,6 +49,11 @@ export default function LsAccountPage() {
         queryKey: ['stkcompany', 'ls', 'account'],
         queryFn: fetchLsAccount,
         staleTime: 1000 * 30,
+    })
+    const { data: cashData, refetch: refetchCash } = useQuery({
+        queryKey: ['stkcompany', 'ls', 'cash'],
+        queryFn: fetchLsCash,
+        staleTime: 1000 * 10,
     })
 
     const { data: marketStatus } = useQuery({
@@ -104,7 +113,7 @@ export default function LsAccountPage() {
     const totalMaeip = useMemo(() =>
         rawStocks.reduce((sum, s) => sum + toNum(s['매입금액']), 0), [rawStocks])
 
-    const 예수금 = toNum(summary['추정D2예수금'])
+    const 예수금 = cashData ?? toNum(summary['추정D2예수금'])
     const 잔고평가 = toNum(summary['평가금액'])
     const 손익 = toNum(summary['평가손익'])
 
@@ -259,7 +268,7 @@ export default function LsAccountPage() {
                 평가금액Label="평가금액" 평가금액={잔고평가}
                 손익={손익}
                 onCsv={() => exportCsv(gridRef, 'LS_계좌현황.csv')}
-                onRefresh={() => refetch()}
+                onRefresh={() => { refetch(); refetchCash() }}
                 isLoading={isFetching}
                 enabled={marketStatus?.is_open}
             >

@@ -17,7 +17,6 @@ from backend.core.logger import get_logger
 from backend.domains.infrahub.current_pricer import CurrentPricer
 from backend.domains.infrahub.tick_data import TickData
 from backend.domains.models.auto_trade_model import AutoTradePosition
-from backend.utils.common_utils import parse_price
 
 logger = get_logger(__name__)
 
@@ -69,23 +68,9 @@ def get_active_strategies(conn: sqlite3.Connection) -> list[BuyStrategy]:
 # ─────────────────────────────────────────────────────────
 
 async def get_available_cash() -> int:
-    """키움 kt00001(qry_tp=3) → 주문가능금액(예수금) 반환 (원)"""
-    from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
-    from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
-        KiwoomApiHelper,
-        KiwoomRequest,
-    )
-
-    kiwoom = await get_kiwoom_api()
-    req = KiwoomRequest(api_id='kt00001', payload={'qry_tp': '3'})
-    resp = await kiwoom.send_request(req)
-    if not resp.success:
-        logger.error(f'kdaemon: 예수금 조회 실패: {resp.error_message}')
-        return 0
-    korea = KiwoomApiHelper.to_korea_data(resp.data, 'kt00001')
-    cash = parse_price(korea.get('d+2추정예수금', 0))
-    logger.info(f'kdaemon: 주문가능금액 {cash:,}원')
-    return cash
+    """AccountResolver → kiwoom 현금 주문가능금액 (원)"""
+    from backend.domains.infrahub.account_resolver import AccountResolver
+    return await AccountResolver.get().get_cash('kiwoom')
 
 
 async def get_condition_list() -> list[dict]:
@@ -395,13 +380,16 @@ def analyze_trend_signal(ticks: list[TickData], pos: AutoTradePosition) -> str |
             and cur.price >= highest * 0.97):
         return 'signal_b'
 
-    # [Signal C] 연속 2틱 저거래량 — 일시적 감소 오발동 방지
-    if (cur.volume_1min is not None
+    # [Signal C] 연속 3틱 저거래량 — 일시적 감소 오발동 방지
+    if (len(ticks) >= 3
+            and cur.volume_1min is not None
             and prev.volume_1min is not None
+            and prev2.volume_1min is not None
             and max_vol > 0
             and cur.price >= highest * 0.98
-            and cur.volume_1min < max_vol * 0.20
-            and prev.volume_1min < max_vol * 0.20):
+            and cur.volume_1min < max_vol * 0.15
+            and prev.volume_1min < max_vol * 0.15
+            and prev2.volume_1min < max_vol * 0.15):
         return 'signal_c'
 
     return None
