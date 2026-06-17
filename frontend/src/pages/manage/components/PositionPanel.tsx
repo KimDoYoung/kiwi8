@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { AgGridReact } from 'ag-grid-react'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, ValueGetterParams } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -191,14 +191,14 @@ export function PositionGrid({ positions, handleForceSell }: {
 }) {
     const colDefs = useMemo<ColDef<Position>[]>(() => [
         { headerName: '종목', width: 130, sortable: false,
-            valueGetter: ({ data }: { data: Position }) => `${data!.stk_nm || data!.stk_cd} (${data!.stk_cd})` },
+            valueGetter: (p: ValueGetterParams<Position>) => p.data ? `${p.data.stk_nm || p.data.stk_cd} (${p.data.stk_cd})` : '' },
         { field: 'buy_price', headerName: '매수가', width: 90, type: 'numericColumn',
             valueFormatter: ({ value }: { value: number }) => value.toLocaleString() },
         { field: 'cur_price', headerName: '현재가', width: 90, type: 'numericColumn',
             valueFormatter: ({ value }: { value: number | null }) => value != null ? value.toLocaleString() : '—' },
         { headerName: '평가손익', width: 110, type: 'numericColumn',
-            valueGetter: ({ data }: { data: Position }) =>
-                data!.cur_price != null ? (data!.cur_price - data!.buy_price) * data!.qty : null,
+            valueGetter: (p: ValueGetterParams<Position>) =>
+                p.data?.cur_price != null ? (p.data.cur_price - p.data.buy_price) * p.data.qty : null,
             valueFormatter: ({ value }: { value: number | null }) =>
                 value == null ? '—' : `${value >= 0 ? '+' : ''}${value.toLocaleString()}`,
             cellClassRules: {

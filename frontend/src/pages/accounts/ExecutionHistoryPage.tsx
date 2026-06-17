@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AgGridReact } from 'ag-grid-react'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, CellStyle } from 'ag-grid-community'
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import api from '@/lib/api'
 import { formatYmd, fmt } from '@/lib/utils'
@@ -220,8 +220,8 @@ export default function ExecutionHistoryPage() {
       field: 'amount', headerName: '체결금액', width: 110, type: 'numericColumn',
       cellRenderer: AmtCell,
     },
-    { field: 'order_time', headerName: '주문시간', width: 80, cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
-    { field: 'order_no',   headerName: '주문번호', width: 95, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } },
+    { field: 'order_time', headerName: '주문시간', width: 80, cellRenderer: TimeCell, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } as CellStyle },
+    { field: 'order_no',   headerName: '주문번호', width: 95, cellStyle: { fontFamily: 'monospace', fontSize: '11px' } as CellStyle },
   ], [setStock, openByScreenNo, menus])
 
   const getRowId = useCallback((p: { data: ExecRow }) => p.data._id, [])
