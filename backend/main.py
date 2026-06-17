@@ -8,15 +8,16 @@ from fastapi.staticfiles import StaticFiles
 
 import backend.api.common.stock_functions  # noqa: F401 — fill_kind_stk_info job 등록
 import backend.domains.market.market_service  # noqa: F401 — job_registry 등록 활성화
+import backend.jobs.ipostock_scrap  # noqa: F401
 import backend.jobs.judal_data_collect  # noqa: F401
 import backend.jobs.naver_options  # noqa: F401
 import backend.jobs.system_init  # noqa: F401
 import backend.jobs.write_account_history  # noqa: F401
-import backend.jobs.ipostock_scrap  # noqa: F401
 from backend.api.v1.common.system_routes import router as system_router
 from backend.api.v1.endpoints.ai_routes import router as ai_router
 from backend.api.v1.endpoints.diary_routes import router as diary_router
 from backend.api.v1.endpoints.home_routes import router as home_router
+from backend.api.v1.endpoints.ipo_routes import router as ipo_router
 from backend.api.v1.endpoints.kdaemon_routes import router as kdaemon_router
 from backend.api.v1.endpoints.layout_preset_routes import router as layout_preset_router
 from backend.api.v1.endpoints.market_routes import router as market_router
@@ -33,7 +34,6 @@ from backend.api.v1.endpoints.stock_routes import router as stock_router
 from backend.api.v1.endpoints.trend_routes import router as trend_router
 from backend.api.v1.endpoints.websocket_routes import router as ws_router
 from backend.api.v1.endpoints.words_routes import router as words_router
-from backend.api.v1.endpoints.ipo_routes import router as ipo_router
 from backend.core.config import config
 from backend.core.exception_handler import add_exception_handlers
 from backend.core.jwtmiddleware import JWTAuthMiddleware

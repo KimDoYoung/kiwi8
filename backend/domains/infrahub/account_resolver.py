@@ -71,7 +71,8 @@ class AccountResolver:
         try:
             from backend.domains.stkcompanys.kiwoom.kiwoom_service import get_kiwoom_api
             from backend.domains.stkcompanys.kiwoom.models.kiwoom_schema import (
-                KiwoomApiHelper, KiwoomRequest,
+                KiwoomApiHelper,
+                KiwoomRequest,
             )
             kiwoom = await get_kiwoom_api()
             resp = await kiwoom.send_request(KiwoomRequest(api_id='kt00001', payload={'qry_tp': '3'}))
@@ -92,7 +93,8 @@ class AccountResolver:
             from backend.core.config import config
             from backend.domains.stkcompanys.kis.kis_service import get_kis_api
             from backend.domains.stkcompanys.kis.models.kis_schema import (
-                KisApiHelper, KisRequest,
+                KisApiHelper,
+                KisRequest,
             )
             kis = await get_kis_api()
             if not kis:
@@ -128,7 +130,8 @@ class AccountResolver:
         try:
             from backend.domains.stkcompanys.ls.ls_service import get_ls_api
             from backend.domains.stkcompanys.ls.models.ls_schema import (
-                LsApiHelper, LsRequest,
+                LsApiHelper,
+                LsRequest,
             )
             ls = await get_ls_api()
             if not ls:

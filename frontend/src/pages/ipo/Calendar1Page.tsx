@@ -74,18 +74,17 @@ export default function Calendar1Page() {
         queryFn: () => fetchIpoCalendar(startYmd, endYmd),
         staleTime: 1000 * 60 * 5,
     })
-    const events   = calData?.data     ?? []
     const holidays = calData?.holidays ?? {}
 
     const eventMap = useMemo(() => {
         const map: Record<string, IpoEvent[]> = {}
-        for (const ev of events) {
+        for (const ev of calData?.data ?? []) {
             if (!showDemandForecast && ev.event_type === 'demand_forecast') continue
             if (!map[ev.ymd]) map[ev.ymd] = []
             map[ev.ymd].push(ev)
         }
         return map
-    }, [events, showDemandForecast])
+    }, [calData?.data, showDemandForecast])
 
     const days = useMemo<CalendarDay[]>(() => {
         const result: CalendarDay[] = []

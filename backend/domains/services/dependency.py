@@ -24,6 +24,7 @@ def get_service(name: str):
     from backend.domains.infrahub.cache_manager import CacheManager
     from backend.domains.market.market_service import MarketService
     from backend.domains.services.auth_service import AuthService
+    from backend.domains.services.ipo_service import IpoService
     from backend.domains.services.judal_theme_service import JudalThemeService
     from backend.domains.services.layout_preset_service import LayoutPresetService
     from backend.domains.services.menus_service import MenusService
@@ -36,7 +37,6 @@ def get_service(name: str):
     from backend.domains.services.stk_trade_history_service import StkTradeHistoryService
     from backend.domains.services.stk_words_service import StkWordsService
     from backend.domains.services.tokens_service import TokensService
-    from backend.domains.services.ipo_service import IpoService
 
     # 서비스 클래스 매핑
     service_classes = {

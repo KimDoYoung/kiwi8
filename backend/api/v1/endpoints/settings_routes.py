@@ -1,5 +1,4 @@
 
-import asyncio
 import sqlite3
 
 from fastapi import APIRouter, Query
@@ -97,8 +96,9 @@ async def fetch_holidays(
 ):
     """godata API에서 start_ym~end_ym 공휴일 수집 → holidays 테이블 저장."""
     from datetime import date
-    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
+
     from backend.core.config import config
+    from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 
     try:
         sy, sm = int(start_ym[:4]), int(start_ym[4:6])

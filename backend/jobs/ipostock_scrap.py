@@ -4,8 +4,9 @@ ipostock.co.kr 공모주 데이터 수집 → ipo_data 테이블 upsert.
 스케줄러 잡(scrap_ipo) 등록 포함.
 """
 import asyncio
-import sqlite3
 import datetime
+import sqlite3
+
 import requests
 from bs4 import BeautifulSoup
 
