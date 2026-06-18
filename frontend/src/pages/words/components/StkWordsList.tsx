@@ -114,13 +114,13 @@ export default function StkWordsList({
               <Card
                 key={item.id}
                 onClick={() => onViewWord(item)}
-                className={`transition-all duration-200 cursor-pointer border hover:border-indigo-300 hover:shadow-sm ${
-                  isSelected 
-                    ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500' 
+                className={`py-3 transition-all duration-200 cursor-pointer border hover:border-indigo-300 hover:shadow-sm ${
+                  isSelected
+                    ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500'
                     : 'border-border bg-card'
                 }`}
               >
-                <CardContent className="p-3.5 flex items-start justify-between gap-4">
+                <CardContent className="px-3.5 py-2 flex items-start justify-between gap-4">
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-base truncate text-card-foreground">

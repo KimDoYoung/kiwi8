@@ -89,19 +89,15 @@ export default function DiaryMenuBar({
       <span className="w-px bg-gray-200 mx-1" />
 
       <Popover open={showColors} onOpenChange={setShowColors}>
-        {/* @ts-expect-error: PopoverTrigger asChild type mismatch */}
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className="flex items-center gap-1 px-2 py-1 text-sm rounded text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <span
-              className="inline-block w-4 h-4 rounded-sm border border-gray-300"
-              style={{ backgroundColor: currentColor || '#000000' }}
-            />
-            <span>색상</span>
-            <span className="text-xs opacity-50">▾</span>
-          </button>
+        <PopoverTrigger
+          className="flex items-center gap-1 px-2 py-1 text-sm rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <span
+            className="inline-block w-4 h-4 rounded-sm border border-gray-300"
+            style={{ backgroundColor: currentColor || '#000000' }}
+          />
+          <span>색상</span>
+          <span className="text-xs opacity-50">▾</span>
         </PopoverTrigger>
         <PopoverContent className="w-44 p-2" align="start">
           <div className="flex flex-wrap gap-1">

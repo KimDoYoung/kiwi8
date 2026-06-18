@@ -116,8 +116,8 @@ export default function StkWordsForm({
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-md border-border bg-card">
-      <CardHeader className="border-b bg-muted/40 py-4 shrink-0">
+    <Card className="h-full flex flex-col shadow-md border-border bg-card py-0 gap-0">
+      <CardHeader className="grid-rows-1 items-center border-b bg-muted/40 py-2 !pb-2 shrink-0">
         <CardTitle className="text-lg font-bold flex items-center gap-2">
           {selectedWord ? (
             <>
@@ -134,7 +134,7 @@ export default function StkWordsForm({
       </CardHeader>
 
       <form onSubmit={handleSave} className="flex-1 flex flex-col overflow-hidden">
-        <CardContent className="p-4 space-y-4 flex-1 overflow-y-auto">
+        <CardContent className="p-3 space-y-3 flex-1 overflow-y-auto">
           {errorMsg && (
             <div className="p-3 text-sm bg-destructive/10 text-destructive border border-destructive/20 rounded-md">
               {errorMsg}
@@ -172,26 +172,26 @@ export default function StkWordsForm({
               onChange={(e) => setBrief(e.target.value)}
               maxLength={300}
               rows={2}
-              className="resize-none bg-background border-input"
+              className="resize-none bg-background border-input min-h-0 h-16"
               required
             />
           </div>
 
           <div className="space-y-1.5 flex-1 flex flex-col">
             <Label className="font-semibold text-sm">상세 설명</Label>
-            <div className="flex-1 min-h-[220px]">
+            <div className="flex-1 min-h-[340px]">
               <DiaryEditor
                 key={editorKey}
                 value={detail}
                 onChange={setDetail}
                 placeholder="해당 경제 용어에 대한 유익하고 풍부한 상세 지식을 남겨주세요... 이미지 붙여넣기(Ctrl+V) 지원"
-                minHeight="200px"
+                minHeight="340px"
               />
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="border-t bg-muted/20 py-3 px-4 shrink-0 flex justify-between gap-3">
+        <CardFooter className="border-t bg-muted/20 py-2 !pt-2 px-4 shrink-0 flex justify-between gap-3">
           <Button
             type="button"
             variant="outline"
