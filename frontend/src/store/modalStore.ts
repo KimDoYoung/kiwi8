@@ -20,7 +20,8 @@ interface OrderInitialData {
 interface ModalState {
   // 종목 찾기 모달
   isStockFindModalOpen: boolean
-  openStockFindModal: () => void
+  stockFindOnSelect: ((stkCd: string, stkNm: string) => void) | null
+  openStockFindModal: (onSelect?: (stkCd: string, stkNm: string) => void) => void
   closeStockFindModal: () => void
 
   // 매매일지 작성 모달
@@ -39,8 +40,9 @@ interface ModalState {
 export const useModalStore = create<ModalState>((set) => ({
   // 종목 찾기 모달
   isStockFindModalOpen: false,
-  openStockFindModal: () => set({ isStockFindModalOpen: true }),
-  closeStockFindModal: () => set({ isStockFindModalOpen: false }),
+  stockFindOnSelect: null,
+  openStockFindModal: (onSelect) => set({ isStockFindModalOpen: true, stockFindOnSelect: onSelect ?? null }),
+  closeStockFindModal: () => set({ isStockFindModalOpen: false, stockFindOnSelect: null }),
 
   // 매매일지 작성 모달
   isDiaryEditModalOpen: false,

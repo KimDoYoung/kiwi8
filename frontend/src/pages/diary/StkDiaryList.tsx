@@ -67,6 +67,13 @@ export default function StkDiaryList() {
     openDiaryEditModal(entry as unknown as DiaryInitialData)
   }
 
+  const handleReset = () => {
+    setStartDate(format(subDays(new Date(), 30), 'yyyy-MM-dd'))
+    setEndDate(format(new Date(), 'yyyy-MM-dd'))
+    setStkCd('')
+    setKeyword('')
+  }
+
   return (
     <div className="p-4 space-y-4 h-full flex flex-col overflow-hidden">
       <div className="flex justify-between items-center">
@@ -96,6 +103,7 @@ export default function StkDiaryList() {
         onStkCdChange={setStkCd}
         onKeywordChange={setKeyword}
         onSearch={fetchDiaries}
+        onReset={handleReset}
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto">

@@ -25,7 +25,7 @@ interface StockResult {
 }
 
 export default function StockFindModal() {
-  const { isStockFindModalOpen, closeStockFindModal } = useModalStore()
+  const { isStockFindModalOpen, closeStockFindModal, stockFindOnSelect } = useModalStore()
   const [keyword, setKeyword] = useState('')
   const [limit, setLimit] = useState('20')
   const [loading, setLoading] = useState(false)
@@ -75,6 +75,11 @@ export default function StockFindModal() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSelect = (item: StockResult) => {
+    stockFindOnSelect?.(item.stk_cd, item.stk_nm)
+    closeStockFindModal()
   }
 
   const handleAddToMyStock = async (item: StockResult) => {
@@ -160,7 +165,11 @@ export default function StockFindModal() {
               </thead>
               <tbody className="divide-y">
                 {results.map((item) => (
-                  <tr key={item.stk_cd} className="hover:bg-muted/50 transition-colors">
+                  <tr
+                    key={item.stk_cd}
+                    onClick={stockFindOnSelect ? () => handleSelect(item) : undefined}
+                    className={`hover:bg-muted/50 transition-colors ${stockFindOnSelect ? 'cursor-pointer' : ''}`}
+                  >
                     <td className="p-2 font-mono font-bold">{item.stk_cd}</td>
                     <td className="p-2">{item.stk_nm}</td>
                     <td className="p-2">
@@ -173,7 +182,10 @@ export default function StockFindModal() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => handleAddToMyStock(item)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddToMyStock(item)
+                        }}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
