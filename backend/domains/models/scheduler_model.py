@@ -26,7 +26,9 @@ class SchedulerJob:
     retry_backoff: float = 2.0                                 # 지수 백오프 배수
     jitter_sec: int = 0                                        # 지터 (초, 0이면 지터 없음)
     next_run_at: str | None = None                          # 다음 실행 시각 (ISO8601)
-    last_run_at: str | None = None                          # 마지막 실행 시각 (ISO8601)
+    last_run_at: str | None = None                          # 마지막 실행 시각 (kscheduler_run 최신 기록 기준)
+    last_status: str | None = None                          # 마지막 실행 상태: 'success' | 'error' | 'timeout' | 'cancelled'
+    last_message: str | None = None                         # 마지막 실행 결과 메시지
     created_at: str | None = None                           # 생성 시각
     updated_at: str | None = None                           # 수정 시각
 

@@ -1,18 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  getSchedulerJobs, 
-  getSchedulerStats, 
-  enableJob, 
+import {
+  getSchedulerJobs,
+  getSchedulerStats,
+  enableJob,
   disableJob,
+  type SchedulerJob,
 } from '@/services/schedulerService'
-import { 
-  Play, 
-  Square, 
-  RefreshCcw, 
-  Clock, 
-  Activity, 
-  CheckCircle2, 
-  AlertCircle 
+import {
+  Play,
+  Square,
+  RefreshCcw,
+  Clock,
+  Activity,
+  CheckCircle2,
+  AlertCircle,
+  XCircle
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -162,7 +164,10 @@ export default function SchedulerPage() {
                   {formatDateTime(job.next_run_at)}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {formatDateTime(job.last_run_at)}
+                  <div className="flex items-center gap-1.5">
+                    <span>{formatDateTime(job.last_run_at)}</span>
+                    <LastRunBadge status={job.last_status} message={job.last_message} />
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-right">
                   {job.enabled ? (
@@ -192,6 +197,21 @@ export default function SchedulerPage() {
       </div>
     </div>
   )
+}
+
+function LastRunBadge({ status, message }: { status: SchedulerJob['last_status'], message: string | null }) {
+  if (!status) return null
+
+  if (status === 'success') {
+    return <CheckCircle2 size={16} className="text-green-500" />
+  }
+  if (status === 'error') {
+    return <XCircle size={16} className="text-red-500" title={message ?? ''} />
+  }
+  if (status === 'timeout') {
+    return <Clock size={16} className="text-orange-500" title={message ?? ''} />
+  }
+  return <AlertCircle size={16} className="text-gray-400" title={message ?? ''} />
 }
 
 function StatCard({ title, value, icon }: { title: string, value: string | number, icon: React.ReactNode }) {

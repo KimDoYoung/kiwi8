@@ -16,6 +16,8 @@ export interface SchedulerJob {
   jitter_sec: number
   next_run_at: string | null
   last_run_at: string | null
+  last_status: 'success' | 'error' | 'timeout' | 'cancelled' | null
+  last_message: string | null
   created_at: string
   updated_at: string
 }

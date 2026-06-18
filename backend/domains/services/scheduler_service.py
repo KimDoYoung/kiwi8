@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 class SchedulerService:
     """스케줄러 관련 서비스 클래스
     
-    kscheduler_job, kscheduler_run_history, kscheduler_lock 테이블을 관리하는 서비스
+    kscheduler_job, kscheduler_run, kscheduler_lock 테이블을 관리하는 서비스
     - 작업 정의 CRUD
     - 실행 이력 관리
     - 분산 락 관리
@@ -55,6 +55,30 @@ class SchedulerService:
             last_run_at=row[14],
             created_at=row[15],
             updated_at=row[16]
+        )
+
+    def _row_to_scheduler_job_with_run(self, row) -> SchedulerJob:
+        """DB row(kscheduler_run 조인 포함)를 SchedulerJob 객체로 변환"""
+        return SchedulerJob(
+            id=row[0],
+            name=row[1],
+            func_name=row[2],
+            schedule_type=row[3],
+            schedule_expr=row[4],
+            timezone=row[5],
+            enabled=row[6],
+            max_conc=row[7],
+            overlap_policy=row[8],
+            timeout_sec=row[9],
+            retry_max=row[10],
+            retry_backoff=row[11],
+            jitter_sec=row[12],
+            next_run_at=row[13],
+            last_run_at=row[14],
+            last_status=row[15],
+            last_message=row[16],
+            created_at=row[17],
+            updated_at=row[18]
         )
 
     async def create_job(self, job: SchedulerJobCreate) -> SchedulerJob:
@@ -140,48 +164,57 @@ class SchedulerService:
         return await loop.run_in_executor(None, self._get_all_jobs_sync, filters)
 
     def _get_all_jobs_sync(self, filters: SchedulerJobFilter | None = None) -> list[SchedulerJob]:
-        """모든 스케줄러 작업 조회 (동기)"""
+        """모든 스케줄러 작업 조회 (동기)
+
+        last_run_at/last_status/last_message는 kscheduler_job.last_run_at(엔진이 갱신 안 함) 대신
+        kscheduler_run(엔진이 실제로 기록하는 테이블)에서 job별 최신 실행 1건을 조인해서 계산한다.
+        """
         with self._get_conn() as conn:
             cur = conn.cursor()
-            
-            # 기본 쿼리
+
+            # 기본 쿼리 (kscheduler_run 최신 실행 기록 LEFT JOIN)
             query = """
-                SELECT id, name, func_name, schedule_type, schedule_expr, timezone,
-                       enabled, max_conc, overlap_policy, timeout_sec, retry_max,
-                       retry_backoff, jitter_sec, next_run_at, last_run_at,
-                       created_at, updated_at
-                FROM kscheduler_job
+                SELECT j.id, j.name, j.func_name, j.schedule_type, j.schedule_expr, j.timezone,
+                       j.enabled, j.max_conc, j.overlap_policy, j.timeout_sec, j.retry_max,
+                       j.retry_backoff, j.jitter_sec, j.next_run_at, r.started_at, r.status, r.message,
+                       j.created_at, j.updated_at
+                FROM kscheduler_job j
+                LEFT JOIN (
+                    SELECT job_name, started_at, status, message,
+                           ROW_NUMBER() OVER (PARTITION BY job_name ORDER BY started_at DESC) AS rn
+                    FROM kscheduler_run
+                ) r ON r.job_name = j.name AND r.rn = 1
             """
             params = []
             where_conditions = []
-            
+
             # 필터 조건 추가
             if filters:
                 if filters.enabled is not None:
-                    where_conditions.append("enabled = ?")
+                    where_conditions.append("j.enabled = ?")
                     params.append(filters.enabled)
-                
+
                 if filters.schedule_type:
-                    where_conditions.append("schedule_type = ?")
+                    where_conditions.append("j.schedule_type = ?")
                     params.append(filters.schedule_type)
-                
+
                 if filters.func_name_like:
-                    where_conditions.append("func_name LIKE ?")
+                    where_conditions.append("j.func_name LIKE ?")
                     params.append(f"%{filters.func_name_like}%")
-                
+
                 if filters.name_like:
-                    where_conditions.append("name LIKE ?")
+                    where_conditions.append("j.name LIKE ?")
                     params.append(f"%{filters.name_like}%")
-            
+
             if where_conditions:
                 query += " WHERE " + " AND ".join(where_conditions)
-            
-            query += " ORDER BY created_at DESC"
-            
+
+            query += " ORDER BY j.created_at DESC"
+
             cur.execute(query, params)
             rows = cur.fetchall()
-            
-            return [self._row_to_scheduler_job(row) for row in rows]
+
+            return [self._row_to_scheduler_job_with_run(row) for row in rows]
 
     async def update_job(self, job_id: int, job_update: SchedulerJobUpdate) -> SchedulerJob | None:
         """스케줄러 작업 수정"""
@@ -300,7 +333,7 @@ class SchedulerService:
             cur = conn.cursor()
             
             cur.execute("""
-                INSERT INTO kscheduler_run_history (job_name, started_at, finished_at, status, message)
+                INSERT INTO kscheduler_run (job_name, started_at, finished_at, status, message)
                 VALUES (?, ?, ?, ?, ?)
             """, (
                 history.job_name, history.started_at, history.finished_at, 
@@ -313,7 +346,7 @@ class SchedulerService:
             # 생성된 이력 조회 후 반환
             cur.execute("""
                 SELECT id, job_name, started_at, finished_at, status, message
-                FROM kscheduler_run_history WHERE id = ?
+                FROM kscheduler_run WHERE id = ?
             """, (history_id,))
             
             row = cur.fetchone()
@@ -332,7 +365,7 @@ class SchedulerService:
             
             query = """
                 SELECT id, job_name, started_at, finished_at, status, message
-                FROM kscheduler_run_history
+                FROM kscheduler_run
             """
             params = []
             where_conditions = []
@@ -378,7 +411,7 @@ class SchedulerService:
             cur = conn.cursor()
             
             cur.execute("""
-                UPDATE kscheduler_run_history 
+                UPDATE kscheduler_run 
                 SET finished_at = ?, status = ?, message = ?
                 WHERE id = ?
             """, (finished_at, status, message, history_id))
@@ -401,7 +434,7 @@ class SchedulerService:
             cutoff_date_str = datetime.fromtimestamp(cutoff_date).isoformat()
             
             cur.execute("""
-                DELETE FROM kscheduler_run_history 
+                DELETE FROM kscheduler_run 
                 WHERE started_at < ?
             """, (cutoff_date_str,))
             
@@ -550,7 +583,7 @@ class SchedulerService:
             yesterday = datetime.now().timestamp() - (24 * 60 * 60)
             yesterday_str = datetime.fromtimestamp(yesterday).isoformat()
             cur.execute("""
-                SELECT COUNT(*) FROM kscheduler_run_history 
+                SELECT COUNT(*) FROM kscheduler_run 
                 WHERE started_at >= ?
             """, (yesterday_str,))
             stats['runs_24h'] = cur.fetchone()[0]

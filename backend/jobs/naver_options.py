@@ -269,8 +269,17 @@ async def scrap_naver_options_job(_payload: dict):
     """
     매일 02:00 네이버 종목토론방 수집 → stk_options 저장.
 
+    my_stock이 새벽 시간대엔 비어있을 수 있어(자동 동기화 cron이 없음),
+    수집 대상을 정하기 전에 my_stock 동기화를 먼저 실행한다.
     requests/time.sleep 동기 코드이므로 run_in_executor로 감싸
     FastAPI 이벤트 루프 블로킹을 방지한다.
     """
+    from backend.domains.services.my_stock_service import get_my_stock_service
+
+    try:
+        await get_my_stock_service().scheduler_sync_and_update()
+    except Exception as e:
+        logger.error(f"[naver_options] my_stock 동기화 실패: {e}")
+
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, collect_naver_options)

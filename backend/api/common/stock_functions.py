@@ -115,17 +115,21 @@ def _kind_stk_info_fill_sync():
                 conn.execute(f"ALTER TABLE stk_info ADD COLUMN {col} TEXT")
                 logger.info(f"ALTER TABLE stk_info ADD COLUMN {col}")
 
-        cur.execute("""
-            UPDATE stk_info SET
-                main_products       = (SELECT k.main_products       FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1),
-                representative_name = (SELECT k.representative_name FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1),
-                homepage            = (SELECT k.homepage            FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1),
-                location            = (SELECT k.location            FROM kind_stk_info k WHERE k.stock_code = stk_info.stk_cd LIMIT 1)
-            WHERE stk_cd IN (SELECT stock_code FROM kind_stk_info)
-        """)
+        # stk_info upsert: 이미 있으면 4개 컬럼만 갱신, 없으면 신규 row 생성
+        # (stk_info_fill()을 따로 안 돌려도 KIND 데이터만으로 최소 정보가 채워지도록)
+        cur.executemany(
+            """INSERT INTO stk_info (stk_cd, stk_nm, main_products, representative_name, homepage, location)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(stk_cd) DO UPDATE SET
+                   main_products       = excluded.main_products,
+                   representative_name = excluded.representative_name,
+                   homepage             = excluded.homepage,
+                   location             = excluded.location""",
+            [(r[2], r[0], r[4], r[7], r[8], r[9]) for r in rows],
+        )
         conn.commit()
 
-    logger.info(f"kind_stk_info {len(rows)}건 insert, stk_info {cur.rowcount}건 업데이트 완료")
+    logger.info(f"kind_stk_info {len(rows)}건 insert, stk_info {cur.rowcount}건 upsert 완료")
 
 
 async def kind_stk_info_fill():

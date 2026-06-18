@@ -112,10 +112,12 @@ async def get_jobs(
                 "jitter_sec": job.jitter_sec,
                 "next_run_at": job.next_run_at,
                 "last_run_at": job.last_run_at,
+                "last_status": job.last_status,
+                "last_message": job.last_message,
                 "created_at": job.created_at,
                 "updated_at": job.updated_at
             })
-        
+
         logger.info(f"스케줄러 작업 목록 조회 완료: {len(job_list)}개")
         return KiwoomApiHelper.create_success_response(data={"jobs": job_list, "count": len(job_list)})
         
