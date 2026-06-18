@@ -206,12 +206,12 @@ function LastRunBadge({ status, message }: { status: SchedulerJob['last_status']
     return <CheckCircle2 size={16} className="text-green-500" />
   }
   if (status === 'error') {
-    return <XCircle size={16} className="text-red-500" title={message ?? ''} />
+    return <span title={message ?? ''}><XCircle size={16} className="text-red-500" /></span>
   }
   if (status === 'timeout') {
-    return <Clock size={16} className="text-orange-500" title={message ?? ''} />
+    return <span title={message ?? ''}><Clock size={16} className="text-orange-500" /></span>
   }
-  return <AlertCircle size={16} className="text-gray-400" title={message ?? ''} />
+  return <span title={message ?? ''}><AlertCircle size={16} className="text-gray-400" /></span>
 }
 
 function StatCard({ title, value, icon }: { title: string, value: string | number, icon: React.ReactNode }) {

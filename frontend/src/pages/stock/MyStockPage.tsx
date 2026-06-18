@@ -336,7 +336,7 @@ export default function MyStockPage() {
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           <h1 className="text-xl font-bold text-gray-800">관심/보유 종목</h1>
-          <Button size="sm" variant="outline" className="h-[26px] px-2" onClick={openStockFindModal}>
+          <Button size="sm" variant="outline" className="h-[26px] px-2" onClick={() => openStockFindModal()}>
             <Search className="w-4 h-4" />
           </Button>
           <StockFilterButton

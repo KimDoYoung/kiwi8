@@ -99,7 +99,7 @@ export default function TopBar() {
         </button>
         
         <button
-          onClick={openStockFindModal}
+          onClick={() => openStockFindModal()}
           title="종목 찾기"
           className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
         >
