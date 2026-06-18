@@ -1,6 +1,7 @@
 import { Edit2, Trash2, BookOpen } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
+import { formatDate } from '@/lib/utils'
 
 export interface DiaryEntry {
   id: number
@@ -16,11 +17,6 @@ interface StkDiaryEntriesProps {
   loading: boolean
   onEdit: (entry: DiaryEntry) => void
   onDelete: (id: number) => void
-}
-
-function formatYmd(ymd: string): string {
-  if (!ymd || ymd.length !== 8) return ymd
-  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`
 }
 
 export default function StkDiaryEntries({
@@ -56,7 +52,7 @@ export default function StkDiaryEntries({
           <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-gray-700">
-                {formatYmd(entry.ymd)}
+                {formatDate(entry.ymd)}
               </span>
               {entry.stk_cd && (
                 <Badge variant="secondary" className="font-mono text-xs">
