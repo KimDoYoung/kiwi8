@@ -139,8 +139,8 @@ async def kind_stk_info_fill():
 
 @job_registry.register("fill_kind_stk_info")
 async def fill_kind_stk_info_job(_payload: dict):
-    """매일 03:00 KIND Excel 다운로드 → kind_stk_info + stk_info 갱신."""
-    await asyncio.to_thread(_kind_stk_info_fill_sync)
+    """매일 03:00 kiwoom stk_info 갱신(stale시) → KIND Excel 다운로드 → kind_stk_info + stk_info 갱신."""
+    await stk_info_fill()
 
 async def stk_info_fill(force:bool=False):
     """ 
@@ -153,7 +153,7 @@ async def stk_info_fill(force:bool=False):
     settings_service = get_service("settings")
     last_fill_time = await settings_service.get(SettingsKey.LAST_STK_INFO_FILL)
     #  유효시간이 지났거나, force이면
-    if not last_fill_time or (not force and is_time_exceeded(last_fill_time)) or force:
+    if not last_fill_time or (not force and is_time_exceeded(last_fill_time, "1d")) or force:
         # kiwoom에서 가져온다.
         api = await get_kiwoom_api()
         # 0:코스피,10:코스닥,3:ELW,8:ETF,30:K-OTC,50:코넥스,5:신주인수권,4:뮤추얼펀드,6:리츠,9:하이일드

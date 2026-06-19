@@ -168,6 +168,30 @@ EOF
     fi
 }
 
+fetch_server_logs() {
+    local remote_host="jskn"
+    local remote_log_dir="/data/docker/apps/kiwi8/logs"
+    local local_tmp_dir="/tmp/kiwi8_logs"
+
+    echo "서버($remote_host)에서 로그를 가져옵니다..."
+
+    mkdir -p "$local_tmp_dir"
+
+    sftp "$remote_host" <<EOF
+lcd $local_tmp_dir
+cd $remote_log_dir
+mget kiwi8.log*
+quit
+EOF
+
+    if [ $? -eq 0 ]; then
+        echo "로그 가져오기 성공: $local_tmp_dir"
+        ls -lh "$local_tmp_dir"
+    else
+        echo "오류: 로그 가져오기에 실패했습니다."
+    fi
+}
+
 #----------------------------------------------------
 # 4. 실행 로직 (CLI 인자 처리 또는 단일 메뉴 실행 후 종료)
 #----------------------------------------------------
@@ -181,7 +205,8 @@ if [ $# -gt 0 ]; then
         run)    run_sql "$2" ;;
         delete) delete_db ;;
         fetch)  fetch_server_db ;;
-        *)      echo "사용법: $0 {list|desc|select|run|delete|fetch}" ;;
+        logs)   fetch_server_logs ;;
+        *)      echo "사용법: $0 {list|desc|select|run|delete|fetch|logs}" ;;
     esac
     exit 0
 fi
@@ -193,6 +218,7 @@ echo "2. 테이블 desc (db.sh desc)"
 echo "3. 테이블 select (db.sh select)"
 echo "4. sql 실행 (db.sh run)"
 echo "5. 서버 DB 가져오기 (db.sh fetch)"
+echo "6. 서버 logs 가져오기 (db.sh logs)"
 echo "---------------------------------------------"
 echo "99. db 삭제"
 echo "q. 종료"
@@ -205,6 +231,7 @@ case "$choice" in
     3) select_table ;;
     4) run_sql ;;
     5) fetch_server_db ;;
+    6) fetch_server_logs ;;
     99) delete_db ;;
     q|Q) exit 0 ;;
     *) echo "잘못된 선택입니다." ;;
