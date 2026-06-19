@@ -315,7 +315,19 @@ export default function OrderModal() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="qty">수량</Label>
-                  <Input id="qty" type="number" {...form.register('qty', { valueAsNumber: true })} />
+                  <Input
+                    id="qty"
+                    type="number"
+                    min={1}
+                    {...form.register('qty', {
+                      valueAsNumber: true,
+                      min: 1,
+                      onChange: (e) => {
+                        const v = Number(e.target.value)
+                        if (v < 1) form.setValue('qty', 1)
+                      },
+                    })}
+                  />
                   {form.formState.errors.qty && (
                     <p className="text-xs text-destructive">{form.formState.errors.qty.message}</p>
                   )}
@@ -324,7 +336,19 @@ export default function OrderModal() {
                   <Label htmlFor="price">
                     지정가 <span className="text-[10px] text-muted-foreground font-normal">(0:시장가)</span>
                   </Label>
-                  <Input id="price" type="number" {...form.register('price', { valueAsNumber: true })} />
+                  <Input
+                    id="price"
+                    type="number"
+                    min={0}
+                    {...form.register('price', {
+                      valueAsNumber: true,
+                      min: 0,
+                      onChange: (e) => {
+                        const v = Number(e.target.value)
+                        if (v < 0) form.setValue('price', 0)
+                      },
+                    })}
+                  />
                   {form.formState.errors.price && (
                     <p className="text-xs text-destructive">{form.formState.errors.price.message}</p>
                   )}
