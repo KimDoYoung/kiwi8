@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, type FormEvent } from 'react'
+import React, { useState, useCallback, useEffect, useMemo, useRef, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
@@ -34,6 +34,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
   const [padKeys, setPadKeys] = useState<(number | null)[]>(makeShuffledPad)
   const [bgLoaded, setBgLoaded] = useState(false)
   const bgUrl = useMemo(() => getBgImageUrl(), [])
+  const loginBtnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (isModal) return
@@ -61,6 +62,32 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
       }
     }
   }
+
+  useEffect(() => {
+    if (password.length === 4) {
+      loginBtnRef.current?.focus()
+    }
+  }, [password])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') return
+      if (loading) return
+      if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault()
+        handlePadInput(Number(e.key))
+      } else if (e.key === 'Backspace') {
+        e.preventDefault()
+        handlePadInput(-1)
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        handlePadInput(-2)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [password, loading])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -124,6 +151,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
             placeholder="아이디를 입력하세요"
             disabled={loading}
             required
+            autoFocus
           />
         </div>
 
@@ -190,6 +218,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
 
         {/* 로그인 버튼 */}
         <button
+          ref={loginBtnRef}
           type="submit"
           disabled={loading || password.length !== 4}
           className={`mt-1 font-semibold rounded-lg py-3 text-sm transition-all text-white
