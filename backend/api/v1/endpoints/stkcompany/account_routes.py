@@ -33,6 +33,7 @@ from backend.domains.stkcompanys.ls.models.ls_schema import (
     LsRequest,
     LsResponse,
 )
+from backend.domains.services.account_history_service import AccountHistoryService
 from backend.utils.acct_summary import (
     get_kis_account_summary,
     get_kiwoom_account_summary,
@@ -43,6 +44,7 @@ from backend.utils.common_utils import parse_price
 
 router = APIRouter()
 logger = get_logger(__name__)
+_account_history_service = AccountHistoryService()
 
 
 @router.get('/cash')
@@ -88,7 +90,15 @@ async def get_summary():
         return {'summary': {}, 'accounts': {}}
 
 
-# total/account/list 라우트는 3개 증권사(KIS, LS, 키움)의 계좌현황을 통합하여 리스트한다. 
+@router.get('/history')
+async def get_account_history(days: int = Query(90, ge=1, le=365, description='조회할 최근 일수')):
+    """일별 계좌 자산 변동 이력 조회 (account_history)"""
+    logger.info(f'[계좌현황] 자산 변동 이력 조회 요청 (days={days})')
+    rows = await _account_history_service.get_recent(days)
+    return {'success': True, 'data': [row.model_dump() for row in rows]}
+
+
+# total/account/list 라우트는 3개 증권사(KIS, LS, 키움)의 계좌현황을 통합하여 리스트한다.
 
 
 def _normalize_stock_code(code: str | int | None) -> str:

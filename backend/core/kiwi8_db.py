@@ -79,14 +79,17 @@ def create_kiwi8_db(db_path: str):
     except sqlite3.Error as e:
         # SQLite 관련 오류
         logger.error(f"SQLite 데이터베이스 오류: {e!s}")
-        
-        # 손상된 데이터베이스 파일 삭제 시도
+
+        # 손상된 데이터베이스 파일을 삭제하지 않고 이름 변경하여 보존
         if os.path.exists(db_path):
             try:
-                os.remove(db_path)
-                logger.info(f"손상된 데이터베이스 파일 삭제: {db_path}")
-            except OSError as delete_error:
-                logger.warning(f"데이터베이스 파일 삭제 실패: {delete_error}")
+                from datetime import datetime
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                corrupted_path = f"{db_path}.corrupted_{timestamp}"
+                os.rename(db_path, corrupted_path)
+                logger.info(f"손상된 데이터베이스 파일 보존: {db_path} -> {corrupted_path}")
+            except OSError as rename_error:
+                logger.warning(f"손상된 데이터베이스 파일 이름 변경 실패: {rename_error}")
         
         raise DatabaseCreationError(f"데이터베이스 생성 오류: {e!s}") from e
         

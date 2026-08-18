@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { getMarketStatus } from '@/services/stockService'
@@ -9,6 +10,8 @@ import {
     TrendingDown,
     PieChart as PieChartIcon,
     BarChart3,
+    ChartLine as LineChartIcon,
+    ChartArea as AreaChartIcon,
     Building2,
     Banknote,
     Store,
@@ -54,7 +57,25 @@ interface AccountSummaryResponse {
     accounts: Record<string, AccountData>
 }
 
+interface AccountHistoryRow {
+    record_date: string
+    total_asset: number
+    total_rate: string
+    kiwoom_total_asset: number
+    kis_total_asset: number
+    ls_total_asset: number
+}
+
+interface AccountHistoryResponse {
+    success: boolean
+    data: AccountHistoryRow[]
+}
+
+const HISTORY_DAY_OPTIONS = [30, 90, 180] as const
+
 export default function AccountSummaryPage() {
+    const [historyDays, setHistoryDays] = useState<number>(90)
+
     const { data, isLoading, isError, refetch, isFetching } = useQuery<AccountSummaryResponse>({
         queryKey: ['accountSummary'],
         queryFn: async () => {
@@ -67,6 +88,14 @@ export default function AccountSummaryPage() {
         queryKey: ['marketStatus'],
         queryFn: getMarketStatus,
         refetchInterval: 60_000,
+    })
+
+    const { data: historyRes } = useQuery<AccountHistoryResponse>({
+        queryKey: ['accountHistory', historyDays],
+        queryFn: async () => {
+            const res = await api.get(`/api/v1/stkcompany/history?days=${historyDays}`)
+            return res.data
+        }
     })
 
     if (isLoading) {
@@ -139,6 +168,73 @@ export default function AccountSummaryPage() {
                 label: { show: true, position: 'top', fontSize: 10, formatter: (p: unknown) => formatCost((p as ChartFormatterParams).value as number) }
             }
         ]
+    }
+
+    const historyRows = historyRes?.data ?? []
+    const historyDates = historyRows.map(r => r.record_date)
+
+    // 총자산 & 전체수익률 추이 (듀얼축)
+    const assetTrendOption = {
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['총자산', '전체수익률'], bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
+        grid: { left: '3%', right: '3%', bottom: '12%', top: '5%', containLabel: true },
+        xAxis: { type: 'category', data: historyDates, axisLabel: { fontSize: 10 } },
+        yAxis: [
+            { type: 'value', name: '자산', axisLabel: { fontSize: 10, formatter: (v: number) => formatCost(v) } },
+            { type: 'value', name: '수익률(%)', axisLabel: { fontSize: 10, formatter: '{value}%' } },
+        ],
+        series: [
+            {
+                name: '총자산',
+                type: 'bar',
+                yAxisIndex: 0,
+                itemStyle: { color: '#64748b' },
+                data: historyRows.map(r => r.total_asset),
+            },
+            {
+                name: '전체수익률',
+                type: 'line',
+                yAxisIndex: 1,
+                smooth: true,
+                itemStyle: { color: '#e4007f' },
+                data: historyRows.map(r => parseFloat(r.total_rate)),
+            },
+        ],
+    }
+
+    // 증권사별 자산 비중 추이 (누적 영역)
+    const brokerShareTrendOption = {
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['한국투자증권', 'LS증권', '키움증권'], bottom: '0%', left: 'center', itemSize: 10, textStyle: { fontSize: 11 } },
+        grid: { left: '3%', right: '3%', bottom: '12%', top: '5%', containLabel: true },
+        xAxis: { type: 'category', data: historyDates, axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'value', axisLabel: { fontSize: 10, formatter: (v: number) => formatCost(v) } },
+        series: [
+            {
+                name: '한국투자증권',
+                type: 'line',
+                stack: 'total',
+                areaStyle: {},
+                itemStyle: { color: '#80624c' },
+                data: historyRows.map(r => r.kis_total_asset),
+            },
+            {
+                name: 'LS증권',
+                type: 'line',
+                stack: 'total',
+                areaStyle: {},
+                itemStyle: { color: '#003378' },
+                data: historyRows.map(r => r.ls_total_asset),
+            },
+            {
+                name: '키움증권',
+                type: 'line',
+                stack: 'total',
+                areaStyle: {},
+                itemStyle: { color: '#e4007f' },
+                data: historyRows.map(r => r.kiwoom_total_asset),
+            },
+        ],
     }
 
     return (
@@ -260,6 +356,60 @@ export default function AccountSummaryPage() {
                         </CardHeader>
                         <CardContent className="p-4 h-[280px]">
                             <ReactECharts option={barOption} style={{ height: '100%' }} />
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* 자산 변동 추이 */}
+                <div className="flex items-center justify-between pt-2">
+                    <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <LineChartIcon className="w-4 h-4 text-primary" />
+                        자산 변동 추이
+                    </h2>
+                    <div className="flex items-center gap-1 bg-slate-100 rounded-md p-0.5">
+                        {HISTORY_DAY_OPTIONS.map(d => (
+                            <button
+                                key={d}
+                                onClick={() => setHistoryDays(d)}
+                                className={cn(
+                                    "px-2.5 py-1 text-xs font-semibold rounded transition-colors",
+                                    historyDays === d
+                                        ? "bg-white text-primary shadow-sm"
+                                        : "text-slate-500 hover:text-slate-700"
+                                )}
+                            >
+                                {d}일
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="shadow-sm border-slate-200">
+                        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center gap-2">
+                            <LineChartIcon className="w-4 h-4 text-slate-400" />
+                            <CardTitle className="text-sm font-bold">총자산 &amp; 수익률 추이</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 h-[280px]">
+                            {historyRows.length > 0 ? (
+                                <ReactECharts option={assetTrendOption} style={{ height: '100%' }} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-sm text-slate-400">데이터가 없습니다.</div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm border-slate-200">
+                        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center gap-2">
+                            <AreaChartIcon className="w-4 h-4 text-slate-400" />
+                            <CardTitle className="text-sm font-bold">증권사별 자산 비중 추이</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 h-[280px]">
+                            {historyRows.length > 0 ? (
+                                <ReactECharts option={brokerShareTrendOption} style={{ height: '100%' }} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-sm text-slate-400">데이터가 없습니다.</div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
