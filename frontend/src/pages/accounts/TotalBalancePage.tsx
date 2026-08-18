@@ -121,22 +121,22 @@ export default function TotalBalancePage() {
     ], [filteredStocks, sumMaeip, sumPyeong, sumSonik])
 
     const colDefs = useMemo<ColDef[]>(() => {
-        const allCols: (ColDef & { simple?: boolean })[] = [
+        const allCols: ColDef[] = [
             {
-                field: '브로커', headerName: '증권사', width: 80, pinned: 'left', simple: true,
+                field: '브로커', headerName: '증권사', width: 80, pinned: 'left', context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : p.value,
             },
             {
-                headerName: '종목코드', field: '종목코드', width: 90, pinned: 'left', simple: true,
+                headerName: '종목코드', field: '종목코드', width: 90, pinned: 'left', context: { simple: true },
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <CodeCell value={p.data?.종목코드} />,
                 comparator: (a: string, b: string) => a.localeCompare(b),
             },
-            { field: '종목명', headerName: '종목명', width: 140, pinned: 'left', simple: true },
+            { field: '종목명', headerName: '종목명', width: 140, pinned: 'left', context: { simple: true } },
             {
                 field: '전일대비', headerName: '전일대비', width: 90, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '평단가', headerName: '매입평단', width: 90, type: 'numericColumn',
@@ -144,7 +144,7 @@ export default function TotalBalancePage() {
                 comparator: numComparator,
             },
             {
-                field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn', simple: true,
+                field: '현재가', headerName: '현재가', width: 110, type: 'numericColumn', context: { simple: true },
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
             },
@@ -152,13 +152,13 @@ export default function TotalBalancePage() {
                 field: '일주당', headerName: '1주당', width: 110, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '수량', headerName: '수량', width: 70, type: 'numericColumn',
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '매입금액', headerName: '매입금액', width: 120, type: 'numericColumn',
@@ -169,19 +169,19 @@ export default function TotalBalancePage() {
                 field: '평가금액', headerName: '평가금액', width: 120, type: 'numericColumn',
                 valueFormatter: ({ value, data }) => (data?._isSummary && toNum(value) === 0) ? '' : fmt(toNum(value)),
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '손익금액', headerName: '손익금액', width: 120, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <ProfitCell {...p} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             {
                 field: '손익율', headerName: '손익율(%)', width: 100, type: 'numericColumn',
                 cellRenderer: (p: CustomCellRendererProps) => (p.data?._isSummary && toNum(p.value) === 0) ? '' : <RateCell {...p} value={p.value} />,
                 comparator: numComparator,
-                simple: true,
+                context: { simple: true },
             },
             { 
                 field: '가격추세', headerName: '추세', width: 125, sortable: false,
@@ -189,7 +189,7 @@ export default function TotalBalancePage() {
             },
         ]
 
-        return isSimpleView ? allCols.filter(col => col.simple) : allCols
+        return isSimpleView ? allCols.filter(col => col.context?.simple) : allCols
     }, [isSimpleView])
 
     const defaultColDef = useMemo<ColDef>(() => ({

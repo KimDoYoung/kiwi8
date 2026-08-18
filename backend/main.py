@@ -64,7 +64,7 @@ def create_app() -> FastAPI:
                 path = request.url.path
                 if '/api/' in path:
                     return _JSONResponse({'detail': 'Not Found'}, status_code=404)
-                rel = path.lstrip('/')
+                rel = request.scope['path'].lstrip('/')
                 file_path = os.path.join(dist_path, rel)
                 if os.path.isfile(file_path):
                     return FileResponse(file_path)
