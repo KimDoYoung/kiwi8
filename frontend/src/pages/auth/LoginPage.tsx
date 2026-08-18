@@ -48,7 +48,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
     setPadKeys(makeShuffledPad())
   }, [])
 
-  const handlePadInput = (key: number | null) => {
+  const handlePadInput = useCallback((key: number | null) => {
     if (key === null) return
     if (key === -1) {
       setPassword((p) => p.slice(0, -1))
@@ -62,7 +62,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
         setError('')
       }
     }
-  }
+  }, [password, reshufflePad])
 
   useEffect(() => {
     if (password.length === 4) {
@@ -88,7 +88,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [password, loading])
+  }, [password, loading, handlePadInput])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

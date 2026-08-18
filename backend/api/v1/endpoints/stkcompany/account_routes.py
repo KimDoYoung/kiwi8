@@ -15,6 +15,7 @@ from backend.domains.infrahub.current_pricer import CurrentPricer
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 from backend.domains.infrahub.stock_resolver import StockResolver
+from backend.domains.services.account_history_service import AccountHistoryService
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import (
     KisApiHelper,
@@ -33,7 +34,6 @@ from backend.domains.stkcompanys.ls.models.ls_schema import (
     LsRequest,
     LsResponse,
 )
-from backend.domains.services.account_history_service import AccountHistoryService
 from backend.utils.acct_summary import (
     get_kis_account_summary,
     get_kiwoom_account_summary,

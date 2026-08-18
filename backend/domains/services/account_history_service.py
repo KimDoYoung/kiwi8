@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
 import aiosqlite
 
@@ -33,6 +33,6 @@ class AccountHistoryService:
 
     async def get_recent(self, days: int = 90) -> list[AccountHistoryRow]:
         """오늘 기준 최근 N일치 계좌 이력 조회"""
-        end = date.today()
+        end = datetime.now().date()
         start = end - timedelta(days=days)
         return await self.get_range(start.isoformat(), end.isoformat())
