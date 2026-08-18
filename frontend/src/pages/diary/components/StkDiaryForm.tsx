@@ -17,6 +17,7 @@ interface StkDiaryFormProps {
   onNoteChange: (html: string) => void
   editorKey?: string | number
   onError?: (msg: string) => void
+  onSave?: () => void
 }
 
 export default function StkDiaryForm({
@@ -30,6 +31,7 @@ export default function StkDiaryForm({
   onNoteChange,
   editorKey,
   onError,
+  onSave,
 }: StkDiaryFormProps) {
   const [searching, setSearching] = useState(false)
 
@@ -108,6 +110,7 @@ export default function StkDiaryForm({
           onChange={onNoteChange}
           placeholder="오늘의 매매 복기나 시장 분석을 입력하세요..."
           minHeight="280px"
+          onSave={onSave}
         />
       </div>
     </div>

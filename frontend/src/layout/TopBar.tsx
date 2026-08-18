@@ -7,6 +7,7 @@ import { useLayoutStore } from '@/store/layoutStore'
 import { useModalStore } from '@/store/modalStore'
 import { fetchMenuTree } from '@/services/menuService'
 import api from '@/lib/api'
+import type { DiaryInitialData } from '@/store/modalStore'
 import TopBarControlPanel from './topbar/TopBarControlPanel'
 import ScreenInputPanel, { type ScreenInputPanelHandle } from './topbar/ScreenInputPanel'
 import { useGlobalHotkeys } from '@/hooks/useGlobalHotkeys'
@@ -45,6 +46,31 @@ export default function TopBar() {
 
   const handleLogout = async () => {
     try { await api.get('/logout') } finally { logout() }
+  }
+
+  const handleOpenDiary = async () => {
+    const todayYmd = new Date().toISOString().split('T')[0].replace(/-/g, '')
+    try {
+      const res = await api.post('/api/v1/diary/list', {
+        api_id: 'diary_list',
+        payload: { start_ymd: todayYmd, end_ymd: todayYmd, limit: 50 },
+      })
+      const list: { id: number; ymd: string; stk_cd: string | null; note: string }[] =
+        res.data?.data?.list ?? []
+      const todayGeneral = list.find((d) => !d.stk_cd)
+      if (todayGeneral) {
+        const data: DiaryInitialData = {
+          id: String(todayGeneral.id),
+          ymd: `${todayYmd.slice(0, 4)}-${todayYmd.slice(4, 6)}-${todayYmd.slice(6, 8)}`,
+          note: todayGeneral.note,
+        }
+        openDiaryEditModal(data)
+        return
+      }
+    } catch {
+      // 조회 실패 시 새 작성으로 폴백
+    }
+    openDiaryEditModal()
   }
 
   return (
@@ -107,7 +133,7 @@ export default function TopBar() {
         </button>
 
         <button
-          onClick={() => openDiaryEditModal()}
+          onClick={handleOpenDiary}
           title="일지 작성"
           className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
         >

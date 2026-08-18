@@ -65,7 +65,7 @@ class KiwoomWsClient:
 
                 if trnm == 'LOGIN':
                     if response.get('return_code') != 0:
-                        logger.error('웹소켓(실시간) 로그인 실패하였습니다. : ', response.get('return_msg'))
+                        logger.error(f"웹소켓(실시간) 로그인 실패하였습니다. : {response.get('return_msg')}")
                         await self.disconnect()
                     else:
                         logger.info('웹소켓(실시간) 로그인 성공하였습니다.')
@@ -75,7 +75,7 @@ class KiwoomWsClient:
                     await self.send_message(response)
 
                 elif trnm == 'UNKNOWN':
-                    logger.warning('알 수 없는 메시지를 받았습니다:', response)
+                    logger.warning(f'알 수 없는 메시지를 받았습니다: {response}')
 
                 elif trnm == 'REAL':
                     data_list = response.get('data', [])

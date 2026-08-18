@@ -35,6 +35,7 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
   const [bgLoaded, setBgLoaded] = useState(false)
   const bgUrl = useMemo(() => getBgImageUrl(), [])
   const loginBtnRef = useRef<HTMLButtonElement>(null)
+  const passwordAreaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isModal) return
@@ -147,6 +148,12 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
             type="text"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                passwordAreaRef.current?.focus()
+              }
+            }}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
             placeholder="아이디를 입력하세요"
             disabled={loading}
@@ -159,7 +166,11 @@ export default function LoginPage({ isModal = false }: { isModal?: boolean }) {
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">비밀번호 (4자리)</label>
           <div className="flex gap-2">
-            <div className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-center text-xl font-mono tracking-widest bg-gray-50 select-none">
+            <div
+              ref={passwordAreaRef}
+              tabIndex={-1}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-center text-xl font-mono tracking-widest bg-gray-50 select-none focus:outline-none focus:ring-2 focus:ring-green-400"
+            >
               {passwordDisplay}
             </div>
             <button

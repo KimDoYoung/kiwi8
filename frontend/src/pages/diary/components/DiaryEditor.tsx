@@ -4,8 +4,16 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
+import { Highlight } from '@tiptap/extension-highlight'
+import { Link } from '@tiptap/extension-link'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TableCell } from '@tiptap/extension-table-cell'
 import api from '@/lib/api'
 import ResizableInlineImage from './ResizableInlineImage'
+import MediaEmbedExtension from './MediaEmbedExtension'
+import { FontSize } from './FontSizeExtension'
 import DiaryMenuBar from './DiaryMenuBar'
 
 interface DiaryEditorProps {
@@ -13,6 +21,7 @@ interface DiaryEditorProps {
   onChange: (html: string) => void
   placeholder?: string
   minHeight?: string
+  onSave?: () => void
 }
 
 export interface DiaryEditorHandle {
@@ -35,18 +44,32 @@ const DiaryEditor = forwardRef<DiaryEditorHandle, DiaryEditorProps>(
       onChange,
       placeholder = '일지 내용을 입력하세요...',
       minHeight = '300px',
+      onSave,
     },
     ref,
   ) {
     const editorRef = useRef<ReturnType<typeof useEditor>>(null)
+    const onSaveRef = useRef(onSave)
+
+    useEffect(() => {
+      onSaveRef.current = onSave
+    }, [onSave])
 
     const editor = useEditor({
       extensions: [
-        StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+        StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
         Placeholder.configure({ placeholder }),
         ResizableInlineImage.configure({ allowBase64: false }),
+        MediaEmbedExtension,
         TextStyle,
         Color,
+        FontSize,
+        Highlight.configure({ multicolor: true }),
+        Link.configure({ openOnClick: false, autolink: true }),
+        Table.configure({ resizable: true }),
+        TableRow,
+        TableHeader,
+        TableCell,
       ],
       content: value,
       onUpdate({ editor }) {
@@ -56,6 +79,14 @@ const DiaryEditor = forwardRef<DiaryEditorHandle, DiaryEditorProps>(
         attributes: {
           class: `diary-prose ProseMirror focus:outline-none px-4 py-3`,
           style: `min-height: ${minHeight}`,
+        },
+        handleKeyDown(_view, event) {
+          if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 's') {
+            event.preventDefault()
+            onSaveRef.current?.()
+            return true
+          }
+          return false
         },
         handlePaste(_view, event) {
           const items = event.clipboardData?.items

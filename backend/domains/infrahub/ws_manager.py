@@ -183,10 +183,11 @@ class WsManager:
                 # receive_messages를 먼저 task로 시작해야 LOGIN 응답 수신 가능
                 recv_task = asyncio.create_task(self.kiwoom_ws.receive_messages())
                 logged_in = await self.kiwoom_ws.wait_login()
-                if logged_in and config.KIWOOM_ACCT_NO:
-                    await self.kiwoom_ws.subscribe(config.KIWOOM_ACCT_NO, '00')
-                    logger.info(f"[Kiwoom WS] 계좌체결통보 구독(00): {config.KIWOOM_ACCT_NO}")
-                delay = 10
+                if logged_in:
+                    delay = 10
+                    if config.KIWOOM_ACCT_NO:
+                        await self.kiwoom_ws.subscribe(config.KIWOOM_ACCT_NO, '00')
+                        logger.info(f"[Kiwoom WS] 계좌체결통보 구독(00): {config.KIWOOM_ACCT_NO}")
                 await recv_task
             except Exception as e:
                 logger.error(f"[Kiwoom WS] 오류: {e}")

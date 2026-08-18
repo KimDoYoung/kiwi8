@@ -137,10 +137,10 @@ export default function StockNewsPage() {
           <div className="p-1.5 bg-violet-100 rounded-lg">
             <FileText className="w-4 h-4 text-violet-600" />
           </div>
-          <h1 className="text-base font-bold text-slate-800">종목 뉴스</h1>
-          <span className="ml-auto text-xs text-slate-400 font-mono">{news.length}건</span>
+          <h1 className="text-[17px] font-bold text-slate-800">종목 뉴스</h1>
+          <span className="ml-auto text-[13px] text-slate-400 font-mono">{news.length}건</span>
           {lastUpdated && (
-            <span className="text-[10px] text-slate-300 font-mono">
+            <span className="text-[11px] text-slate-300 font-mono">
               {lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
@@ -158,7 +158,7 @@ export default function StockNewsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
-              className="w-full pl-8 pr-8 py-1.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="w-full pl-8 pr-8 py-1.5 text-[15px] border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-1 focus:ring-violet-400"
               placeholder="제목 또는 종목코드 검색"
               value={inputVal}
               onChange={e => setInputVal(e.target.value)}
@@ -179,7 +179,7 @@ export default function StockNewsPage() {
           </div>
           <button
             onClick={handleSearch}
-            className="px-3 py-1.5 bg-violet-500 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors"
+            className="px-3 py-1.5 bg-violet-500 text-white text-[15px] rounded-lg hover:bg-violet-600 transition-colors"
           >
             검색
           </button>
@@ -189,9 +189,9 @@ export default function StockNewsPage() {
       {/* 목록 */}
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
         {loading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">로딩 중...</div>
+          <div className="p-8 text-center text-slate-400 text-[15px]">로딩 중...</div>
         ) : news.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-sm">뉴스가 없습니다.</div>
+          <div className="p-8 text-center text-slate-400 text-[15px]">뉴스가 없습니다.</div>
         ) : (
           news.map(item => (
             <button
@@ -201,18 +201,18 @@ export default function StockNewsPage() {
                 ${panel?.news_id === item.news_id ? 'bg-violet-50 border-l-2 border-violet-400' : ''}`}
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-700 leading-snug font-medium line-clamp-2">{item.title}</p>
+                <p className="text-[15px] text-slate-700 leading-snug font-medium line-clamp-2">{item.title}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] font-mono text-slate-400">
+                  <span className="text-[11px] font-mono text-slate-400">
                     {formatTime(item.news_date, item.news_time)}
                   </span>
                   {item.stock_codes && (
-                    <span className="text-[10px] font-mono bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded">
+                    <span className="text-[11px] font-mono bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded">
                       {item.stock_codes.split(',').slice(0, 3).join(' ')}
                     </span>
                   )}
                   {item.content && (
-                    <span className="text-[10px] text-emerald-500 font-medium">본문 ✓</span>
+                    <span className="text-[11px] text-emerald-500 font-medium">본문 ✓</span>
                   )}
                 </div>
               </div>
@@ -227,16 +227,16 @@ export default function StockNewsPage() {
   const contentPanel = panel ? (
     <div className="flex flex-col bg-white overflow-hidden shrink-0" style={contentStyle}>
       <div className="px-4 py-3 border-b border-slate-200 flex items-start gap-2 shrink-0">
-        <p className="flex-1 text-sm font-semibold text-slate-800 leading-snug">{panel.title}</p>
+        <p className="flex-1 text-[15px] font-semibold text-slate-800 leading-snug">{panel.title}</p>
         <button onClick={() => setPanel(null)} className="p-1 hover:bg-slate-100 rounded shrink-0">
           <X className="w-4 h-4 text-slate-400" />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
         {panel.loading ? (
-          <div className="text-center text-slate-400 text-sm py-8">본문 불러오는 중...</div>
+          <div className="text-center text-slate-400 text-[15px] py-8">본문 불러오는 중...</div>
         ) : (
-          <div className="text-sm text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: panel.content ?? '' }} />
+          <div className="text-[15px] text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: panel.content ?? '' }} />
         )}
       </div>
     </div>

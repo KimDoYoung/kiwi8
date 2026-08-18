@@ -20,6 +20,7 @@ export default function DiaryEditModal() {
   const [stkNm, setStkNm] = useState('')
   const [note, setNote] = useState('')
   const [editorKey, setEditorKey] = useState<string | number>('new')
+  const [currentId, setCurrentId] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null)
 
@@ -31,12 +32,14 @@ export default function DiaryEditModal() {
         setStkNm(diaryInitialData.stk_nm || '')
         setNote(diaryInitialData.note || '')
         setEditorKey(diaryInitialData.id ?? 'new')
+        setCurrentId(diaryInitialData.id)
       } else {
         setYmd(new Date().toISOString().split('T')[0])
         setStkCd('')
         setStkNm('')
         setNote('')
         setEditorKey('new-' + Date.now())
+        setCurrentId(undefined)
       }
       setMessage(null)
     }
@@ -49,7 +52,7 @@ export default function DiaryEditModal() {
 
   const isNoteEmpty = !note || note.replace(/<[^>]*>/g, '').trim() === ''
 
-  const handleSave = async () => {
+  const handleSave = async (keepOpen = false) => {
     if (!ymd || isNoteEmpty) {
       showMessage('날짜와 내용은 필수 입력 사항입니다.', 'error')
       return
@@ -64,10 +67,10 @@ export default function DiaryEditModal() {
       }
 
       let res
-      if (diaryInitialData?.id) {
-        res = await api.put(`/api/v1/diary/${diaryInitialData.id}`, {
+      if (currentId) {
+        res = await api.put(`/api/v1/diary/${currentId}`, {
           api_id: 'diary_update',
-          payload: { id: diaryInitialData.id, ...payload },
+          payload: { id: currentId, ...payload },
         })
       } else {
         res = await api.post('/api/v1/diary/', {
@@ -79,7 +82,12 @@ export default function DiaryEditModal() {
       if (res.data?.success) {
         showMessage('주식 일지가 저장되었습니다.', 'success')
         window.dispatchEvent(new CustomEvent('diary-updated'))
-        setTimeout(closeDiaryEditModal, 1500)
+        if (!currentId && res.data.data?.id) {
+          setCurrentId(String(res.data.data.id))
+        }
+        if (!keepOpen) {
+          setTimeout(closeDiaryEditModal, 1500)
+        }
       } else {
         showMessage(res.data?.error_message || '저장 실패', 'error')
       }
@@ -100,7 +108,7 @@ export default function DiaryEditModal() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-success" />
-            {diaryInitialData?.id ? '주식 일지 수정' : '주식 일지 작성'}
+            {currentId ? '주식 일지 수정' : '주식 일지 작성'}
           </DialogTitle>
         </DialogHeader>
 
@@ -116,33 +124,30 @@ export default function DiaryEditModal() {
             onNoteChange={setNote}
             editorKey={editorKey}
             onError={(msg) => showMessage(msg, 'error')}
+            onSave={() => handleSave(true)}
           />
 
-          {message && (
-            <div
-              className={`flex items-center gap-2 p-2 rounded-md text-sm mt-4 ${
-                message.type === 'success'
-                  ? 'bg-green-500/10 text-green-600'
-                  : 'bg-destructive/10 text-destructive'
-              }`}
-            >
-              {message.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : (
-                <AlertCircle className="w-4 h-4" />
-              )}
+          {message?.type === 'error' && (
+            <div className="flex items-center gap-2 p-2 rounded-md text-sm mt-4 bg-destructive/10 text-destructive">
+              <AlertCircle className="w-4 h-4" />
               <span>{message.text}</span>
             </div>
           )}
         </div>
 
         <DialogFooter>
+          {message?.type === 'success' && (
+            <span className="flex items-center gap-1 text-sm text-green-600 sm:mr-auto">
+              <CheckCircle2 className="w-4 h-4" />
+              {message.text}
+            </span>
+          )}
           <Button variant="outline" onClick={closeDiaryEditModal}>
             취소
           </Button>
-          <Button onClick={handleSave} disabled={loading || isNoteEmpty}>
+          <Button onClick={() => handleSave()} disabled={loading || isNoteEmpty}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {diaryInitialData?.id ? '수정' : '저장'}
+            {currentId ? '수정' : '저장'}
           </Button>
         </DialogFooter>
       </DialogContent>

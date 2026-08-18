@@ -48,7 +48,6 @@ const ResizableInlineImage = Image.extend({
         'display: inline-block; position: relative; vertical-align: bottom; line-height: 0; cursor: default;'
 
       const img = document.createElement('img')
-      img.src = node.attrs.src || ''
       if (node.attrs.alt) img.alt = node.attrs.alt
       if (node.attrs.title) img.title = node.attrs.title
       img.style.cssText = [
@@ -59,6 +58,15 @@ const ResizableInlineImage = Image.extend({
       ]
         .filter(Boolean)
         .join('; ')
+      // width/height 속성 없이 viewBox만 있는 SVG는 절대 크기가 없어서, inline-block 래퍼 안에서
+      // max-width:100%만으로는 크기가 0으로 붕괴되는 크로미움 레이아웃 버그가 있음. 로드 후 실제로
+      // 0이면 자연 크기로 명시 폭을 줘서 복구한다 — 절대 크기가 있는 PNG/JPG는 영향 없음.
+      img.onload = () => {
+        if (!node.attrs.width && img.offsetWidth === 0 && img.naturalWidth > 0) {
+          img.style.width = `${img.naturalWidth}px`
+        }
+      }
+      img.src = node.attrs.src || ''
 
       wrapper.appendChild(img)
 
