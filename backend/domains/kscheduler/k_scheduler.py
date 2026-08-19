@@ -393,7 +393,6 @@ from backend.domains.services.my_stock_service import get_my_stock_service
 
 logger = get_logger(__name__)
 
-# ==== 예시 잡 함수들 ====
 @job_registry.register("sync_my_stock")
 async def sync_my_stock(_payload: dict):
     """
@@ -403,6 +402,7 @@ async def sync_my_stock(_payload: dict):
     await service.scheduler_sync_and_update()
 
 
+# ==== 예시 잡 함수들 ====
 @job_registry.register("nightly_board_scrape")
 async def nightly_board_scrape(_payload: dict):
     """

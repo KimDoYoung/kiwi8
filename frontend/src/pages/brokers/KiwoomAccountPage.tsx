@@ -15,6 +15,7 @@ import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
 import LoadingFail from '@/shared/components/LoadingFail'
 import { TrendBadge } from '@/shared/components/TrendBadge'
+import { SellSignalBadge } from '@/shared/components/SellSignalBadge'
 import { fetchMenuTree } from '@/services/menuService'
 import { getMarketStatus } from '@/services/stockService'
 import { Switch } from '@/shared/components/ui/switch'
@@ -182,6 +183,18 @@ export default function KiwoomAccountPage() {
             { 
                 field: '가격추세', headerName: '추세', width: 106, sortable: false,
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
+            },
+            {
+                headerName: '기준가대비', width: 100, type: 'numericColumn',
+                valueGetter: (p) => p.data?.기준가대비율 ?? null,
+                cellRenderer: (p: CustomCellRendererProps) =>
+                    p.data?._isSummary || p.value == null ? '' : <RateCell value={p.value} />,
+                comparator: numComparator,
+            },
+            {
+                headerName: '매도신호', width: 90, sortable: false,
+                cellRenderer: (p: CustomCellRendererProps) =>
+                    p.data?._isSummary ? '' : <SellSignalBadge recommend={p.data?.매도추천} />,
             },
             {
                 headerName: '', width: 145, sortable: false, resizable: false,

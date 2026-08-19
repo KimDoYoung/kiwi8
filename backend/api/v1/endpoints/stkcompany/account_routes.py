@@ -15,7 +15,9 @@ from backend.domains.infrahub.current_pricer import CurrentPricer
 from backend.domains.infrahub.open_time_checker import OpenTimeChecker
 from backend.domains.infrahub.prev_price_cache import get_prev_price_cache
 from backend.domains.infrahub.stock_resolver import StockResolver
+from backend.domains.models.my_stock_model import MyStockFilter
 from backend.domains.services.account_history_service import AccountHistoryService
+from backend.domains.services.my_stock_service import get_my_stock_service
 from backend.domains.stkcompanys.kis.kis_service import get_kis_api
 from backend.domains.stkcompanys.kis.models.kis_schema import (
     KisApiHelper,
@@ -101,6 +103,12 @@ async def get_account_history(days: int = Query(90, ge=1, le=365, description='�
 # total/account/list 라우트는 3개 증권사(KIS, LS, 키움)의 계좌현황을 통합하여 리스트한다.
 
 
+async def _get_my_stock_signal_map() -> dict[str, object]:
+    """보유중인 my_stock 레코드를 stk_cd 기준 dict로 반환 (기준가/매도신호용)"""
+    rows = await get_my_stock_service().get_list(MyStockFilter(is_hold=1))
+    return {r.stk_cd: r for r in rows}
+
+
 def _normalize_stock_code(code: str | int | None) -> str:
     if code is None:
         return ''
@@ -176,6 +184,10 @@ def _normalize_total_entry(row: dict, broker: str) -> dict:
         '전일대비': row.get('전일대비', 0),
         '가격추세': row.get('가격추세', '-'),
         '일주당': row.get('1주당', 0),
+        '기준가': row.get('기준가'),
+        '기준가대비율': row.get('기준가대비율'),
+        '매도목표가': row.get('매도목표가'),
+        '매도추천': row.get('매도추천', False),
     }
 
 
@@ -253,7 +265,8 @@ async def kiwoom_account_list():
         if response.success:
             korea_data = KiwoomApiHelper.to_korea_data(response.data, 'kt00004')
             response.data = korea_data
-            await _insert_prev_costs_kiwoom(response.data.get('종목별계좌평가현황', []))
+            my_stock_map = await _get_my_stock_signal_map()
+            await _insert_prev_costs_kiwoom(response.data.get('종목별계좌평가현황', []), my_stock_map)
             logger.info('[계좌현황] 키움 계좌현황 조회 성공')
         return response
 
@@ -304,7 +317,8 @@ async def kis_account_list():
             output1 = response.data.get('output1', [])
             output1 = [r for r in output1 if int(r.get('보유수량', 0)) > 0]
             response.data['output1'] = output1
-            await _insert_prev_costs_kis(output1)
+            my_stock_map = await _get_my_stock_signal_map()
+            await _insert_prev_costs_kis(output1, my_stock_map)
             logger.info('[계좌현황] KIS 계좌현황 조회 성공')
         else:
             logger.warning(f'[계좌현황] KIS API 오류: code={response.error_code} msg={response.error_message}')
@@ -352,7 +366,8 @@ async def ls_account_list():
         if response.success and response.data:
             korea_data = LsApiHelper.to_korea_data(response.data, 't0424')
             response.data = korea_data
-            await _insert_prev_costs_ls(response.data.get('t0424OutBlock1', []), price_market)
+            my_stock_map = await _get_my_stock_signal_map()
+            await _insert_prev_costs_ls(response.data.get('t0424OutBlock1', []), price_market, my_stock_map)
             logger.info('[계좌현황] LS 계좌현황 조회 성공')
         # print('[DEBUG] ls/account/list response:', json.dumps(response.model_dump(mode='json'), ensure_ascii=False, indent=2))
         return response
@@ -364,7 +379,17 @@ async def ls_account_list():
         )
 
 
-async def _insert_prev_costs_kiwoom(stock_list: list):
+def _insert_my_stock_signals(stock: dict, stk_cd: str, cur_price: float, my_stock_map: dict) -> None:
+    ms = my_stock_map.get(stk_cd)
+    base_price = ms.base_price if ms else None
+    sell_price = ms.sell_price if ms else None
+    stock['기준가'] = base_price
+    stock['기준가대비율'] = round((cur_price - base_price) / base_price * 100, 2) if base_price else None
+    stock['매도목표가'] = sell_price
+    stock['매도추천'] = bool(sell_price is not None and cur_price <= sell_price)
+
+
+async def _insert_prev_costs_kiwoom(stock_list: list, my_stock_map: dict):
     cache = get_prev_price_cache()
     async def enrich(stock):
         stk_cd = stock.get('종목코드', '')
@@ -379,9 +404,10 @@ async def _insert_prev_costs_kiwoom(stock_list: list):
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
+        _insert_my_stock_signals(stock, stk_cd, cur_price, my_stock_map)
     await asyncio.gather(*[enrich(s) for s in stock_list])
 
-async def _insert_prev_costs_kis(stock_list: list):
+async def _insert_prev_costs_kis(stock_list: list, my_stock_map: dict):
     cache = get_prev_price_cache()
     async def enrich(stock):
         stk_cd = stock.get('상품번호', '')
@@ -396,9 +422,10 @@ async def _insert_prev_costs_kis(stock_list: list):
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
+        _insert_my_stock_signals(stock, stk_cd, cur_price, my_stock_map)
     await asyncio.gather(*[enrich(s) for s in stock_list])
 
-async def _insert_prev_costs_ls(stock_list: list, price_market: str):
+async def _insert_prev_costs_ls(stock_list: list, price_market: str, my_stock_map: dict):
     cache = get_prev_price_cache()
     async def enrich(stock):
         stk_cd = stock.get('종목번호', '')
@@ -418,4 +445,5 @@ async def _insert_prev_costs_ls(stock_list: list, price_market: str):
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
+        _insert_my_stock_signals(stock, stk_cd, cur_price, my_stock_map)
     await asyncio.gather(*[enrich(s) for s in stock_list])
