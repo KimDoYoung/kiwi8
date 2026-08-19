@@ -2,7 +2,7 @@
 
 import asyncio
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Literal
 
 from backend.core.logger import get_logger
@@ -141,6 +141,7 @@ class PrevPriceCache:
             cls._instance = super().__new__(cls)
             cls._instance._cache = {}
             cls._instance._last_update = None
+            cls._instance._cached_on = {}  # {stk_cd: 캐시가 채워진 달력 날짜(YYYYMMDD)}
         return cls._instance
 
     @staticmethod
@@ -211,6 +212,7 @@ class PrevPriceCache:
         data = PriceData()
         data.set_prices(dates, prices)
         self._cache[stk_cd] = data
+        self._cached_on[stk_cd] = datetime.now().strftime('%Y%m%d')
         logger.debug(
             f"가격 캐시 저장: {stk_cd} - {len(prices)}일치, 추세: {data.trend}"
         )
@@ -227,6 +229,7 @@ class PrevPriceCache:
             self._cache[stk_cd] = PriceData()
 
         self._cache[stk_cd].add_price(date, price)
+        self._cached_on[stk_cd] = datetime.now().strftime('%Y%m%d')
         logger.debug(f"가격 추가: {stk_cd} {date}={price}, 추세: {self._cache[stk_cd].trend}")
 
     async def set_multi(self, data_dict: dict[str, tuple[list[str], list[float]]]) -> None:
@@ -235,10 +238,12 @@ class PrevPriceCache:
         Args:
             data_dict: {종목코드: (dates, prices)}
         """
+        today = datetime.now().strftime('%Y%m%d')
         for stk_cd, (dates, prices) in data_dict.items():
             data = PriceData()
             data.set_prices(dates, prices)
             self._cache[stk_cd] = data
+            self._cached_on[stk_cd] = today
 
         logger.info(f"가격 캐시 갱신: {len(data_dict)}개 종목 저장됨")
 
@@ -263,9 +268,11 @@ class PrevPriceCache:
         """
         if stk_cd:
             self._cache.pop(stk_cd, None)
+            self._cached_on.pop(stk_cd, None)
             logger.info(f"가격 캐시 삭제: {stk_cd}")
         else:
             self._cache.clear()
+            self._cached_on.clear()
             self._last_update = None
             logger.info("가격 캐시 전체 초기화됨")
 
@@ -309,17 +316,17 @@ class PrevPriceCache:
         Returns:
             전일 종가 (prices[-2]) 또는 None
         """
-        # 주말/공휴일 다음날에도 캐시 유효하도록 7일 이내 날짜면 유효 처리
-        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
+        # 캐시가 오늘 채워진 것인지 확인 (하루가 지나면 반드시 재조회하여 전일종가 갱신)
+        today = datetime.now().strftime('%Y%m%d')
 
         # 캐시에서 먼저 조회
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            if data.dates and self._normalize_date_for_sort(data.dates[-1]) >= week_ago:
+            if self._cached_on.get(stk_cd) == today:
                 return data.prices[-2]
             else:
                 await self.clear(stk_cd)
-                logger.debug(f"캐시 만료로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}")
+                logger.debug(f"캐시 만료(날짜 경과)로 무효화: {stk_cd}, 캐시일: {self._cached_on.get(stk_cd)}")
 
         # 캐시 미스 또는 날짜 불일치: API 호출로 10일 데이터 로드 (최대 3회 재시도)
         for attempt in range(3):
@@ -344,17 +351,17 @@ class PrevPriceCache:
         Returns:
             추세 문자열 또는 None
         """
-        # 주말/공휴일 다음날에도 캐시 유효하도록 7일 이내 날짜면 유효 처리
-        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
+        # 캐시가 오늘 채워진 것인지 확인 (하루가 지나면 반드시 재조회하여 전일종가 갱신)
+        today = datetime.now().strftime('%Y%m%d')
 
         # 캐시에서 먼저 조회 (추세 판단을 위해 최소 2일 데이터 필요)
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            if data.dates and self._normalize_date_for_sort(data.dates[-1]) >= week_ago:
+            if self._cached_on.get(stk_cd) == today:
                 return data.trend
             else:
                 await self.clear(stk_cd)
-                logger.debug(f"캐시 만료로 무효화: {stk_cd}, 캐시 날짜: {data.dates[-1] if data.dates else '없음'}")
+                logger.debug(f"캐시 만료(날짜 경과)로 무효화: {stk_cd}, 캐시일: {self._cached_on.get(stk_cd)}")
 
         # 캐시 미스 또는 날짜 불일치: API 호출로 10일 데이터 로드 (최대 3회 재시도)
         for attempt in range(3):
@@ -378,11 +385,11 @@ class PrevPriceCache:
 
     async def get_price_and_trend(self, stk_cd: str) -> tuple[float, str]:
         """전일종가와 추세를 한 번의 캐시/API 조회로 반환"""
-        # 주말/공휴일 다음날에도 캐시 유효하도록 7일 이내 날짜면 유효 처리
-        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
+        # 캐시가 오늘 채워진 것인지 확인 (하루가 지나면 반드시 재조회하여 전일종가 갱신)
+        today = datetime.now().strftime('%Y%m%d')
         data = self._cache.get(stk_cd)
         if data and len(data.prices) >= 2:
-            if data.dates and self._normalize_date_for_sort(data.dates[-1]) >= week_ago:
+            if self._cached_on.get(stk_cd) == today:
                 return data.prices[-2], data.trend
             else:
                 await self.clear(stk_cd)
