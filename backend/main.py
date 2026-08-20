@@ -208,6 +208,16 @@ async def startup_event():
         ))
 
         scheduler.upsert_job(Job(
+            name="sync_my_stock",
+            func_name="sync_my_stock",
+            schedule_type="cron",
+            schedule_expr="30 1 * * *",
+            enabled=True,
+            timeout_sec=600,
+            overlap_policy="skip",
+        ))
+
+        scheduler.upsert_job(Job(
             name="write_account_history",
             func_name="write_account_history",
             schedule_type="cron",
