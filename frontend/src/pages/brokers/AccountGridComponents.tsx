@@ -24,6 +24,19 @@ export const PrevDayCell = React.memo(function PrevDayCell({ value, rate }: { va
   )
 })
 
+/** 기준가 셀 — 기준가 (대비율) 한 줄 우정렬, 대비율 부호로 색상, + 기호 생략, % 없음 */
+export const BasePriceCell = React.memo(function BasePriceCell({ value, rate }: { value: number; rate: number | null }) {
+  if (rate == null) return null
+  const color = rate > 0 ? '#ef4444' : rate < 0 ? '#3b82f6' : undefined
+  const fmtRate = rate < 0 ? `-${Math.abs(rate).toFixed(2)}` : `${rate.toFixed(2)}`
+  return (
+    <span style={{ color, fontWeight: 600, display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: '3px' }}>
+      <span>{fmt(toNum(value))}</span>
+      <span style={{ fontSize: '10px', opacity: 0.85 }}>({fmtRate})</span>
+    </span>
+  )
+})
+
 /** 손익율 셀 (% 기호 없음, 헤더에 표시) */
 export const RateCell = React.memo(function RateCell({ value }: { value: number }) {
   const n = toNum(value)

@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import aiosqlite
@@ -347,22 +348,25 @@ class MyStockService:
             await db.commit()
             
         # 3. 모든 레코드 spec 갱신
+        # ka10001+ka10100 2콜/종목, 키움 유량제한(5건/초) 회피 위해 콜당 0.25초 간격
         all_stocks = await self.get_list()
         for s in all_stocks:
             await self.fill_spec(s.stk_cd)
-            
+            await asyncio.sleep(0.25)
+
         # 4. 보유 종목 base_price 갱신
         kiwoom = await get_kiwoom_api()
         for s in all_stocks:
             if s.is_hold != 1:
                 continue
-                
+
             # ka10001로 전일 종가(기준가) 조회
+            await asyncio.sleep(0.25)
             resp = await kiwoom.send_request(KiwoomRequest(api_id="ka10001", payload={"stk_cd": s.stk_cd}))
             if resp and resp.success:
                 try:
-                    out = resp.data.get("output", {})
-                    prev_close = abs(int(out.get("base_pric", "0")))
+                    out = KiwoomApiHelper.to_korea_data(resp.data, "ka10001")
+                    prev_close = abs(int(out.get("기준가", "0") or "0"))
                     
                     current_base = s.base_price
                     should_update = False
@@ -388,7 +392,10 @@ class MyStockService:
                         ))
                 except Exception as e:
                     logger.error(f"Failed to update base_price for {s.stk_cd}: {e}")
-                    
+            else:
+                err_msg = resp.error_message if resp else "no response"
+                logger.error(f"ka10001 조회 실패, base_price 갱신 skip - {s.stk_cd}: {err_msg}")
+
         logger.info("MyStock scheduler task completed.")
 
     async def sync_holdings(self, holdings: list[dict]):

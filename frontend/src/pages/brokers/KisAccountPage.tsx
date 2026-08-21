@@ -10,7 +10,7 @@ import { useLayoutStore } from '@/store/layoutStore'
 import api from '@/lib/api'
 import { toNum, fmt, numComparator, exportCsv } from '@/lib/utils'
 import {
-    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader, PrevDayCell,
+    ProfitCell, RateCell, WeightCell, CodeCell, ActionCell, AccountHeader, PrevDayCell, BasePriceCell,
 } from './AccountGridComponents'
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton'
 import Loading from '@/shared/components/Loading'
@@ -209,10 +209,10 @@ export default function KisAccountPage() {
                 cellRenderer: (p: CustomCellRendererProps) => p.data?._isSummary ? '' : <TrendBadge trend={p.data?.가격추세} />,
             },
             {
-                headerName: '기준가대비', width: 100, type: 'numericColumn',
-                valueGetter: (p) => p.data?.기준가대비율 ?? null,
+                headerName: '기준가(대비율)', width: 130, type: 'numericColumn',
+                valueGetter: (p) => p.data?.기준가 ?? null,
                 cellRenderer: (p: CustomCellRendererProps) =>
-                    p.data?._isSummary || p.value == null ? '' : <RateCell value={p.value} />,
+                    p.data?._isSummary || p.value == null ? '' : <BasePriceCell value={p.value} rate={toNum(p.data?.기준가대비율)} />,
                 comparator: numComparator,
             },
             {

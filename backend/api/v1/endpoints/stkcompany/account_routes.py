@@ -379,14 +379,18 @@ async def ls_account_list():
         )
 
 
-def _insert_my_stock_signals(stock: dict, stk_cd: str, cur_price: float, my_stock_map: dict) -> None:
+def _insert_my_stock_signals(stock: dict, stk_cd: str, cur_price: float, avg_price: float, my_stock_map: dict) -> None:
     ms = my_stock_map.get(stk_cd)
     base_price = ms.base_price if ms else None
     sell_price = ms.sell_price if ms else None
+    base_rate = round((cur_price - base_price) / base_price * 100, 2) if base_price else None
     stock['기준가'] = base_price
-    stock['기준가대비율'] = round((cur_price - base_price) / base_price * 100, 2) if base_price else None
+    stock['기준가대비율'] = base_rate
     stock['매도목표가'] = sell_price
-    stock['매도추천'] = bool(sell_price is not None and cur_price <= sell_price)
+    # 매도 조건: 매입평단 대비 수익 상태 + 기준가 대비 -15%(포함) 이하로 하락
+    is_profit = cur_price > avg_price
+    is_dropped = base_rate is not None and base_rate <= -15
+    stock['매도추천'] = bool(is_profit and is_dropped)
 
 
 async def _insert_prev_costs_kiwoom(stock_list: list, my_stock_map: dict):
@@ -404,7 +408,7 @@ async def _insert_prev_costs_kiwoom(stock_list: list, my_stock_map: dict):
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
-        _insert_my_stock_signals(stock, stk_cd, cur_price, my_stock_map)
+        _insert_my_stock_signals(stock, stk_cd, cur_price, avg_price, my_stock_map)
     await asyncio.gather(*[enrich(s) for s in stock_list])
 
 async def _insert_prev_costs_kis(stock_list: list, my_stock_map: dict):
@@ -422,7 +426,7 @@ async def _insert_prev_costs_kis(stock_list: list, my_stock_map: dict):
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
-        _insert_my_stock_signals(stock, stk_cd, cur_price, my_stock_map)
+        _insert_my_stock_signals(stock, stk_cd, cur_price, avg_price, my_stock_map)
     await asyncio.gather(*[enrich(s) for s in stock_list])
 
 async def _insert_prev_costs_ls(stock_list: list, price_market: str, my_stock_map: dict):
@@ -445,5 +449,5 @@ async def _insert_prev_costs_ls(stock_list: list, price_market: str, my_stock_ma
         stock['전일대비'] = cur_price - prev_close
         stock['전일대비율'] = round((cur_price - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         stock['1주당'] = cur_price - avg_price
-        _insert_my_stock_signals(stock, stk_cd, cur_price, my_stock_map)
+        _insert_my_stock_signals(stock, stk_cd, cur_price, avg_price, my_stock_map)
     await asyncio.gather(*[enrich(s) for s in stock_list])
